@@ -1,0 +1,10 @@
+// Módulo auth — modelo mínimo de ejemplo para el scaffolding.
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("users")
+}

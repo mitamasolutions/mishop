@@ -1,0 +1,28 @@
+{
+  "name": "mitama-commerce",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "packages/modules/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:generate": "yarn workspace @mitama/db db:generate",
+    "db:migrate": "yarn workspace @mitama/db db:migrate",
+    "db:seed": "yarn workspace @mitama/db db:seed",
+    "new:module": "node tools/new-module.mjs"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "yarn@4.9.2"
+}

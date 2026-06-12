@@ -1,0 +1,11 @@
+// Configuración base de Prisma. El schema es multi-archivo:
+// cada módulo de dominio tiene su propio .prisma en esta carpeta.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

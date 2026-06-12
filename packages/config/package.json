@@ -1,0 +1,16 @@
+{
+  "name": "@mitama/config",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint": "./eslint.config.base.mjs"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.15.0"
+  }
+}

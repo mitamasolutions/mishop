@@ -1,0 +1,57 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Tokens del DESIGN.md: "cream paper engineering notebook" */
+:root {
+  --background: #f6f6f6;
+  --foreground: #141414;
+  --card: #ffffff;
+  --card-foreground: #141414;
+  --muted: #e5e5e5;
+  --muted-foreground: #6d6d70;
+  --accent: #f7f1ff;
+  --accent-foreground: #141414;
+  --border: #e5e5e5;
+  --primary: #141414;
+  --primary-foreground: #ffffff;
+}
+
+.dark {
+  --background: #141414;
+  --foreground: #f6f6f6;
+  --card: #292929;
+  --card-foreground: #f6f6f6;
+  --muted: #38383a;
+  --muted-foreground: #a9a9ac;
+  --accent: #38383a;
+  --accent-foreground: #f6f6f6;
+  --border: #38383a;
+  --primary: #f6f6f6;
+  --primary-foreground: #141414;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  /* Radios squared del design system: 4/8/12/16, sin sombras */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
