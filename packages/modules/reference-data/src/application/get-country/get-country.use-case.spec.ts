@@ -11,7 +11,6 @@ describe('GetCountryUseCase', () => {
       numCode: '484',
       name: 'Mexico',
       displayName: 'México',
-      regionId: 'mexico',
     });
     const useCase = new GetCountryUseCase(new InMemoryCountryRepository([mexico]));
 

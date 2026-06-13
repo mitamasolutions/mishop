@@ -1,5 +1,6 @@
-// Módulo reference-data: catálogos de moneda, región y país (estilo Medusa).
-// Solo lectura por API, cargados por seed, con soft delete.
+// Módulo reference-data: catálogos de moneda, región y país.
+// Region, Territory y Zone son editables por API.
+// Currency y Country siguen siendo solo lectura (seed).
 
 model Currency {
   code          String    @id
@@ -24,12 +25,15 @@ model Region {
   currencyCode   String    @map("currency_code")
   currency       Currency  @relation(fields: [currencyCode], references: [code])
   automaticTaxes Boolean   @default(true) @map("automatic_taxes")
+  isActive       Boolean   @default(true) @map("is_active")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
 
-  countries Country[]
-  stores    Store[]
+  countries        RegionCountry[]
+  paymentProviders RegionPaymentProvider[]
+  territories      Territory[]
+  stores           Store[]
 
   @@map("regions")
 }
@@ -40,11 +44,96 @@ model Country {
   numCode     String    @map("num_code")
   name        String
   displayName String    @map("display_name")
-  regionId    String?   @map("region_id")
-  region      Region?   @relation(fields: [regionId], references: [id])
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
+  regions RegionCountry[]
+
   @@map("countries")
+}
+
+/// Tabla de unión Región ↔ País (muchos-a-muchos).
+/// Un país puede pertenecer a varias regiones.
+model RegionCountry {
+  regionId    String @map("region_id")
+  countryIso2 String @map("country_iso2")
+
+  region  Region  @relation(fields: [regionId], references: [id])
+  country Country @relation(fields: [countryIso2], references: [iso2])
+
+  @@id([regionId, countryIso2])
+  @@map("region_countries")
+}
+
+/// Catálogo sembrado de proveedores de pago. Solo selección, no creación vía API.
+model PaymentProvider {
+  id   String @id @default(uuid())
+  code String @unique
+  name String
+
+  regions RegionPaymentProvider[]
+
+  @@map("payment_providers")
+}
+
+/// Tabla de unión Región ↔ Proveedor de pago (muchos-a-muchos).
+model RegionPaymentProvider {
+  regionId          String @map("region_id")
+  paymentProviderId String @map("payment_provider_id")
+
+  region          Region          @relation(fields: [regionId], references: [id])
+  paymentProvider PaymentProvider @relation(fields: [paymentProviderId], references: [id])
+
+  @@id([regionId, paymentProviderId])
+  @@map("region_payment_providers")
+}
+
+/// Segundo nivel jerárquico: pertenece a una Región y concentra la configuración de envío.
+model Territory {
+  id       String  @id @default(uuid())
+  regionId String  @map("region_id")
+  region   Region  @relation(fields: [regionId], references: [id])
+  name     String
+  code     String
+  isActive Boolean @default(true) @map("is_active")
+
+  // Configuración de envío
+  automaticFulfillment          Boolean  @default(false) @map("automatic_fulfillment")
+  minSubtotal                   Decimal? @map("min_subtotal")
+  minSubtotalWithTax            Boolean  @default(false) @map("min_subtotal_with_tax")
+  freeShippingThreshold         Decimal? @map("free_shipping_threshold")
+  freeShippingThresholdWithTax  Boolean  @default(false) @map("free_shipping_threshold_with_tax")
+  freeShippingNoDiscount        Boolean  @default(false) @map("free_shipping_no_discount")
+  shippingCost                  Decimal? @map("shipping_cost")
+  description                   String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  zones Zone[]
+
+  /// El código es único dentro de la misma región.
+  @@unique([regionId, code])
+  @@map("territories")
+}
+
+/// Tercer nivel jerárquico: agrupador geográfico más fino, pertenece a un Territorio.
+model Zone {
+  id          String  @id @default(uuid())
+  territoryId String  @map("territory_id")
+  territory   Territory @relation(fields: [territoryId], references: [id])
+  name        String
+  code        String
+  isActive    Boolean @default(true) @map("is_active")
+  description String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  /// El código es único dentro del mismo territorio.
+  @@unique([territoryId, code])
+  @@map("zones")
 }

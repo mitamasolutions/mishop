@@ -5,7 +5,6 @@ interface CountryProps {
   numCode: string;
   name: string;
   displayName: string;
-  regionId: string | null;
 }
 
 /** Identidad por `iso2` (ISO 3166-1 alpha-2, p.ej. "MX"). */
@@ -32,9 +31,5 @@ export class Country extends Entity<CountryProps> {
 
   get displayName(): string {
     return this.props.displayName;
-  }
-
-  get regionId(): string | null {
-    return this.props.regionId;
   }
 }

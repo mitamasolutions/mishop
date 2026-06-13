@@ -3,4 +3,5 @@ export interface RegionOutput {
   name: string;
   currencyCode: string;
   automaticTaxes: boolean;
+  isActive: boolean;
 }

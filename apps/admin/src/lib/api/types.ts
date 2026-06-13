@@ -82,4 +82,49 @@ export interface RegionOutput {
   name: string;
   currencyCode: string;
   automaticTaxes: boolean;
+  isActive: boolean;
+}
+
+export interface RegionDetailOutput extends RegionOutput {
+  countriesIso2: string[];
+  paymentProviderIds: string[];
+}
+
+export interface CountryOutput {
+  iso2: string;
+  iso3: string;
+  numCode: string;
+  name: string;
+  displayName: string;
+}
+
+export interface PaymentProviderOutput {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface TerritoryOutput {
+  id: string;
+  regionId: string;
+  name: string;
+  code: string;
+  isActive: boolean;
+  automaticFulfillment: boolean;
+  minSubtotal: number | null;
+  minSubtotalWithTax: boolean;
+  freeShippingThreshold: number | null;
+  freeShippingThresholdWithTax: boolean;
+  freeShippingNoDiscount: boolean;
+  shippingCost: number | null;
+  description: string | null;
+}
+
+export interface ZoneOutput {
+  id: string;
+  territoryId: string;
+  name: string;
+  code: string;
+  isActive: boolean;
+  description: string | null;
 }

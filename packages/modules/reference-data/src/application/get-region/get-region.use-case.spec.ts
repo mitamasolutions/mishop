@@ -10,6 +10,9 @@ describe('GetRegionUseCase', () => {
       name: 'México',
       currencyCode: 'MXN',
       automaticTaxes: true,
+      isActive: true,
+      countriesIso2: [],
+      paymentProviderIds: [],
     });
     const useCase = new GetRegionUseCase(new InMemoryRegionRepository([mexico]));
 

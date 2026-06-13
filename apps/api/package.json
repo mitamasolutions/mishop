@@ -13,6 +13,7 @@
   "dependencies": {
     "@mitama/activity-log": "workspace:*",
     "@mitama/auth": "workspace:*",
+    "@mitama/catalog": "workspace:*",
     "@mitama/contracts": "workspace:*",
     "@mitama/core": "workspace:*",
     "@mitama/db": "workspace:*",

@@ -10,7 +10,6 @@ describe('ListCountriesUseCase', () => {
       numCode: '484',
       name: 'Mexico',
       displayName: 'México',
-      regionId: 'mexico',
     });
     const useCase = new ListCountriesUseCase(new InMemoryCountryRepository([mexico]));
 
@@ -19,7 +18,7 @@ describe('ListCountriesUseCase', () => {
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value).toEqual([
-        { iso2: 'MX', iso3: 'MEX', numCode: '484', name: 'Mexico', displayName: 'México', regionId: 'mexico' },
+        { iso2: 'MX', iso3: 'MEX', numCode: '484', name: 'Mexico', displayName: 'México' },
       ]);
     }
   });

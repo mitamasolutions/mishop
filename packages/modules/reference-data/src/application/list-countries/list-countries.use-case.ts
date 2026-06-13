@@ -14,7 +14,6 @@ export class ListCountriesUseCase implements UseCase<void, Result<CountryOutput[
         numCode: country.numCode,
         name: country.name,
         displayName: country.displayName,
-        regionId: country.regionId,
       })),
     );
   }

@@ -4,5 +4,4 @@ export interface CountryOutput {
   numCode: string;
   name: string;
   displayName: string;
-  regionId: string | null;
 }

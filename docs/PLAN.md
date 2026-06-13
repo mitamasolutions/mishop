@@ -65,7 +65,7 @@ _Equivalencia nopCommerce: Products, Categories, Manufacturers, Attributes, Spec
 - [ ] Categorías jerárquicas (árbol con drag & drop en admin) y fabricantes/marcas
 - [ ] Precios: precio base, precio de oferta con vigencia, tier prices (precio por cantidad), costo (para márgenes y POS)
 - [ ] Inventario **por ubicación** desde el inicio: stock, reservas, backorder configurable, umbral de stock bajo
-- [ ] Media: subida de imágenes (S3-compatible/local), orden, alt text, imagen por variante
+- [ ] Media: subida de imágenes (S3-compatible/claudinary/local), orden, alt text, imagen por variante
 - [ ] Productos relacionados y cross-sell; tags
 - [ ] SEO por producto/categoría: slug único, meta title/description, redirects al cambiar slug
 - [ ] Búsqueda y filtros en admin (nombre, SKU, categoría, estado, stock)

@@ -13,6 +13,7 @@ export class ListRegionsUseCase implements UseCase<void, Result<RegionOutput[], 
         name: region.name,
         currencyCode: region.currencyCode,
         automaticTaxes: region.automaticTaxes,
+        isActive: region.isActive,
       })),
     );
   }

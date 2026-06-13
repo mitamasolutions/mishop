@@ -18,22 +18,18 @@ export class PrismaCountryRepository implements CountryRepository {
         numCode: row.numCode,
         name: row.name,
         displayName: row.displayName,
-        regionId: row.regionId,
       }),
     );
   }
 
   async findByIso2(iso2: string): Promise<Country | null> {
     const row = await this.prisma.country.findFirst({ where: { iso2, deletedAt: null } });
-    if (!row) {
-      return null;
-    }
+    if (!row) return null;
     return Country.rehydrate(row.iso2, {
       iso3: row.iso3,
       numCode: row.numCode,
       name: row.name,
       displayName: row.displayName,
-      regionId: row.regionId,
     });
   }
 }

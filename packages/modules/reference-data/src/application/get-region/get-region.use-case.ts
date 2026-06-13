@@ -15,6 +15,7 @@ export class GetRegionUseCase implements UseCase<string, Result<RegionOutput, No
       name: region.name,
       currencyCode: region.currencyCode,
       automaticTaxes: region.automaticTaxes,
+      isActive: region.isActive,
     });
   }
 }
