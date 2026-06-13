@@ -2,8 +2,8 @@
  * Seed de desarrollo/demo. Idempotente: usa upsert (o find+create) por
  * claves naturales, así que correrlo varias veces no duplica datos.
  *
- * Carga: datos de referencia (currencies/regions/countries), catálogo de
- * roles predefinidos, un usuario Super Admin y una tienda demo.
+ * Carga: datos de referencia (currencies/regions/countries/payment-providers),
+ * catálogo de roles predefinidos, un usuario Super Admin y una tienda demo.
  */
 import { PrismaClient, type Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
@@ -30,6 +30,16 @@ const STORE_ADMIN_PERMISSIONS: Permission[] = [
 ];
 
 const OPERATOR_PERMISSIONS: Permission[] = ['stores.read', 'settings.read', 'activity-log.read', 'users.read'];
+
+const PAYMENT_PROVIDERS = [
+  { code: 'stripe', name: 'Stripe' },
+  { code: 'mercado-pago', name: 'MercadoPago' },
+  { code: 'paypal', name: 'PayPal' },
+  { code: 'transferencia', name: 'Transferencia bancaria' },
+  { code: 'efectivo', name: 'Efectivo (contra entrega)' },
+  { code: 'oxxo', name: 'OXXO Pay' },
+  { code: 'conekta', name: 'Conekta' },
+];
 
 async function seedReferenceData(): Promise<void> {
   for (const currency of currencies as Array<{
@@ -65,8 +75,38 @@ async function seedReferenceData(): Promise<void> {
   }>) {
     await prisma.country.upsert({
       where: { iso2: country.iso2 },
-      create: country,
-      update: country,
+      create: {
+        iso2: country.iso2,
+        iso3: country.iso3,
+        numCode: country.numCode,
+        name: country.name,
+        displayName: country.displayName,
+      },
+      update: {
+        iso3: country.iso3,
+        numCode: country.numCode,
+        name: country.name,
+        displayName: country.displayName,
+      },
+    });
+  }
+
+  // Poblar asociaciones región ↔ país (muchos-a-muchos) desde los datos de seed.
+  for (const country of countries as Array<{ iso2: string; regionId: string | null }>) {
+    if (!country.regionId) continue;
+    await prisma.regionCountry.upsert({
+      where: { regionId_countryIso2: { regionId: country.regionId, countryIso2: country.iso2 } },
+      create: { regionId: country.regionId, countryIso2: country.iso2 },
+      update: {},
+    });
+  }
+
+  // Catálogo de proveedores de pago (solo lectura para la API).
+  for (const provider of PAYMENT_PROVIDERS) {
+    await prisma.paymentProvider.upsert({
+      where: { code: provider.code },
+      create: provider,
+      update: { name: provider.name },
     });
   }
 }

@@ -10,6 +10,7 @@ import { ReferenceDataModule } from '@mitama/reference-data';
 import { StoresModule } from '@mitama/stores';
 import { SettingsModule } from '@mitama/settings';
 import { ActivityLogModule } from '@mitama/activity-log';
+import { CatalogModule } from '@mitama/catalog';
 import { EventBusModule } from './event-bus.module';
 import { HealthController } from './health.controller';
 
@@ -23,6 +24,7 @@ import { HealthController } from './health.controller';
     ActivityLogModule,
     StoresModule,
     SettingsModule,
+    CatalogModule,
   ],
   controllers: [HealthController],
 })

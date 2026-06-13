@@ -1,0 +1,24 @@
+// Módulo media: imágenes del catálogo. El archivo binario vive en un backend
+// configurable (local / S3-compatible / Cloudinary) detrás de un puerto; aquí
+// solo se persiste la referencia (url), el orden, el alt text y el vínculo a
+// producto y/o variante.
+
+/// Imagen de catálogo. Si variantId es null, es imagen general del producto;
+/// si apunta a una variante, es específica de esa variante.
+model ProductImage {
+  id        String   @id @default(uuid())
+  url       String
+  altText   String?  @map("alt_text")
+  rank      Int      @default(0)
+  productId String   @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?  @map("variant_id")
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([productId])
+  @@index([variantId])
+  @@map("product_images")
+}

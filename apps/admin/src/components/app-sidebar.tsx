@@ -7,11 +7,15 @@ import {
   ClipboardList,
   Globe,
   LayoutDashboard,
+  Layers,
   Map,
   MapPin,
   Settings,
+  Package,
   ShieldCheck,
   Store,
+  Tag,
+  Tags,
   Users,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -27,7 +31,12 @@ const navItems = [
   { href: '/actividad', label: 'Actividad', icon: ClipboardList, permission: 'activity-log.read' },
 ] as const;
 
-const catalogoItems = [
+const catalogItems = [
+  { href: '/catalogos/marcas', label: 'Marcas', icon: Tag, permission: 'brands.read' },
+  { href: '/catalogos/tipos-producto', label: 'Tipos de producto', icon: Layers, permission: 'product-types.read' },
+  { href: '/catalogos/etiquetas', label: 'Etiquetas', icon: Tags, permission: 'product-tags.read' },
+  { href: '/catalogos/canales-venta', label: 'Canales de venta', icon: Store, permission: 'sales-channels.read' },
+  { href: '/catalogos/colecciones', label: 'Colecciones', icon: Package, permission: 'collections.read' },
   { href: '/catalogos/regiones', label: 'Regiones', icon: Globe, permission: 'regions.read' },
   { href: '/catalogos/territorios', label: 'Territorios', icon: Map, permission: 'territories.read' },
   { href: '/catalogos/zonas', label: 'Zonas', icon: MapPin, permission: 'zones.read' },
@@ -36,10 +45,11 @@ const catalogoItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
-  const isCatalogosActive = pathname.startsWith('/catalogos');
-  const [catalogosOpen, setCatalogosOpen] = useState(isCatalogosActive);
 
-  const visibleCatalogos = catalogoItems.filter(
+  const isCatalogActive = catalogItems.some((item) => pathname.startsWith(item.href));
+  const [catalogOpen, setCatalogOpen] = useState(isCatalogActive);
+
+  const visibleCatalog = catalogItems.filter(
     (item) => !item.permission || hasPermission(user, item.permission),
   );
 
@@ -68,26 +78,26 @@ export function AppSidebar() {
             );
           })}
 
-        {visibleCatalogos.length > 0 && (
+        {visibleCatalog.length > 0 && (
           <div>
             <button
               type="button"
-              onClick={() => setCatalogosOpen((prev) => !prev)}
+              onClick={() => setCatalogOpen((prev) => !prev)}
               className={cn(
                 'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
-                isCatalogosActive ? 'text-accent-foreground' : 'text-muted-foreground',
+                isCatalogActive ? 'text-accent-foreground' : 'text-muted-foreground',
               )}
             >
-              <Globe className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">Catálogos</span>
+              <Package className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">Catálogo</span>
               <ChevronDown
-                className={cn('h-3.5 w-3.5 transition-transform duration-200', catalogosOpen && 'rotate-180')}
+                className={cn('h-3.5 w-3.5 transition-transform duration-200', catalogOpen && 'rotate-180')}
               />
             </button>
 
-            {catalogosOpen && (
+            {catalogOpen && (
               <div className="ml-3 mt-1 flex flex-col gap-1 border-l border-border pl-3">
-                {visibleCatalogos.map(({ href, label, icon: Icon }) => {
+                {visibleCatalog.map(({ href, label, icon: Icon }) => {
                   const active = pathname.startsWith(href);
                   return (
                     <Link

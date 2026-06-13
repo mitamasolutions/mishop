@@ -38,6 +38,43 @@ export interface StoreOutput {
   updatedAt: string;
 }
 
+export interface BrandOutput {
+  id: string;
+  name: string;
+  handle: string;
+  logoUrl: string | null;
+  description: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ValueTaxonomyOutput {
+  id: string;
+  value: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesChannelOutput {
+  id: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductCollectionOutput {
+  id: string;
+  title: string;
+  handle: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type SettingType = 'string' | 'number' | 'boolean' | 'json';
 export type SettingSource = 'override' | 'global' | 'default';
 
