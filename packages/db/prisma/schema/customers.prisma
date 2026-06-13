@@ -1,0 +1,43 @@
+// Módulo customers: compradores separados de usuarios admin.
+
+model Customer {
+  id              String    @id @default(uuid())
+  storeId         String    @map("store_id")
+  email           String
+  firstName       String    @map("first_name")
+  lastName        String    @map("last_name")
+  phone           String?
+  passwordHash    String?   @map("password_hash")
+  isGuest         Boolean   @default(false) @map("is_guest")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  addresses CustomerAddress[]
+
+  @@unique([storeId, email])
+  @@index([storeId])
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id                String   @id @default(uuid())
+  customerId        String   @map("customer_id")
+  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  firstName         String   @map("first_name")
+  lastName          String   @map("last_name")
+  phone             String?
+  line1             String
+  line2             String?
+  city              String
+  province          String?
+  postalCode        String?  @map("postal_code")
+  countryCode       String   @map("country_code")
+  isDefaultShipping Boolean  @default(false) @map("is_default_shipping")
+  isDefaultBilling  Boolean  @default(false) @map("is_default_billing")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([customerId])
+  @@map("customer_addresses")
+}

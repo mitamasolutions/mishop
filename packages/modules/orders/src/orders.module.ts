@@ -1,0 +1,74 @@
+/**
+ * Composición del módulo: el único lugar donde las capas se conectan.
+ */
+import { Module } from '@nestjs/common';
+import { EVENT_BUS } from '@mitama/contracts';
+import type { EventBus } from '@mitama/core';
+import { ORDERS_TOKENS } from './orders.tokens';
+import type { CheckoutCartReader } from './domain/checkout-cart';
+import type { EmailQueue } from './domain/email-queue';
+import type { OrderRepository } from './domain/order.repository';
+import type { StockReservationService } from './domain/stock-reservation';
+import {
+  AddOrderNoteUseCase,
+  CancelOrderUseCase,
+  ChangeOrderStateUseCase,
+  ChangePaymentStateUseCase,
+  CreateOrderUseCase,
+  ListOrdersUseCase,
+  ResendOrderConfirmationUseCase,
+} from './application/order-use-cases';
+import { PrismaCheckoutCartReader } from './infra/prisma-checkout-cart.reader';
+import { PrismaEmailQueue } from './infra/prisma-email-queue';
+import { PrismaOrderRepository } from './infra/prisma-order.repository';
+import { PrismaStockReservationService } from './infra/prisma-stock-reservation.service';
+import { OrdersController } from './http/orders.controller';
+
+@Module({
+  controllers: [OrdersController],
+  providers: [
+    { provide: ORDERS_TOKENS.orderRepository, useClass: PrismaOrderRepository },
+    { provide: ORDERS_TOKENS.checkoutCartReader, useClass: PrismaCheckoutCartReader },
+    { provide: ORDERS_TOKENS.stockReservationService, useClass: PrismaStockReservationService },
+    { provide: ORDERS_TOKENS.emailQueue, useClass: PrismaEmailQueue },
+    {
+      provide: CreateOrderUseCase,
+      useFactory: (orders: OrderRepository, carts: CheckoutCartReader, stock: StockReservationService, eventBus: EventBus, email: EmailQueue) =>
+        new CreateOrderUseCase(orders, carts, stock, eventBus, email),
+      inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.checkoutCartReader, ORDERS_TOKENS.stockReservationService, EVENT_BUS, ORDERS_TOKENS.emailQueue],
+    },
+    {
+      provide: ListOrdersUseCase,
+      useFactory: (orders: OrderRepository) => new ListOrdersUseCase(orders),
+      inject: [ORDERS_TOKENS.orderRepository],
+    },
+    {
+      provide: ChangeOrderStateUseCase,
+      useFactory: (orders: OrderRepository, eventBus: EventBus) => new ChangeOrderStateUseCase(orders, eventBus),
+      inject: [ORDERS_TOKENS.orderRepository, EVENT_BUS],
+    },
+    {
+      provide: ChangePaymentStateUseCase,
+      useFactory: (orders: OrderRepository, eventBus: EventBus, email: EmailQueue) => new ChangePaymentStateUseCase(orders, eventBus, email),
+      inject: [ORDERS_TOKENS.orderRepository, EVENT_BUS, ORDERS_TOKENS.emailQueue],
+    },
+    {
+      provide: CancelOrderUseCase,
+      useFactory: (orders: OrderRepository, stock: StockReservationService, eventBus: EventBus, email: EmailQueue) =>
+        new CancelOrderUseCase(orders, stock, eventBus, email),
+      inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.stockReservationService, EVENT_BUS, ORDERS_TOKENS.emailQueue],
+    },
+    {
+      provide: AddOrderNoteUseCase,
+      useFactory: (orders: OrderRepository) => new AddOrderNoteUseCase(orders),
+      inject: [ORDERS_TOKENS.orderRepository],
+    },
+    {
+      provide: ResendOrderConfirmationUseCase,
+      useFactory: (orders: OrderRepository, email: EmailQueue) => new ResendOrderConfirmationUseCase(orders, email),
+      inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue],
+    },
+  ],
+  exports: [ORDERS_TOKENS.orderRepository],
+})
+export class OrdersModule {}

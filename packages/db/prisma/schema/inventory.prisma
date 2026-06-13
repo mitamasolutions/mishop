@@ -63,6 +63,7 @@ model InventoryLevel {
   stockedQuantity   Decimal  @default(0) @map("stocked_quantity") @db.Decimal(12, 2)
   reservedQuantity  Decimal  @default(0) @map("reserved_quantity") @db.Decimal(12, 2)
   incomingQuantity  Decimal  @default(0) @map("incoming_quantity") @db.Decimal(12, 2)
+  version           Int      @default(0)
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 

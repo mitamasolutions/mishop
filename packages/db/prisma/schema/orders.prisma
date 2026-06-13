@@ -1,0 +1,156 @@
+// Módulo orders: snapshots inmutables, estados, idempotencia y reservas.
+
+model OrderSequence {
+  storeId String @id @map("store_id")
+  prefix  String @default("WEB-")
+  next    Int    @default(1)
+
+  @@map("order_sequences")
+}
+
+model Order {
+  id                   String   @id @default(uuid())
+  storeId              String   @map("store_id")
+  orderNumber          String   @map("order_number")
+  customerId           String   @map("customer_id")
+  customerEmail        String?  @map("customer_email")
+  channel              String
+  status               String   @default("pending")
+  paymentStatus        String   @default("pending") @map("payment_status")
+  currencyCode         String   @map("currency_code")
+  subtotal             Decimal  @db.Decimal(12, 2)
+  shippingTotal        Decimal  @map("shipping_total") @db.Decimal(12, 2)
+  taxTotal             Decimal  @map("tax_total") @db.Decimal(12, 2)
+  total                Decimal  @db.Decimal(12, 2)
+  shippingAddress      Json     @map("shipping_address")
+  billingAddress       Json     @map("billing_address")
+  shippingMethod       Json     @map("shipping_method")
+  paymentMethod        Json     @map("payment_method")
+  reservationExpiresAt DateTime? @map("reservation_expires_at")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  lines            OrderLine[]
+  transitions      OrderStateTransition[]
+  notes            OrderNote[]
+  idempotencyKeys  OrderIdempotencyKey[]
+  emailJobs        OrderEmailJob[]
+
+  @@unique([storeId, orderNumber])
+  @@index([storeId, status, paymentStatus, channel])
+  @@index([customerId])
+  @@map("orders")
+}
+
+model OrderLine {
+  id              String  @id @default(uuid())
+  orderId         String  @map("order_id")
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId       String  @map("variant_id")
+  productId       String  @map("product_id")
+  productTitle    String  @map("product_title")
+  variantTitle    String  @map("variant_title")
+  sku             String
+  quantity        Int
+  currencyCode    String  @map("currency_code")
+  unitPrice       Decimal @map("unit_price") @db.Decimal(12, 2)
+  taxAmount       Decimal @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  total           Decimal @db.Decimal(12, 2)
+  stockLocationId String  @map("stock_location_id")
+
+  @@index([orderId])
+  @@map("order_lines")
+}
+
+model OrderStateTransition {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind      String
+  from      String
+  to        String
+  actorId   String?  @map("actor_id")
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([orderId])
+  @@map("order_state_transitions")
+}
+
+model OrderNote {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  authorId  String   @map("author_id")
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([orderId])
+  @@map("order_notes")
+}
+
+model OrderIdempotencyKey {
+  id          String   @id @default(uuid())
+  storeId     String   @map("store_id")
+  key         String
+  requestHash String   @map("request_hash")
+  orderId     String   @map("order_id")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([storeId, key])
+  @@index([expiresAt])
+  @@map("order_idempotency_keys")
+}
+
+model StockReservation {
+  id              String   @id @default(uuid())
+  orderId         String   @map("order_id")
+  variantId       String   @map("variant_id")
+  stockLocationId String   @map("stock_location_id")
+  quantity        Int
+  expiresAt       DateTime @map("expires_at")
+  releasedAt      DateTime? @map("released_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([orderId])
+  @@index([expiresAt, releasedAt])
+  @@map("stock_reservations")
+}
+
+model OrderEmailTemplate {
+  id        String   @id @default(uuid())
+  code      String
+  version   Int
+  subject   String
+  body      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  jobs OrderEmailJob[]
+
+  @@unique([code, version])
+  @@map("order_email_templates")
+}
+
+model OrderEmailJob {
+  id          String   @id @default(uuid())
+  orderId     String   @map("order_id")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  templateId  String?  @map("template_id")
+  template    OrderEmailTemplate? @relation(fields: [templateId], references: [id])
+  templateCode String  @map("template_code")
+  payload     Json
+  status      String   @default("queued")
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(3) @map("max_attempts")
+  nextRunAt   DateTime @default(now()) @map("next_run_at")
+  lastError   String?  @map("last_error")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([status, nextRunAt])
+  @@map("order_email_jobs")
+}
