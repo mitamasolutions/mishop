@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./acl/permissions": {
+      "types": "./dist/acl/permissions.d.ts",
+      "default": "./dist/acl/permissions.js"
     }
   },
   "scripts": {
@@ -15,11 +19,15 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@mitama/core": "workspace:*"
+    "@mitama/core": "workspace:*",
+    "@nestjs/common": "^11.0.0",
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@mitama/config": "workspace:*",
+    "@nestjs/core": "^11.0.0",
     "eslint": "^9.15.0",
+    "reflect-metadata": "^0.2.2",
     "typescript": "^5.6.0"
   }
 }

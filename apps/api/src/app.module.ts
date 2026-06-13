@@ -6,6 +6,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DbModule } from '@mitama/db';
 import { AuthModule } from '@mitama/auth';
+import { ReferenceDataModule } from '@mitama/reference-data';
+import { StoresModule } from '@mitama/stores';
+import { SettingsModule } from '@mitama/settings';
+import { ActivityLogModule } from '@mitama/activity-log';
 import { EventBusModule } from './event-bus.module';
 import { HealthController } from './health.controller';
 
@@ -15,6 +19,10 @@ import { HealthController } from './health.controller';
     DbModule,
     EventBusModule,
     AuthModule,
+    ReferenceDataModule,
+    ActivityLogModule,
+    StoresModule,
+    SettingsModule,
   ],
   controllers: [HealthController],
 })

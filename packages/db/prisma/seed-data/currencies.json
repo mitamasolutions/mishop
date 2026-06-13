@@ -1,0 +1,14 @@
+[
+  { "code": "MXN", "symbol": "$", "symbolNative": "$", "decimalDigits": 2, "rounding": 0, "name": "Peso mexicano" },
+  { "code": "USD", "symbol": "$", "symbolNative": "$", "decimalDigits": 2, "rounding": 0, "name": "Dólar estadounidense" },
+  { "code": "EUR", "symbol": "€", "symbolNative": "€", "decimalDigits": 2, "rounding": 0, "name": "Euro" },
+  { "code": "GBP", "symbol": "£", "symbolNative": "£", "decimalDigits": 2, "rounding": 0, "name": "Libra esterlina" },
+  { "code": "CAD", "symbol": "CA$", "symbolNative": "$", "decimalDigits": 2, "rounding": 0, "name": "Dólar canadiense" },
+  { "code": "BRL", "symbol": "R$", "symbolNative": "R$", "decimalDigits": 2, "rounding": 0, "name": "Real brasileño" },
+  { "code": "ARS", "symbol": "AR$", "symbolNative": "$", "decimalDigits": 2, "rounding": 0, "name": "Peso argentino" },
+  { "code": "COP", "symbol": "COL$", "symbolNative": "$", "decimalDigits": 2, "rounding": 0, "name": "Peso colombiano" },
+  { "code": "CLP", "symbol": "CL$", "symbolNative": "$", "decimalDigits": 0, "rounding": 0, "name": "Peso chileno" },
+  { "code": "PEN", "symbol": "S/", "symbolNative": "S/", "decimalDigits": 2, "rounding": 0, "name": "Sol peruano" },
+  { "code": "GTQ", "symbol": "Q", "symbolNative": "Q", "decimalDigits": 2, "rounding": 0, "name": "Quetzal guatemalteco" },
+  { "code": "JPY", "symbol": "¥", "symbolNative": "¥", "decimalDigits": 0, "rounding": 0, "name": "Yen japonés" }
+]

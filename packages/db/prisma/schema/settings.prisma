@@ -1,0 +1,15 @@
+// Módulo settings: valores tipados en dos niveles (global / por tienda).
+// storeId = null representa el valor global; el override de tienda gana al leer en contexto.
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String
+  storeId   String?  @map("store_id")
+  store     Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  value     Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([key, storeId])
+  @@map("settings")
+}

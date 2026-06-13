@@ -1,0 +1,22 @@
+// Módulo activity-log: registro inmutable de mutaciones de la API admin.
+// Sin API de edición/borrado; se escribe transaccionalmente junto a la mutación.
+
+model ActivityLogEntry {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  storeId    String?  @map("store_id")
+  store      Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  ip         String?
+  diff       Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("activity_log_entries")
+  @@index([userId])
+  @@index([storeId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}

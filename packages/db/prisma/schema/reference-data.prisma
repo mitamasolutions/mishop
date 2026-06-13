@@ -1,0 +1,50 @@
+// Módulo reference-data: catálogos de moneda, región y país (estilo Medusa).
+// Solo lectura por API, cargados por seed, con soft delete.
+
+model Currency {
+  code          String    @id
+  symbol        String
+  symbolNative  String    @map("symbol_native")
+  decimalDigits Int       @map("decimal_digits")
+  rounding      Float
+  name          String
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  regions Region[]
+  stores  Store[]
+
+  @@map("currencies")
+}
+
+model Region {
+  id             String    @id
+  name           String
+  currencyCode   String    @map("currency_code")
+  currency       Currency  @relation(fields: [currencyCode], references: [code])
+  automaticTaxes Boolean   @default(true) @map("automatic_taxes")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  countries Country[]
+  stores    Store[]
+
+  @@map("regions")
+}
+
+model Country {
+  iso2        String    @id @map("iso_2")
+  iso3        String    @map("iso_3")
+  numCode     String    @map("num_code")
+  name        String
+  displayName String    @map("display_name")
+  regionId    String?   @map("region_id")
+  region      Region?   @relation(fields: [regionId], references: [id])
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@map("countries")
+}

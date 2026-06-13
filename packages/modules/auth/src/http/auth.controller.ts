@@ -3,38 +3,178 @@ import {
   Body,
   ConflictException,
   Controller,
+  ForbiddenException,
+  HttpCode,
+  NotFoundException,
   Post,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { CurrentUser, NoStoreScope, Public, type AuthenticatedUser } from '@mitama/contracts';
+import { LoginUseCase } from '../application/login/login.use-case';
+import { RefreshSessionUseCase } from '../application/refresh-session/refresh-session.use-case';
+import { LogoutUseCase } from '../application/logout/logout.use-case';
+import { RequestPasswordResetUseCase } from '../application/request-password-reset/request-password-reset.use-case';
+import { ResetPasswordUseCase } from '../application/reset-password/reset-password.use-case';
+import { AcceptInvitationUseCase } from '../application/accept-invitation/accept-invitation.use-case';
+import { ChangePasswordUseCase } from '../application/change-password/change-password.use-case';
+import type { LoginOutput } from '../application/login/login.dto';
+import type { RefreshSessionOutput } from '../application/refresh-session/refresh-session.dto';
 import {
-  ApiBadRequestResponse,
-  ApiConflictResponse,
-  ApiCreatedResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
-import { RegisterUserUseCase } from '../application/register-user/register-user.use-case';
-import type { RegisterUserOutput } from '../application/register-user/register-user.dto';
-import { EmailAlreadyInUseError } from '../domain/errors';
-import { RegisterUserRequestDto } from './dto/register-user.request.dto';
+  AccountDisabledError,
+  AccountLockedError,
+  InvalidCredentialsError,
+  InvalidOrExpiredTokenError,
+  PasswordReuseError,
+  UserNotFoundError,
+} from '../domain/errors';
+import { ValidationError } from '@mitama/core';
+import { LoginRequestDto } from './dto/login.request.dto';
+import { RefreshTokenRequestDto } from './dto/refresh-token.request.dto';
+import { ForgotPasswordRequestDto } from './dto/forgot-password.request.dto';
+import { ResetPasswordRequestDto } from './dto/reset-password.request.dto';
+import { AcceptInvitationRequestDto } from './dto/accept-invitation.request.dto';
+import { ChangePasswordRequestDto } from './dto/change-password.request.dto';
+
+interface RequestWithIp {
+  ip?: string;
+}
 
 @ApiTags('auth')
 @Controller('auth')
+@NoStoreScope()
 export class AuthController {
-  constructor(private readonly registerUser: RegisterUserUseCase) {}
+  constructor(
+    private readonly login: LoginUseCase,
+    private readonly refreshSession: RefreshSessionUseCase,
+    private readonly logout: LogoutUseCase,
+    private readonly requestPasswordReset: RequestPasswordResetUseCase,
+    private readonly resetPassword: ResetPasswordUseCase,
+    private readonly acceptInvitation: AcceptInvitationUseCase,
+    private readonly changePassword: ChangePasswordUseCase,
+  ) {}
 
-  @Post('register')
-  @ApiOperation({ summary: 'Registra un usuario nuevo' })
-  @ApiCreatedResponse({ description: 'Usuario registrado' })
-  @ApiBadRequestResponse({ description: 'Datos inválidos' })
-  @ApiConflictResponse({ description: 'El email ya está registrado' })
-  async register(@Body() body: RegisterUserRequestDto): Promise<RegisterUserOutput> {
-    const result = await this.registerUser.execute(body);
+  @Post('login')
+  @Public()
+  @ApiOperation({ summary: 'Inicia sesión con email y contraseña' })
+  @ApiOkResponse({ description: 'Sesión iniciada' })
+  @ApiUnauthorizedResponse({ description: 'Credenciales inválidas' })
+  async loginHandler(@Body() body: LoginRequestDto, @Req() req: RequestWithIp): Promise<LoginOutput> {
+    const result = await this.login.execute({ email: body.email, password: body.password, ip: req.ip ?? null });
     if (result.isErr()) {
-      if (result.error instanceof EmailAlreadyInUseError) {
-        throw new ConflictException(result.error.message);
+      const error = result.error;
+      if (error instanceof AccountLockedError || error instanceof AccountDisabledError) {
+        throw new ForbiddenException(error.message);
       }
-      throw new BadRequestException(result.error.message);
+      throw new UnauthorizedException(error.message);
     }
     return result.value;
+  }
+
+  @Post('refresh')
+  @Public()
+  @ApiOperation({ summary: 'Rota el refresh token y emite un nuevo access token' })
+  @ApiOkResponse({ description: 'Sesión renovada' })
+  @ApiUnauthorizedResponse({ description: 'El refresh token es inválido o expiró' })
+  async refresh(@Body() body: RefreshTokenRequestDto, @Req() req: RequestWithIp): Promise<RefreshSessionOutput> {
+    const result = await this.refreshSession.execute({ refreshToken: body.refreshToken, ip: req.ip ?? null });
+    if (result.isErr()) {
+      throw new UnauthorizedException(result.error.message);
+    }
+    return result.value;
+  }
+
+  @Post('logout')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Cierra la sesión, revocando la familia del refresh token' })
+  @ApiOkResponse({ description: 'Sesión cerrada' })
+  async logoutHandler(@Body() body: RefreshTokenRequestDto, @Req() req: RequestWithIp): Promise<void> {
+    await this.logout.execute({ refreshToken: body.refreshToken, ip: req.ip ?? null });
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Solicita un enlace de recuperación de contraseña' })
+  @ApiOkResponse({ description: 'Solicitud procesada (siempre, exista o no la cuenta)' })
+  async forgotPassword(@Body() body: ForgotPasswordRequestDto): Promise<void> {
+    await this.requestPasswordReset.execute({ email: body.email });
+  }
+
+  @Post('reset-password')
+  @Public()
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Restablece la contraseña con un token de recuperación' })
+  @ApiOkResponse({ description: 'Contraseña actualizada' })
+  @ApiBadRequestResponse({ description: 'Token inválido, expirado, o contraseña reutilizada' })
+  async resetPasswordHandler(@Body() body: ResetPasswordRequestDto): Promise<void> {
+    const result = await this.resetPassword.execute({ token: body.token, newPassword: body.newPassword });
+    if (result.isErr()) {
+      const error = result.error;
+      if (error instanceof InvalidOrExpiredTokenError) {
+        throw new UnauthorizedException(error.message);
+      }
+      if (error instanceof PasswordReuseError) {
+        throw new ConflictException(error.message);
+      }
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Post('accept-invitation')
+  @Public()
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Acepta una invitación y activa la cuenta' })
+  @ApiOkResponse({ description: 'Cuenta activada' })
+  @ApiBadRequestResponse({ description: 'Token inválido o expirado' })
+  async acceptInvitationHandler(@Body() body: AcceptInvitationRequestDto): Promise<void> {
+    const result = await this.acceptInvitation.execute({ token: body.token, password: body.password });
+    if (result.isErr()) {
+      const error = result.error;
+      if (error instanceof InvalidOrExpiredTokenError) {
+        throw new UnauthorizedException(error.message);
+      }
+      if (error instanceof UserNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Post('change-password')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Cambia la contraseña del usuario autenticado' })
+  @ApiOkResponse({ description: 'Contraseña actualizada' })
+  @ApiUnauthorizedResponse({ description: 'No autenticado o contraseña actual incorrecta' })
+  async changePasswordHandler(
+    @Body() body: ChangePasswordRequestDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ): Promise<void> {
+    if (!user) {
+      throw new UnauthorizedException('No autenticado');
+    }
+
+    const result = await this.changePassword.execute({
+      userId: user.id,
+      currentPassword: body.currentPassword,
+      newPassword: body.newPassword,
+    });
+    if (result.isErr()) {
+      const error = result.error;
+      if (error instanceof UserNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      if (error instanceof InvalidCredentialsError) {
+        throw new UnauthorizedException(error.message);
+      }
+      if (error instanceof PasswordReuseError) {
+        throw new ConflictException(error.message);
+      }
+      if (error instanceof ValidationError) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException((error as Error).message);
+    }
   }
 }

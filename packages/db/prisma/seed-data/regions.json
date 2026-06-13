@@ -1,0 +1,13 @@
+[
+  { "id": "mexico", "name": "México", "currencyCode": "MXN", "automaticTaxes": true },
+  { "id": "centroamerica", "name": "Centroamérica", "currencyCode": "GTQ", "automaticTaxes": true },
+  { "id": "colombia", "name": "Colombia", "currencyCode": "COP", "automaticTaxes": true },
+  { "id": "argentina", "name": "Argentina", "currencyCode": "ARS", "automaticTaxes": true },
+  { "id": "chile", "name": "Chile", "currencyCode": "CLP", "automaticTaxes": true },
+  { "id": "peru", "name": "Perú", "currencyCode": "PEN", "automaticTaxes": true },
+  { "id": "brasil", "name": "Brasil", "currencyCode": "BRL", "automaticTaxes": true },
+  { "id": "latam", "name": "Latinoamérica y Caribe", "currencyCode": "USD", "automaticTaxes": false },
+  { "id": "norteamerica", "name": "Norteamérica", "currencyCode": "USD", "automaticTaxes": false },
+  { "id": "reino-unido", "name": "Reino Unido", "currencyCode": "GBP", "automaticTaxes": true },
+  { "id": "europa", "name": "Europa", "currencyCode": "EUR", "automaticTaxes": true }
+]
