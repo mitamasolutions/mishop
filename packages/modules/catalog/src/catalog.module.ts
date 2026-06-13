@@ -44,6 +44,56 @@ import type { ProductCollectionRepository } from './domain/product-collection.re
 import { PrismaProductCollectionRepository } from './infra/prisma-product-collection.repository';
 import { CollectionsController } from './http/collections.controller';
 
+import { CreateCategoryUseCase } from './application/create-category/create-category.use-case';
+import { UpdateCategoryUseCase } from './application/update-category/update-category.use-case';
+import { MoveCategoryUseCase } from './application/move-category/move-category.use-case';
+import { DeleteCategoryUseCase } from './application/delete-category/delete-category.use-case';
+import { ListCategoriesUseCase } from './application/list-categories/list-categories.use-case';
+import { GetCategoryUseCase } from './application/get-category/get-category.use-case';
+import type { ProductCategoryRepository } from './domain/product-category.repository';
+import { PrismaProductCategoryRepository } from './infra/prisma-product-category.repository';
+import { CategoriesController } from './http/categories.controller';
+
+import { CreateProductUseCase } from './application/create-product/create-product.use-case';
+import { UpdateProductUseCase } from './application/update-product/update-product.use-case';
+import { DeleteProductUseCase } from './application/delete-product/delete-product.use-case';
+import { ListProductsUseCase } from './application/list-products/list-products.use-case';
+import { GetProductUseCase } from './application/get-product/get-product.use-case';
+import { SetProductStatusUseCase } from './application/set-product-status/set-product-status.use-case';
+import { AddProductOptionUseCase } from './application/manage-product-options/add-option.use-case';
+import { UpdateProductOptionUseCase } from './application/manage-product-options/update-option.use-case';
+import { RemoveProductOptionUseCase } from './application/manage-product-options/remove-option.use-case';
+import { AddProductOptionValueUseCase } from './application/manage-product-options/add-option-value.use-case';
+import { RemoveProductOptionValueUseCase } from './application/manage-product-options/remove-option-value.use-case';
+import { AddVariantUseCase } from './application/manage-product-variants/add-variant.use-case';
+import { UpdateVariantUseCase } from './application/manage-product-variants/update-variant.use-case';
+import { RemoveVariantUseCase } from './application/manage-product-variants/remove-variant.use-case';
+import { PreviewVariantMatrixUseCase } from './application/manage-product-variants/preview-variant-matrix.use-case';
+import { AddSpecificationUseCase } from './application/manage-product-specifications/add-specification.use-case';
+import { UpdateSpecificationUseCase } from './application/manage-product-specifications/update-specification.use-case';
+import { RemoveSpecificationUseCase } from './application/manage-product-specifications/remove-specification.use-case';
+import type { ProductRepository } from './domain/product.repository';
+import { PrismaProductRepository } from './infra/prisma-product.repository';
+import { ProductsController } from './http/products.controller';
+
+import { SetVariantBasePriceUseCase } from './application/manage-product-prices/set-variant-base-price.use-case';
+import { AddVariantTierPriceUseCase } from './application/manage-product-prices/add-variant-tier-price.use-case';
+import { UpdateVariantTierPriceUseCase } from './application/manage-product-prices/update-variant-tier-price.use-case';
+import { RemoveVariantTierPriceUseCase } from './application/manage-product-prices/remove-variant-tier-price.use-case';
+import { CreatePriceListUseCase } from './application/create-price-list/create-price-list.use-case';
+import { UpdatePriceListUseCase } from './application/update-price-list/update-price-list.use-case';
+import { SetPriceListStatusUseCase } from './application/set-price-list-status/set-price-list-status.use-case';
+import { ListPriceListsUseCase } from './application/list-price-lists/list-price-lists.use-case';
+import { GetPriceListUseCase } from './application/get-price-list/get-price-list.use-case';
+import { DeletePriceListUseCase } from './application/delete-price-list/delete-price-list.use-case';
+import { AddPriceListPriceUseCase } from './application/manage-price-list-prices/add-price-list-price.use-case';
+import { UpdatePriceListPriceUseCase } from './application/manage-price-list-prices/update-price-list-price.use-case';
+import { RemovePriceListPriceUseCase } from './application/manage-price-list-prices/remove-price-list-price.use-case';
+import { GetEffectivePriceUseCase } from './application/get-effective-price/get-effective-price.use-case';
+import type { PriceListRepository } from './domain/price-list.repository';
+import { PrismaPriceListRepository } from './infra/prisma-price-list.repository';
+import { PriceListsController } from './http/price-lists.controller';
+
 const PRODUCT_TAG_CONFIG: ValueTaxonomyConfig = {
   entityCode: 'PRODUCT_TAG',
   entityLabel: 'La etiqueta de producto',
@@ -65,6 +115,9 @@ const PRODUCT_TYPE_CONFIG: ValueTaxonomyConfig = {
     ProductTypesController,
     SalesChannelsController,
     CollectionsController,
+    CategoriesController,
+    ProductsController,
+    PriceListsController,
   ],
   providers: [
     { provide: CATALOG_TOKENS.brandRepository, useClass: PrismaBrandRepository },
@@ -208,6 +261,205 @@ const PRODUCT_TYPE_CONFIG: ValueTaxonomyConfig = {
       useFactory: (collections: ProductCollectionRepository) => new GetCollectionUseCase(collections),
       inject: [CATALOG_TOKENS.productCollectionRepository],
     },
+
+    // ----- Categorías (árbol con materialized path) -----
+    { provide: CATALOG_TOKENS.productCategoryRepository, useClass: PrismaProductCategoryRepository },
+    {
+      provide: CreateCategoryUseCase,
+      useFactory: (categories: ProductCategoryRepository) => new CreateCategoryUseCase(categories),
+      inject: [CATALOG_TOKENS.productCategoryRepository],
+    },
+    {
+      provide: UpdateCategoryUseCase,
+      useFactory: (categories: ProductCategoryRepository) => new UpdateCategoryUseCase(categories),
+      inject: [CATALOG_TOKENS.productCategoryRepository],
+    },
+    {
+      provide: MoveCategoryUseCase,
+      useFactory: (categories: ProductCategoryRepository) => new MoveCategoryUseCase(categories),
+      inject: [CATALOG_TOKENS.productCategoryRepository],
+    },
+    {
+      provide: DeleteCategoryUseCase,
+      useFactory: (categories: ProductCategoryRepository) => new DeleteCategoryUseCase(categories),
+      inject: [CATALOG_TOKENS.productCategoryRepository],
+    },
+    {
+      provide: ListCategoriesUseCase,
+      useFactory: (categories: ProductCategoryRepository) => new ListCategoriesUseCase(categories),
+      inject: [CATALOG_TOKENS.productCategoryRepository],
+    },
+    {
+      provide: GetCategoryUseCase,
+      useFactory: (categories: ProductCategoryRepository) => new GetCategoryUseCase(categories),
+      inject: [CATALOG_TOKENS.productCategoryRepository],
+    },
+
+    // ----- Productos, opciones, variantes y especificaciones -----
+    { provide: CATALOG_TOKENS.productRepository, useClass: PrismaProductRepository },
+    {
+      provide: CreateProductUseCase,
+      useFactory: (products: ProductRepository) => new CreateProductUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: UpdateProductUseCase,
+      useFactory: (products: ProductRepository) => new UpdateProductUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: DeleteProductUseCase,
+      useFactory: (products: ProductRepository) => new DeleteProductUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: ListProductsUseCase,
+      useFactory: (products: ProductRepository) => new ListProductsUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: GetProductUseCase,
+      useFactory: (products: ProductRepository) => new GetProductUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: SetProductStatusUseCase,
+      useFactory: (products: ProductRepository) => new SetProductStatusUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: AddProductOptionUseCase,
+      useFactory: (products: ProductRepository) => new AddProductOptionUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: UpdateProductOptionUseCase,
+      useFactory: (products: ProductRepository) => new UpdateProductOptionUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: RemoveProductOptionUseCase,
+      useFactory: (products: ProductRepository) => new RemoveProductOptionUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: AddProductOptionValueUseCase,
+      useFactory: (products: ProductRepository) => new AddProductOptionValueUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: RemoveProductOptionValueUseCase,
+      useFactory: (products: ProductRepository) => new RemoveProductOptionValueUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: AddVariantUseCase,
+      useFactory: (products: ProductRepository) => new AddVariantUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: UpdateVariantUseCase,
+      useFactory: (products: ProductRepository) => new UpdateVariantUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: RemoveVariantUseCase,
+      useFactory: (products: ProductRepository) => new RemoveVariantUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: PreviewVariantMatrixUseCase,
+      useFactory: (products: ProductRepository) => new PreviewVariantMatrixUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: AddSpecificationUseCase,
+      useFactory: (products: ProductRepository) => new AddSpecificationUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: UpdateSpecificationUseCase,
+      useFactory: (products: ProductRepository) => new UpdateSpecificationUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: RemoveSpecificationUseCase,
+      useFactory: (products: ProductRepository) => new RemoveSpecificationUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: SetVariantBasePriceUseCase,
+      useFactory: (products: ProductRepository) => new SetVariantBasePriceUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: AddVariantTierPriceUseCase,
+      useFactory: (products: ProductRepository) => new AddVariantTierPriceUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: UpdateVariantTierPriceUseCase,
+      useFactory: (products: ProductRepository) => new UpdateVariantTierPriceUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: RemoveVariantTierPriceUseCase,
+      useFactory: (products: ProductRepository) => new RemoveVariantTierPriceUseCase(products),
+      inject: [CATALOG_TOKENS.productRepository],
+    },
+
+    // ----- Listas de precios -----
+    { provide: CATALOG_TOKENS.priceListRepository, useClass: PrismaPriceListRepository },
+    {
+      provide: CreatePriceListUseCase,
+      useFactory: (priceLists: PriceListRepository) => new CreatePriceListUseCase(priceLists),
+      inject: [CATALOG_TOKENS.priceListRepository],
+    },
+    {
+      provide: UpdatePriceListUseCase,
+      useFactory: (priceLists: PriceListRepository) => new UpdatePriceListUseCase(priceLists),
+      inject: [CATALOG_TOKENS.priceListRepository],
+    },
+    {
+      provide: SetPriceListStatusUseCase,
+      useFactory: (priceLists: PriceListRepository) => new SetPriceListStatusUseCase(priceLists),
+      inject: [CATALOG_TOKENS.priceListRepository],
+    },
+    {
+      provide: ListPriceListsUseCase,
+      useFactory: (priceLists: PriceListRepository) => new ListPriceListsUseCase(priceLists),
+      inject: [CATALOG_TOKENS.priceListRepository],
+    },
+    {
+      provide: GetPriceListUseCase,
+      useFactory: (priceLists: PriceListRepository) => new GetPriceListUseCase(priceLists),
+      inject: [CATALOG_TOKENS.priceListRepository],
+    },
+    {
+      provide: DeletePriceListUseCase,
+      useFactory: (priceLists: PriceListRepository) => new DeletePriceListUseCase(priceLists),
+      inject: [CATALOG_TOKENS.priceListRepository],
+    },
+    {
+      provide: AddPriceListPriceUseCase,
+      useFactory: (priceLists: PriceListRepository, products: ProductRepository) => new AddPriceListPriceUseCase(priceLists, products),
+      inject: [CATALOG_TOKENS.priceListRepository, CATALOG_TOKENS.productRepository],
+    },
+    {
+      provide: UpdatePriceListPriceUseCase,
+      useFactory: (priceLists: PriceListRepository) => new UpdatePriceListPriceUseCase(priceLists),
+      inject: [CATALOG_TOKENS.priceListRepository],
+    },
+    {
+      provide: RemovePriceListPriceUseCase,
+      useFactory: (priceLists: PriceListRepository) => new RemovePriceListPriceUseCase(priceLists),
+      inject: [CATALOG_TOKENS.priceListRepository],
+    },
+    {
+      provide: GetEffectivePriceUseCase,
+      useFactory: (products: ProductRepository, priceLists: PriceListRepository) => new GetEffectivePriceUseCase(products, priceLists),
+      inject: [CATALOG_TOKENS.productRepository, CATALOG_TOKENS.priceListRepository],
+    },
   ],
   exports: [
     CATALOG_TOKENS.brandRepository,
@@ -215,6 +467,9 @@ const PRODUCT_TYPE_CONFIG: ValueTaxonomyConfig = {
     CATALOG_TOKENS.productTypeRepository,
     CATALOG_TOKENS.salesChannelRepository,
     CATALOG_TOKENS.productCollectionRepository,
+    CATALOG_TOKENS.productCategoryRepository,
+    CATALOG_TOKENS.productRepository,
+    CATALOG_TOKENS.priceListRepository,
   ],
 })
 export class CatalogModule {}

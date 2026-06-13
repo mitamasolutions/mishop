@@ -5,6 +5,9 @@ export const CATALOG_TOKENS = {
   productTypeRepository: 'catalog.product-type-repository',
   salesChannelRepository: 'catalog.sales-channel-repository',
   productCollectionRepository: 'catalog.product-collection-repository',
+  productCategoryRepository: 'catalog.product-category-repository',
+  productRepository: 'catalog.product-repository',
+  priceListRepository: 'catalog.price-list-repository',
 
   createProductTagUseCase: 'catalog.create-product-tag-use-case',
   updateProductTagUseCase: 'catalog.update-product-tag-use-case',

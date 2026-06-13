@@ -3,8 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  AlertTriangle,
+  BadgePercent,
+  Boxes,
   ChevronDown,
   ClipboardList,
+  FolderTree,
   Globe,
   LayoutDashboard,
   Layers,
@@ -17,6 +21,7 @@ import {
   Tag,
   Tags,
   Users,
+  Warehouse,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -32,7 +37,10 @@ const navItems = [
 ] as const;
 
 const catalogItems = [
+  { href: '/catalogos/productos', label: 'Productos', icon: Boxes, permission: 'products.read' },
+  { href: '/catalogos/listas-precios', label: 'Listas de precios', icon: BadgePercent, permission: 'products.read' },
   { href: '/catalogos/marcas', label: 'Marcas', icon: Tag, permission: 'brands.read' },
+  { href: '/catalogos/categorias', label: 'Categorías', icon: FolderTree, permission: 'categories.read' },
   { href: '/catalogos/tipos-producto', label: 'Tipos de producto', icon: Layers, permission: 'product-types.read' },
   { href: '/catalogos/etiquetas', label: 'Etiquetas', icon: Tags, permission: 'product-tags.read' },
   { href: '/catalogos/canales-venta', label: 'Canales de venta', icon: Store, permission: 'sales-channels.read' },
@@ -42,6 +50,11 @@ const catalogItems = [
   { href: '/catalogos/zonas', label: 'Zonas', icon: MapPin, permission: 'zones.read' },
 ] as const;
 
+const inventoryItems = [
+  { href: '/inventario/ubicaciones', label: 'Ubicaciones', icon: Warehouse, permission: 'inventory.read' },
+  { href: '/inventario/bajo-stock', label: 'Bajo stock', icon: AlertTriangle, permission: 'inventory.read' },
+] as const;
+
 export function AppSidebar() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
@@ -49,7 +62,14 @@ export function AppSidebar() {
   const isCatalogActive = catalogItems.some((item) => pathname.startsWith(item.href));
   const [catalogOpen, setCatalogOpen] = useState(isCatalogActive);
 
+  const isInventoryActive = inventoryItems.some((item) => pathname.startsWith(item.href));
+  const [inventoryOpen, setInventoryOpen] = useState(isInventoryActive);
+
   const visibleCatalog = catalogItems.filter(
+    (item) => !item.permission || hasPermission(user, item.permission),
+  );
+
+  const visibleInventory = inventoryItems.filter(
     (item) => !item.permission || hasPermission(user, item.permission),
   );
 
@@ -98,6 +118,46 @@ export function AppSidebar() {
             {catalogOpen && (
               <div className="ml-3 mt-1 flex flex-col gap-1 border-l border-border pl-3">
                 {visibleCatalog.map(({ href, label, icon: Icon }) => {
+                  const active = pathname.startsWith(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
+                        active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground',
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {visibleInventory.length > 0 && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setInventoryOpen((prev) => !prev)}
+              className={cn(
+                'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
+                isInventoryActive ? 'text-accent-foreground' : 'text-muted-foreground',
+              )}
+            >
+              <Warehouse className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">Inventario</span>
+              <ChevronDown
+                className={cn('h-3.5 w-3.5 transition-transform duration-200', inventoryOpen && 'rotate-180')}
+              />
+            </button>
+
+            {inventoryOpen && (
+              <div className="ml-3 mt-1 flex flex-col gap-1 border-l border-border pl-3">
+                {visibleInventory.map(({ href, label, icon: Icon }) => {
                   const active = pathname.startsWith(href);
                   return (
                     <Link

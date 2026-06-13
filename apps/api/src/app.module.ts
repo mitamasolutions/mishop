@@ -11,6 +11,7 @@ import { StoresModule } from '@mitama/stores';
 import { SettingsModule } from '@mitama/settings';
 import { ActivityLogModule } from '@mitama/activity-log';
 import { CatalogModule } from '@mitama/catalog';
+import { InventoryModule } from '@mitama/inventory';
 import { EventBusModule } from './event-bus.module';
 import { HealthController } from './health.controller';
 
@@ -25,6 +26,7 @@ import { HealthController } from './health.controller';
     StoresModule,
     SettingsModule,
     CatalogModule,
+    InventoryModule,
   ],
   controllers: [HealthController],
 })

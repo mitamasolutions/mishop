@@ -17,6 +17,7 @@
     "@mitama/contracts": "workspace:*",
     "@mitama/core": "workspace:*",
     "@mitama/db": "workspace:*",
+    "@mitama/inventory": "workspace:*",
     "@mitama/reference-data": "workspace:*",
     "@mitama/settings": "workspace:*",
     "@mitama/stores": "workspace:*",

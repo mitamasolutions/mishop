@@ -38,19 +38,19 @@ Regla madre: **ninguna fase se cierra sin cumplir su Definition of Done.** Avanz
 
 Monorepo, core kernel, módulo ejemplo, admin base, CI, generador de módulos, CLAUDE.md/AGENTS.md.
 
-### Fase 1 · Fundación
+### Fase 1 · Fundación [DONE]
 
 _Equivalencia nopCommerce: Customers/Roles, ACL, Multi-store, Settings, Activity Log_
 
 **Módulos:** `auth`, `stores`, `settings`, `activity-log`
 
-- [ ] Auth: login email+contraseña, JWT access + refresh con rotación, bloqueo por intentos, recuperación de contraseña, invitación de usuarios
-- [ ] ACL granular: permisos por recurso/acción, roles predefinidos + roles personalizados, guard `@RequirePermission()`
-- [ ] Multi-tienda: CRUD de stores, usuario↔tienda con rol por tienda, scoping automático por `store_id` en todas las queries (middleware Prisma)
-- [ ] Settings tipados en 2 niveles (global / por tienda) con cache e invalidación por evento
-- [ ] Activity log: quién, qué, sobre qué entidad, cuándo, desde qué IP
-- [ ] Admin: login, layout (sidebar, selector de tienda, dark mode), CRUD de usuarios/roles/tiendas/settings
-- [ ] Seed: super admin + tienda demo
+- [x] Auth: login email+contraseña, JWT access + refresh con rotación, bloqueo por intentos, recuperación de contraseña, invitación de usuarios
+- [x] ACL granular: permisos por recurso/acción, roles predefinidos + roles personalizados, guard `@RequirePermission()`
+- [x] Multi-tienda: CRUD de stores, usuario↔tienda con rol por tienda, scoping automático por `store_id` en todas las queries (middleware Prisma)
+- [x] Settings tipados en 2 niveles (global / por tienda) con cache e invalidación por evento
+- [x] Activity log: quién, qué, sobre qué entidad, cuándo, desde qué IP
+- [x] Admin: login, layout (sidebar, selector de tienda, dark mode), CRUD de usuarios/roles/tiendas/settings
+- [x] Seed: super admin + tienda demo
 
 **Riesgo a vigilar:** el scoping multi-tienda. Si una query se escapa sin `store_id`, es fuga de datos entre tiendas. Test específico que lo verifique.
 
@@ -60,10 +60,10 @@ _Equivalencia nopCommerce: Products, Categories, Manufacturers, Attributes, Spec
 
 **Módulos:** `catalog`, `inventory`, `media`
 
-- [ ] Productos: simples y con variantes (combinaciones de atributos), SKU/GTIN/código de barras por variante
-- [ ] Atributos de producto (talla, color...) y atributos de especificación (filtrables)
-- [ ] Categorías jerárquicas (árbol con drag & drop en admin) y fabricantes/marcas
-- [ ] Precios: precio base, precio de oferta con vigencia, tier prices (precio por cantidad), costo (para márgenes y POS)
+- [x] Productos: simples y con variantes (combinaciones de atributos), SKU/GTIN/código de barras por variante
+- [x] Atributos de producto (talla, color...) y atributos de especificación (filtrables)
+- [x] Categorías jerárquicas (árbol con drag & drop en admin) y fabricantes/marcas
+- [x] Precios: precio base, precio de oferta con vigencia, tier prices (precio por cantidad), costo (para márgenes y POS)
 - [ ] Inventario **por ubicación** desde el inicio: stock, reservas, backorder configurable, umbral de stock bajo
 - [ ] Media: subida de imágenes (S3-compatible/claudinary/local), orden, alt text, imagen por variante
 - [ ] Productos relacionados y cross-sell; tags
