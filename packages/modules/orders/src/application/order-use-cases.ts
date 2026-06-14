@@ -184,7 +184,13 @@ function hashPayload(payload: unknown): string {
 }
 
 function eventPayload(order: Order): OrderEventPayload {
-  return { orderId: order.id, orderNumber: order.orderNumber, storeId: order.storeId, customerId: order.customerId };
+  return {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    storeId: order.storeId,
+    customerId: order.customerId,
+    productIds: [...new Set(order.lines.map((line) => line.productId))],
+  };
 }
 
 function orderEvent(name: SalesDomainEvent['name'], payload: OrderEventPayload): SalesDomainEvent {

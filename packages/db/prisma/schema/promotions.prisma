@@ -1,0 +1,98 @@
+// Módulo promotions: descuentos, cupones, reward points y newsletter.
+
+model PromotionDiscount {
+  id                String   @id @default(uuid())
+  storeId           String   @map("store_id")
+  name              String
+  type              String
+  value             Decimal  @db.Decimal(12, 2)
+  maxDiscountAmount Decimal? @map("max_discount_amount") @db.Decimal(12, 2)
+  scope             String
+  targetIds         Json     @map("target_ids")
+  conditions        Json
+  requiresCoupon    Boolean  @default(false) @map("requires_coupon")
+  combinable        Boolean  @default(false)
+  active            Boolean  @default(true)
+  startsAt          DateTime? @map("starts_at")
+  endsAt            DateTime? @map("ends_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  coupons PromotionCoupon[]
+
+  @@index([storeId, active, startsAt, endsAt])
+  @@map("promotion_discounts")
+}
+
+model PromotionCoupon {
+  id                    String   @id @default(uuid())
+  storeId               String   @map("store_id")
+  discountId            String   @map("discount_id")
+  discount              PromotionDiscount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  code                  String
+  active                Boolean  @default(true)
+  globalUsageLimit      Int?     @map("global_usage_limit")
+  perCustomerUsageLimit Int?     @map("per_customer_usage_limit")
+  usageCount            Int      @default(0) @map("usage_count")
+  redemptionsByCustomer Json     @map("redemptions_by_customer")
+  version               Int      @default(0)
+  startsAt              DateTime? @map("starts_at")
+  endsAt                DateTime? @map("ends_at")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@unique([storeId, code])
+  @@index([storeId, discountId])
+  @@map("promotion_coupons")
+}
+
+model RewardProgramConfig {
+  storeId                   String  @id @map("store_id")
+  earnPointsPerCurrencyUnit Decimal @map("earn_points_per_currency_unit") @db.Decimal(12, 4)
+  redeemCurrencyPerPoint    Decimal @map("redeem_currency_per_point") @db.Decimal(12, 4)
+  maxRedeemPercent          Decimal? @map("max_redeem_percent") @db.Decimal(5, 2)
+  expiresAfterDays          Int?    @map("expires_after_days")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  @@map("reward_program_configs")
+}
+
+model RewardLedgerEntry {
+  id         String   @id @default(uuid())
+  storeId    String   @map("store_id")
+  customerId String   @map("customer_id")
+  orderId    String?  @map("order_id")
+  points     Int
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([storeId, customerId])
+  @@index([expiresAt])
+  @@map("reward_ledger_entries")
+}
+
+model PromotionIdempotencyKey {
+  id        String   @id @default(uuid())
+  storeId   String   @map("store_id")
+  key       String
+  result    Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([storeId, key])
+  @@map("promotion_idempotency_keys")
+}
+
+model NewsletterSubscription {
+  id                String   @id @default(uuid())
+  storeId           String   @map("store_id")
+  email             String
+  status            String
+  confirmationToken String   @unique @map("confirmation_token")
+  subscribedAt      DateTime @default(now()) @map("subscribed_at")
+  confirmedAt       DateTime? @map("confirmed_at")
+  unsubscribedAt    DateTime? @map("unsubscribed_at")
+
+  @@unique([storeId, email])
+  @@index([storeId, status])
+  @@map("newsletter_subscriptions")
+}

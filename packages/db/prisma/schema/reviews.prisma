@@ -1,0 +1,38 @@
+// Módulo reviews: moderación y rating agregado por reviews aprobadas.
+
+model ProductReview {
+  id               String   @id @default(uuid())
+  storeId          String   @map("store_id")
+  productId        String   @map("product_id")
+  customerId       String   @map("customer_id")
+  rating           Int
+  title            String?
+  body             String
+  status           String   @default("pending")
+  moderatorId      String?  @map("moderator_id")
+  moderationReason String?  @map("moderation_reason")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  moderatedAt      DateTime? @map("moderated_at")
+
+  @@unique([storeId, productId, customerId])
+  @@index([storeId, productId, status])
+  @@map("product_reviews")
+}
+
+// Proyección local de "compra verificada": se alimenta por eventos de orders
+// (order.completed) y se revoca por order.refunded/cancelled, manteniendo el
+// boundary entre módulos (reviews no consulta el schema de orders).
+model VerifiedPurchase {
+  id         String   @id @default(uuid())
+  storeId    String   @map("store_id")
+  customerId String   @map("customer_id")
+  productId  String   @map("product_id")
+  orderId    String   @map("order_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([storeId, customerId, productId, orderId])
+  @@index([storeId, customerId, productId])
+  @@index([storeId, orderId])
+  @@map("verified_purchases")
+}

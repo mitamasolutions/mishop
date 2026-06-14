@@ -1,4 +1,4 @@
-import { ok, type Result } from '@mitama/core';
+import { ok, roundMoney, type Result } from '@mitama/core';
 import type { TaxCalculationInput, TaxCalculationOutput, TaxCategory, TaxProvider } from '../domain/tax-provider';
 import type { TaxRuleRepository } from '../domain/tax-rule.repository';
 
@@ -26,8 +26,4 @@ export class MxIvaTaxProvider implements TaxProvider {
     const total = roundMoney(lines.reduce((sum, line) => sum + line.total, 0));
     return ok({ taxTotal, subtotal, total, lines, warnings });
   }
-}
-
-function roundMoney(value: number): number {
-  return Math.round(value * 100) / 100;
 }

@@ -20,6 +20,9 @@ import { OrdersModule } from '@mitama/orders';
 import { PaymentsModule } from '@mitama/payments';
 import { ShippingModule } from '@mitama/shipping';
 import { TaxesModule } from '@mitama/taxes';
+import { PromotionsModule } from '@mitama/promotions';
+import { GiftCardsModule } from '@mitama/giftcards';
+import { ReviewsModule } from '@mitama/reviews';
 import { EventBusModule } from './event-bus.module';
 import { HealthController } from './health.controller';
 
@@ -42,6 +45,9 @@ import { HealthController } from './health.controller';
     ShippingModule,
     OrdersModule,
     PaymentsModule,
+    PromotionsModule,
+    GiftCardsModule,
+    ReviewsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

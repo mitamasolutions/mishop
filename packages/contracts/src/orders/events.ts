@@ -5,6 +5,8 @@ export interface OrderEventPayload {
   orderNumber: string;
   storeId: string;
   customerId: string;
+  /** Lista dedup de productos de la orden. Aditiva: suscriptores antiguos la ignoran. */
+  productIds: string[];
 }
 
 export type OrderCreatedEvent = DomainEvent<OrderEventPayload> & { name: 'order.created' };

@@ -1,4 +1,4 @@
-import { ok, type Result } from '@mitama/core';
+import { ok, roundMoney, type Result } from '@mitama/core';
 import type { ShippingMethod, ShippingRate, ShippingRateRequest } from '../domain/shipping-method.entity';
 import type { ShippingProvider } from '../domain/shipping-provider';
 
@@ -16,8 +16,4 @@ export class DefaultShippingProvider implements ShippingProvider {
 
 function toRate(method: ShippingMethod, amount: number): ShippingRate {
   return { methodId: method.id, providerCode: method.providerCode, name: method.name, amount: roundMoney(amount) };
-}
-
-function roundMoney(value: number): number {
-  return Math.round(value * 100) / 100;
 }
