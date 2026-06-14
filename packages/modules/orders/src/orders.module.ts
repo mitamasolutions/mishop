@@ -69,6 +69,6 @@ import { OrdersController } from './http/orders.controller';
       inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue],
     },
   ],
-  exports: [ORDERS_TOKENS.orderRepository],
+  exports: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.stockReservationService],
 })
 export class OrdersModule {}

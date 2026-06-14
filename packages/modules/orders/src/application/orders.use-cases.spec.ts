@@ -4,6 +4,7 @@ import { InMemoryCheckoutCartReader } from '../infra/in-memory-checkout-cart.rea
 import { InMemoryOrderRepository } from '../infra/in-memory-order.repository';
 import { InMemoryStockReservationService } from '../infra/in-memory-stock-reservation.service';
 import type { EmailQueue } from '../domain/email-queue';
+import { IdempotencyConflictError } from '../domain/errors';
 import { CancelOrderUseCase, ChangePaymentStateUseCase, CreateOrderUseCase } from './order-use-cases';
 
 class MemoryEmailQueue implements EmailQueue {
@@ -18,6 +19,7 @@ describe('orders use cases', () => {
     const ctx = context();
     ctx.stock.available.set('loc-1:v1', 2);
     ctx.carts.carts.set('cart-1', readyCart('cart-1'));
+    ctx.carts.carts.set('cart-2', readyCart('cart-2'));
 
     const first = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' });
     const replay = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' });
@@ -25,8 +27,29 @@ describe('orders use cases', () => {
 
     expect(first.isOk()).toBe(true);
     expect(replay.isOk()).toBe(true);
-    expect(conflict.isErr()).toBe(true);
     if (first.isOk() && replay.isOk()) expect(replay.value.id).toBe(first.value.id);
+    // Mismo key + payload distinto (otro cartId) = conflicto explícito, sin orden.
+    expect(conflict.isErr()).toBe(true);
+    if (conflict.isErr()) expect(conflict.error).toBeInstanceOf(IdempotencyConflictError);
+  });
+
+  it('replay tras carrito ya ordenado devuelve la orden original sin re-reservar stock (regresión)', async () => {
+    const ctx = context();
+    ctx.stock.available.set('loc-1:v1', 2);
+    ctx.carts.carts.set('cart-1', readyCart('cart-1'));
+
+    const first = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' });
+    // El primer POST marca el carrito como ordenado: ya NO está "listo".
+    await ctx.carts.markOrdered('cart-1');
+    expect(await ctx.carts.getReadyCart('cart-1')).toBeNull();
+
+    const replay = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' });
+
+    expect(first.isOk()).toBe(true);
+    expect(replay.isOk()).toBe(true);
+    if (first.isOk() && replay.isOk()) expect(replay.value.id).toBe(first.value.id);
+    // Una sola reserva: el ítem de stock no se descuenta dos veces (2 - 1 = 1).
+    expect(ctx.stock.available.get('loc-1:v1')).toBe(1);
   });
 
   it('emite eventos y respeta máquinas de estado', async () => {

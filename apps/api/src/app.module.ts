@@ -4,6 +4,8 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DbModule } from '@mitama/db';
 import { AuthModule } from '@mitama/auth';
 import { ReferenceDataModule } from '@mitama/reference-data';
@@ -21,6 +23,7 @@ import { HealthController } from './health.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../../.env'] }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     DbModule,
     EventBusModule,
     AuthModule,
@@ -35,5 +38,6 @@ import { HealthController } from './health.controller';
     OrdersModule,
   ],
   controllers: [HealthController],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

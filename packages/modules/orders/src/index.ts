@@ -8,3 +8,4 @@ export { Order } from './domain/order.entity';
 export type { OrderLineProps, OrderPaymentStatus, OrderStatus } from './domain/order.entity';
 export type { OrderRepository } from './domain/order.repository';
 export type { OrderOutput } from './application/order.dto';
+export type { StockReservationService } from './domain/stock-reservation';

@@ -26,5 +26,11 @@ export interface CheckoutCartSnapshot {
 
 export interface CheckoutCartReader {
   getReadyCart(cartId: string): Promise<CheckoutCartSnapshot | null>;
+  /**
+   * Resuelve el storeId de un carrito en CUALQUIER estado (incluso ya
+   * ordenado). Necesario para consultar idempotencia antes de validar que el
+   * carrito esté listo: un replay no debe depender del estado del carrito.
+   */
+  getCartStoreId(cartId: string): Promise<string | null>;
   markOrdered(cartId: string): Promise<void>;
 }

@@ -6,6 +6,79 @@ Regla madre: **ninguna fase se cierra sin cumplir su Definition of Done.** Avanz
 
 ---
 
+## Estado real al 2026-06-13 (verificación)
+
+> Reconciliación entre el plan y el código en disco. Leyenda de marcas:
+> `[x]` hecho y verificado en runtime · `[~]` código completo pero **sin
+> verificar** (bloqueado o sin e2e) · `[ ]` no iniciado.
+
+**Lo que sí corre hoy:** la API arranca, mapea 142 rutas, la DI resuelve sin
+errores, `POST /auth/login` funciona contra la DB real y el flujo de catálogo
+(crear producto → variante → precio base) responde 200. Fase 1 y el grueso de
+Fase 2 están operativos.
+
+**Drift de DB — RESUELTO 2026-06-13:** el schema definía 13 tablas de Fase 3 y
+la columna `inventory_levels.version` que la DB `mishop` nunca sincronizó →
+inventario y ventas daban 500 (P2022). Se corrió `prisma db push` (diff 100%
+aditivo). **Tras el push, el flujo cart→order se verificó end-to-end:** orden
+`WEB-000001` creada (total 49700 = 2×199 + 99 envío), **stock reservado
+correctamente** (`reservedQuantity:2`, `availableQuantity:48` — lock optimista
+en uso), `Idempotency-Key` obligatorio. Recordatorio: editar cualquier
+`.prisma` exige `db push` o el runtime rompe (no hay migraciones).
+
+**Defecto de idempotencia de órdenes — RESUELTO Y VERIFICADO 2026-06-13:** en
+`CreateOrderUseCase.execute()` el chequeo de carrito-listo corría **antes** que
+el lookup de `Idempotency-Key`; como crear la orden marca el carrito como
+ordenado, un reintento con la misma clave devolvía 400 en vez de la orden
+original. **Fix aplicado:** el lookup de idempotencia se movió al inicio,
+resolviendo el `storeId` con un nuevo método del puerto `CheckoutCartReader`
+(`getCartStoreId`, en cualquier estado). De paso se corrigió el adapter
+in-memory para modelar fielmente "carrito ordenado → no listo" (el test pasaba
+en falso). **Verificado por HTTP:** replay → 201 con el mismo order id, sin
+doble reserva de stock; misma key con otro cart → 409. Spec:
+`docs/spec/f3-fix-idempotencia-ordenes.md`. Es el molde de los webhooks de pago
+(Fase 4).
+
+**Divergencia plan ↔ implementación:** se construyó el módulo `reference-data`
+(countries / currencies / regions / territories / zones) que el plan no lista
+en ninguna fase explícita — es andamiaje para zonas de envío (Fase 4) y
+multi-moneda (Hito 3). Conviene reflejarlo. Además ya existe la ruta
+`GET /payment-providers` y el seed carga 7 providers: hay andamiaje temprano
+de Fase 4.
+
+**Brechas transversales del DoD aún no implementadas (ver Principios):**
+sin logs estructurados (pino) ni correlation-id, sin READMEs por módulo, y el
+seed no carga productos ni inventario demo.
+
+---
+
+## Hardening previo a Fase 4 — RESUELTO Y VERIFICADO 2026-06-14
+
+Sprint corto de 4 tareas antes de iniciar Fase 4 (decisión del usuario:
+"hardening corto primero"). Las 4 quedaron resueltas y verificadas en runtime
+contra la DB real:
+
+- **helmet + rate-limiting:** `app.use(helmet({ contentSecurityPolicy: false }))`
+  en `main.ts` + `ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }])` con
+  `ThrottlerGuard` como `APP_GUARD`. _Verificado: cabeceras
+  `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`
+  presentes; `/docs` (Swagger) sigue cargando; 105 req/min →
+  99×`200` + 6×`429`._
+- **`/health/db`:** `GET /health/db` ejecuta `SELECT 1` vía `PrismaService`,
+  200 `{status:'ok'}` o 503 `{status:'down'}`. _Verificado: 200._
+- **Versionado `/v1`:** `app.setGlobalPrefix('v1', { exclude: ['health', 'health/db'] })`
+  + `.addServer('/v1')` en Swagger; `apps/admin/src/lib/api-client.ts` ahora
+  apunta a `${API_URL}/v1`. _Verificado: `/v1/auth/login` y `/v1/stores`
+  responden con datos reales; `/auth/login` y `/stores` (sin prefijo) → 404;
+  `/health` y `/health/db` siguen sin prefijo._
+- **Test de carrera de inventario:** ver Fase 3 arriba.
+
+CI completa (`yarn lint && yarn build && yarn test`) en verde, incluyendo el
+nuevo e2e. **El proyecto queda listo para iniciar Fase 4** (el primer módulo se
+elige en otra sesión).
+
+---
+
 ## 0. Principios de estabilidad (aplican a TODAS las fases)
 
 **Definition of Done de cada fase:**
@@ -64,11 +137,11 @@ _Equivalencia nopCommerce: Products, Categories, Manufacturers, Attributes, Spec
 - [x] Atributos de producto (talla, color...) y atributos de especificación (filtrables)
 - [x] Categorías jerárquicas (árbol con drag & drop en admin) y fabricantes/marcas
 - [x] Precios: precio base, precio de oferta con vigencia, tier prices (precio por cantidad), costo (para márgenes y POS)
-- [ ] Inventario **por ubicación** desde el inicio: stock, reservas, backorder configurable, umbral de stock bajo
-- [ ] Media: subida de imágenes (S3-compatible/claudinary/local), orden, alt text, imagen por variante
-- [ ] Productos relacionados y cross-sell; tags
-- [ ] SEO por producto/categoría: slug único, meta title/description, redirects al cambiar slug
-- [ ] Búsqueda y filtros en admin (nombre, SKU, categoría, estado, stock)
+- [~] Inventario **por ubicación**: módulo `inventory` con items/levels/locations y reservas (`stock_reservations`); lock optimista (`version`) modelado. **Bloqueado por drift de DB** (escribir nivel de stock da 500). Backorder/umbral existen como flags de variante.
+- [ ] Media: subida de imágenes (S3-compatible/cloudinary/local), orden, alt text, imagen por variante. **No iniciado** — existe `media.prisma` pero no hay módulo `media`.
+- [~] Tags de producto (`product-tags` CRUD). **Productos relacionados y cross-sell: no implementados.**
+- [~] SEO por producto: `handle` (slug), `metaTitle`/`metaDescription` en producto. **Slug único, redirects al cambiar slug y SEO de categoría: faltan.**
+- [x] Búsqueda y filtros en endpoints de listado (productos, inventario, etc.)
 - [ ] Import/export CSV de productos (lo pedirá todo el mundo)
 
 **Riesgo a vigilar:** el modelo de variantes. Estudiar schemas de Medusa/Saleor ANTES de escribir el .prisma. Es la decisión más cara de revertir de todo el proyecto.
@@ -79,22 +152,34 @@ _Equivalencia nopCommerce: Customers (compradores), Shopping Cart, Checkout, Ord
 
 **Módulos:** `customers`, `cart`, `orders`
 
-- [ ] Clientes compradores: registro vía API, perfiles, múltiples direcciones, guest checkout
-- [ ] Carrito persistente (server-side) con validación de stock y precios al momento
-- [ ] Checkout como máquina de estados explícita: dirección → envío → pago → confirmación
-- [ ] Órdenes: numeración configurable, snapshot inmutable de precios/productos al momento de compra, campo `channel` (web/pos)
-- [ ] Estados de orden y de pago como máquinas de estado (no strings sueltos), historial de transiciones
-- [ ] Idempotencia en creación de órdenes (`Idempotency-Key`)
-- [ ] Admin: gestión de órdenes, cambio de estados, notas internas, reenvío de confirmación, cancelación con liberación de stock
-- [ ] Emails transaccionales base: orden creada, pagada, cancelada (message templates editables, cola con reintentos)
+> **Estado: flujo cart→order verificado end-to-end (2026-06-13)** tras el
+> `db push`. Una orden real se crea, reserva stock y se lista. Pendientes:
+> el defecto de idempotencia (arriba), la UI admin y el test de carrera.
 
-**Riesgo a vigilar:** consistencia de stock bajo concurrencia. Reserva de inventario transaccional con locks optimistas; test de carrera obligatorio.
+- [x] Clientes compradores: `POST /customers/register`, `/customers/guests`, CRUD de direcciones. Guest checkout + merge de carrito. _Verificado: register 201._
+- [x] Carrito persistente server-side con validación de stock y precios. _Verificado: add line 201, reserva refleja stock._
+- [x] Checkout como máquina de estados (`cart → address → shipping → payment → confirmation`). _Verificado: las 4 transiciones 201._
+- [x] Órdenes: numeración (`order_sequences`, `WEB-000001`), snapshot en `order_lines`, campo `channel`. _Verificado._
+- [~] Estados de orden/pago como máquinas de estado + historial — creados en `pending`/`pending`; **transiciones de estado no ejercitadas aún**.
+- [x] Idempotencia (`Idempotency-Key` + `order_idempotency_keys`): header obligatorio, replay devuelve la orden original, conflicto por payload distinto = 409. _Verificado tras fix 2026-06-13._
+- [~] Gestión de órdenes vía API (cambio de estado, notas, reenvío, cancelación) — endpoints existen, **sin verificar**.
+- [~] Emails transaccionales: `order_email_templates` + cola `order_email_jobs` — encolado en creación, **entrega/reintentos sin verificar**.
+- [ ] Admin (UI) de órdenes — el plan listaba "admin" y aquí solo hay API.
+- [x] Test de carrera de inventario (e2e DB real): `apps/api/test/inventory-stock-race.e2e-spec.ts`. _Verificado 2026-06-14: con `stockedQuantity=1` y 5 `reserve()` concurrentes para la misma variante/ubicación, exactamente 1 gana (lock optimista por `version`); `release()` devuelve `reservedQuantity` a 0._
+
+**Riesgo vigilado:** consistencia de stock bajo concurrencia. Reserva de inventario transaccional con locks optimistas (`inventory_levels.version`); **test de carrera de inventario (e2e DB real) — RESUELTO Y VERIFICADO 2026-06-14.**
 
 ### Fase 4 · Pagos, envíos e impuestos
 
 _Equivalencia nopCommerce: Payment plugins, Shipping methods/providers, Tax providers, Refunds_
 
 **Módulos:** `payments`, `shipping`, `taxes` — aquí nace el **sistema de providers (plugins)**
+
+> **Andamiaje ya presente (aprovechar):** el módulo `reference-data`
+> (countries / currencies / regions / **territories / zones**) da la base
+> geográfica para zonas de envío e impuestos por región. El seed ya carga 7
+> payment-providers y existe `GET /payment-providers`. La columna `cost` por
+> variante (para márgenes/POS) ya existe en catálogo.
 
 - [ ] Contrato `PaymentProvider` (authorize, capture, refund, void, webhook) con registro dinámico
 - [ ] Adapters: Mercado Pago, Stripe, pago manual/transferencia, efectivo (para POS futuro)

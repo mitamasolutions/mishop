@@ -39,6 +39,11 @@ export class PrismaCheckoutCartReader implements CheckoutCartReader {
     };
   }
 
+  async getCartStoreId(cartId: string): Promise<string | null> {
+    const cart = await this.prisma.cart.findUnique({ where: { id: cartId }, select: { storeId: true } });
+    return cart?.storeId ?? null;
+  }
+
   async markOrdered(cartId: string): Promise<void> {
     await this.prisma.cart.update({ where: { id: cartId }, data: { status: 'ordered' } });
   }

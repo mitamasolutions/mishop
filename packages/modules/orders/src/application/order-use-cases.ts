@@ -39,15 +39,23 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<Orde
 
   async execute(input: CreateOrderInput): Promise<Result<OrderOutput, CreateOrderError>> {
     const requestHash = hashPayload({ cartId: input.cartId });
+
+    // Idempotencia PRIMERO: un replay (mismo key) debe devolver la orden
+    // original sin depender del estado del carrito. Tras crear la orden el
+    // carrito queda "ordenado" y deja de estar listo, así que validar el
+    // carrito antes que la idempotencia rompía el reintento (devolvía 400).
+    const storeId = await this.carts.getCartStoreId(input.cartId);
+    if (storeId) {
+      const existingKey = await this.orders.findIdempotency(storeId, input.idempotencyKey);
+      if (existingKey) {
+        if (existingKey.requestHash !== requestHash) return err(new IdempotencyConflictError());
+        const existingOrder = await this.orders.findById(existingKey.orderId);
+        return existingOrder ? ok(toOrderOutput(existingOrder)) : err(new OrderNotFoundError(existingKey.orderId));
+      }
+    }
+
     const cart = await this.carts.getReadyCart(input.cartId);
     if (!cart || cart.lines.length === 0) return err(new CheckoutCartNotReadyError());
-
-    const existingKey = await this.orders.findIdempotency(cart.storeId, input.idempotencyKey);
-    if (existingKey) {
-      if (existingKey.requestHash !== requestHash) return err(new IdempotencyConflictError());
-      const existingOrder = await this.orders.findById(existingKey.orderId);
-      return existingOrder ? ok(toOrderOutput(existingOrder)) : err(new OrderNotFoundError(existingKey.orderId));
-    }
 
     const orderNumber = await this.orders.nextOrderNumber(cart.storeId, cart.channel === 'web' ? 'WEB-' : 'POS-');
     const reservationExpiresAt = new Date(Date.now() + RESERVATION_TTL_MS);
