@@ -22,6 +22,12 @@ export class IdempotencyConflictError extends Error {
   }
 }
 
+export class OrderAlreadyExistsForCartError extends Error {
+  constructor() {
+    super('El carrito ya tiene una orden asociada');
+  }
+}
+
 export class InvalidOrderStateTransitionError extends Error {
   constructor(from: string, to: string) {
     super(`Transición de orden inválida: ${from} → ${to}`);

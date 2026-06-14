@@ -12,6 +12,8 @@ model Order {
   id                   String    @id @default(uuid())
   storeId              String    @map("store_id")
   orderNumber          String    @map("order_number")
+  cartId               String    @map("cart_id")
+  cart                 Cart      @relation(fields: [cartId], references: [id], onDelete: Restrict)
   customerId           String    @map("customer_id")
   customer             Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
   customerEmail        String?   @map("customer_email")
@@ -41,6 +43,7 @@ model Order {
   stockReservations StockReservation[]
 
   @@unique([storeId, orderNumber])
+  @@unique([storeId, cartId])
   @@index([storeId, status, paymentStatus, channel])
   @@index([customerId])
   @@map("orders")

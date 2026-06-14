@@ -17,7 +17,8 @@ model Cart {
   updatedAt       DateTime  @updatedAt @map("updated_at")
   expiresAt       DateTime  @map("expires_at")
 
-  lines CartLine[]
+  lines  CartLine[]
+  orders Order[]
 
   @@index([storeId, channel, customerId, status])
   @@index([expiresAt])

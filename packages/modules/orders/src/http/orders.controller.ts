@@ -11,7 +11,7 @@ import {
   ListOrdersUseCase,
   ResendOrderConfirmationUseCase,
 } from '../application/order-use-cases';
-import { IdempotencyConflictError, InsufficientStockError, OrderNotFoundError } from '../domain/errors';
+import { IdempotencyConflictError, InsufficientStockError, OrderAlreadyExistsForCartError, OrderNotFoundError } from '../domain/errors';
 import type { OrderOutput } from '../application/order.dto';
 
 class CreateOrderRequestDto {
@@ -77,6 +77,7 @@ export class OrdersController {
     const result = await this.createOrder.execute({ cartId: body.cartId, idempotencyKey });
     if (result.isOk()) return result.value;
     if (result.error instanceof IdempotencyConflictError) throw new ConflictException(result.error.message);
+    if (result.error instanceof OrderAlreadyExistsForCartError) throw new ConflictException(result.error.message);
     if (result.error instanceof InsufficientStockError) throw new BadRequestException(result.error.message);
     throw new BadRequestException(result.error.message);
   }

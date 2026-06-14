@@ -1,4 +1,5 @@
 import { Order } from '../domain/order.entity';
+import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
 import type { OrderFilter, OrderRepository, StoredIdempotencyRecord } from '../domain/order.repository';
 
 export class InMemoryOrderRepository implements OrderRepository {
@@ -33,8 +34,14 @@ export class InMemoryOrderRepository implements OrderRepository {
   }
 
   async save(order: Order, idempotency?: { key: string; requestHash: string; expiresAt: Date }): Promise<void> {
+    const existing = [...this.orders.values()].find((stored) => stored.id !== order.id && stored.storeId === order.storeId && stored.cartId === order.cartId);
+    if (existing) throw new OrderAlreadyExistsForCartError();
+
     this.orders.set(order.id, order);
     if (idempotency) {
+      const existingKey = this.idempotency.get(`${order.storeId}:${idempotency.key}`);
+      if (existingKey && existingKey.orderId !== order.id) throw new IdempotencyConflictError();
+
       this.idempotency.set(`${order.storeId}:${idempotency.key}`, {
         key: idempotency.key,
         storeId: order.storeId,
@@ -43,5 +50,9 @@ export class InMemoryOrderRepository implements OrderRepository {
         expiresAt: idempotency.expiresAt,
       });
     }
+  }
+
+  async delete(orderId: string): Promise<void> {
+    this.orders.delete(orderId);
   }
 }

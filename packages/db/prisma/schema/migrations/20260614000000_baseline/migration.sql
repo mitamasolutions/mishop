@@ -578,6 +578,7 @@ CREATE TABLE "orders" (
     "id" TEXT NOT NULL,
     "store_id" TEXT NOT NULL,
     "order_number" TEXT NOT NULL,
+    "cart_id" TEXT NOT NULL,
     "customer_id" TEXT NOT NULL,
     "customer_email" TEXT,
     "channel" TEXT NOT NULL,
@@ -1280,6 +1281,9 @@ CREATE INDEX "orders_customer_id_idx" ON "orders"("customer_id");
 CREATE UNIQUE INDEX "orders_store_id_order_number_key" ON "orders"("store_id", "order_number");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "orders_store_id_cart_id_key" ON "orders"("store_id", "cart_id");
+
+-- CreateIndex
 CREATE INDEX "order_lines_order_id_idx" ON "order_lines"("order_id");
 
 -- CreateIndex
@@ -1515,6 +1519,9 @@ ALTER TABLE "product_images" ADD CONSTRAINT "product_images_product_id_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "product_images" ADD CONSTRAINT "product_images_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "orders" ADD CONSTRAINT "orders_cart_id_fkey" FOREIGN KEY ("cart_id") REFERENCES "carts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "orders" ADD CONSTRAINT "orders_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

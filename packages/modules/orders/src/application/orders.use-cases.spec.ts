@@ -5,7 +5,7 @@ import { InMemoryOrderRepository } from '../infra/in-memory-order.repository';
 import { InMemoryStockReservationService } from '../infra/in-memory-stock-reservation.service';
 import { PaymentEventsHandler } from '../infra/payment-events.handler';
 import type { EmailQueue } from '../domain/email-queue';
-import { IdempotencyConflictError } from '../domain/errors';
+import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
 import { CancelOrderUseCase, ChangePaymentStateUseCase, CreateOrderUseCase } from './order-use-cases';
 
 class MemoryEmailQueue implements EmailQueue {
@@ -50,6 +50,24 @@ describe('orders use cases', () => {
     expect(replay.isOk()).toBe(true);
     if (first.isOk() && replay.isOk()) expect(replay.value.id).toBe(first.value.id);
     // Una sola reserva: el ítem de stock no se descuenta dos veces (2 - 1 = 1).
+    expect(ctx.stock.available.get('loc-1:v1')).toBe(1);
+  });
+
+  it('no permite dos órdenes para el mismo carrito con distinta Idempotency-Key', async () => {
+    const ctx = context();
+    ctx.stock.available.set('loc-1:v1', 2);
+    ctx.carts.carts.set('cart-1', readyCart('cart-1'));
+
+    const first = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' });
+    // Simula una carrera: otra request ve el carrito todavía listo, pero la
+    // unicidad por storeId+cartId debe bloquear la segunda orden.
+    ctx.carts.ordered.delete('cart-1');
+    const second = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k2' });
+
+    expect(first.isOk()).toBe(true);
+    if (first.isOk()) expect(first.value.cartId).toBe('cart-1');
+    expect(second.isErr()).toBe(true);
+    if (second.isErr()) expect(second.error).toBeInstanceOf(OrderAlreadyExistsForCartError);
     expect(ctx.stock.available.get('loc-1:v1')).toBe(1);
   });
 

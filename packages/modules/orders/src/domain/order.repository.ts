@@ -23,4 +23,5 @@ export interface OrderRepository {
   findIdempotency(storeId: string, key: string): Promise<StoredIdempotencyRecord | null>;
   nextOrderNumber(storeId: string, prefix: string): Promise<string>;
   save(order: Order, idempotency?: { key: string; requestHash: string; expiresAt: Date }): Promise<void>;
+  delete(orderId: string): Promise<void>;
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, PrismaService } from '@mitama/db';
 import { Order, type OrderLineProps, type OrderPaymentStatus, type OrderStatus, type OrderNoteProps, type StateTransitionProps } from '../domain/order.entity';
+import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
 import type { OrderFilter, OrderRepository, StoredIdempotencyRecord } from '../domain/order.repository';
 
 const ORDER_INCLUDE = { lines: true, transitions: true, notes: true } satisfies Prisma.OrderInclude;
@@ -44,20 +45,30 @@ export class PrismaOrderRepository implements OrderRepository {
   }
 
   async save(order: Order, idempotency?: { key: string; requestHash: string; expiresAt: Date }): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.order.upsert({ where: { id: order.id }, create: this.toOrderRow(order), update: this.toOrderRow(order) });
-      await tx.orderLine.deleteMany({ where: { orderId: order.id } });
-      await tx.orderStateTransition.deleteMany({ where: { orderId: order.id } });
-      await tx.orderNote.deleteMany({ where: { orderId: order.id } });
-      if (order.lines.length > 0) await tx.orderLine.createMany({ data: order.lines.map((line) => this.toLineRow(order.id, line)) });
-      if (order.transitions.length > 0) await tx.orderStateTransition.createMany({ data: order.transitions.map((transition) => this.toTransitionRow(order.id, transition)) });
-      if (order.notes.length > 0) await tx.orderNote.createMany({ data: order.notes.map((note) => this.toNoteRow(order.id, note)) });
-      if (idempotency) {
-        await tx.orderIdempotencyKey.create({
-          data: { storeId: order.storeId, key: idempotency.key, requestHash: idempotency.requestHash, orderId: order.id, expiresAt: idempotency.expiresAt },
-        });
-      }
-    });
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.order.upsert({ where: { id: order.id }, create: this.toOrderRow(order), update: this.toOrderRow(order) });
+        await tx.orderLine.deleteMany({ where: { orderId: order.id } });
+        await tx.orderStateTransition.deleteMany({ where: { orderId: order.id } });
+        await tx.orderNote.deleteMany({ where: { orderId: order.id } });
+        if (order.lines.length > 0) await tx.orderLine.createMany({ data: order.lines.map((line) => this.toLineRow(order.id, line)) });
+        if (order.transitions.length > 0) await tx.orderStateTransition.createMany({ data: order.transitions.map((transition) => this.toTransitionRow(order.id, transition)) });
+        if (order.notes.length > 0) await tx.orderNote.createMany({ data: order.notes.map((note) => this.toNoteRow(order.id, note)) });
+        if (idempotency) {
+          await tx.orderIdempotencyKey.create({
+            data: { storeId: order.storeId, key: idempotency.key, requestHash: idempotency.requestHash, orderId: order.id, expiresAt: idempotency.expiresAt },
+          });
+        }
+      });
+    } catch (error) {
+      if (isUniqueCartOrderError(error)) throw new OrderAlreadyExistsForCartError();
+      if (isUniqueIdempotencyError(error)) throw new IdempotencyConflictError();
+      throw error;
+    }
+  }
+
+  async delete(orderId: string): Promise<void> {
+    await this.prisma.order.delete({ where: { id: orderId } });
   }
 
   private toOrderRow(order: Order): Prisma.OrderUncheckedCreateInput {
@@ -65,6 +76,7 @@ export class PrismaOrderRepository implements OrderRepository {
       id: order.id,
       storeId: order.storeId,
       orderNumber: order.orderNumber,
+      cartId: order.cartId,
       customerId: order.customerId,
       customerEmail: order.customerEmail,
       channel: order.channel,
@@ -102,6 +114,7 @@ export class PrismaOrderRepository implements OrderRepository {
       {
         storeId: row.storeId,
         orderNumber: row.orderNumber,
+        cartId: row.cartId,
         customerId: row.customerId,
         customerEmail: row.customerEmail,
         channel: row.channel as 'web' | 'pos',
@@ -147,4 +160,20 @@ export class PrismaOrderRepository implements OrderRepository {
       row.id,
     );
   }
+}
+
+function isUniqueCartOrderError(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError
+    && error.code === 'P2002'
+    && Array.isArray(error.meta?.target)
+    && error.meta.target.includes('store_id')
+    && error.meta.target.includes('cart_id');
+}
+
+function isUniqueIdempotencyError(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError
+    && error.code === 'P2002'
+    && Array.isArray(error.meta?.target)
+    && error.meta.target.includes('store_id')
+    && error.meta.target.includes('key');
 }

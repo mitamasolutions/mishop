@@ -13,6 +13,7 @@ import {
   InsufficientStockError,
   InvalidOrderStateTransitionError,
   InvalidPaymentStateTransitionError,
+  OrderAlreadyExistsForCartError,
   OrderNotFoundError,
 } from '../domain/errors';
 import { toOrderOutput, type OrderOutput } from './order.dto';
@@ -26,7 +27,7 @@ export interface CreateOrderInput {
   actorId?: string | null;
 }
 
-export type CreateOrderError = CheckoutCartNotReadyError | IdempotencyConflictError | InsufficientStockError | OrderNotFoundError;
+export type CreateOrderError = CheckoutCartNotReadyError | IdempotencyConflictError | InsufficientStockError | OrderAlreadyExistsForCartError | OrderNotFoundError;
 
 export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<OrderOutput, CreateOrderError>> {
   constructor(
@@ -60,10 +61,27 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<Orde
     const orderNumber = await this.orders.nextOrderNumber(cart.storeId, cart.channel === 'web' ? 'WEB-' : 'POS-');
     const reservationExpiresAt = new Date(Date.now() + RESERVATION_TTL_MS);
     const order = Order.fromCart(cart, orderNumber, reservationExpiresAt);
-    const reserved = await this.stockReservations.reserve({ orderId: order.id, expiresAt: reservationExpiresAt, lines: cart.lines });
-    if (!reserved) return err(new InsufficientStockError());
+    try {
+      await this.orders.save(order);
+    } catch (error) {
+      if (error instanceof OrderAlreadyExistsForCartError) return err(error);
+      throw error;
+    }
 
-    await this.orders.save(order, { key: input.idempotencyKey, requestHash, expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS) });
+    const reserved = await this.stockReservations.reserve({ orderId: order.id, expiresAt: reservationExpiresAt, lines: cart.lines });
+    if (!reserved) {
+      await this.orders.delete(order.id);
+      return err(new InsufficientStockError());
+    }
+
+    try {
+      await this.orders.save(order, { key: input.idempotencyKey, requestHash, expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS) });
+    } catch (error) {
+      await this.stockReservations.release(order.id);
+      await this.orders.delete(order.id);
+      if (error instanceof IdempotencyConflictError || error instanceof OrderAlreadyExistsForCartError) return err(error);
+      throw error;
+    }
     await this.carts.markOrdered(cart.id);
     await this.eventBus.publish(orderEvent('order.created', eventPayload(order)));
     await this.emailQueue.enqueue({ orderId: order.id, templateCode: 'order.created', payload: { orderNumber: order.orderNumber } });

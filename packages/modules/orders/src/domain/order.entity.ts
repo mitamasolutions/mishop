@@ -40,6 +40,7 @@ export interface OrderNoteProps {
 interface OrderProps {
   storeId: string;
   orderNumber: string;
+  cartId: string;
   customerId: string;
   customerEmail: string | null;
   channel: 'web' | 'pos';
@@ -102,6 +103,7 @@ export class Order extends Entity<OrderProps> {
     return new Order(crypto.randomUUID(), {
       storeId: cart.storeId,
       orderNumber,
+      cartId: cart.id,
       customerId: cart.customerId,
       customerEmail: cart.email,
       channel: cart.channel,
@@ -131,6 +133,7 @@ export class Order extends Entity<OrderProps> {
 
   get storeId(): string { return this.props.storeId; }
   get orderNumber(): string { return this.props.orderNumber; }
+  get cartId(): string { return this.props.cartId; }
   get customerId(): string { return this.props.customerId; }
   get customerEmail(): string | null { return this.props.customerEmail; }
   get channel(): 'web' | 'pos' { return this.props.channel; }

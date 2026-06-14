@@ -4,6 +4,7 @@ export interface OrderOutput {
   id: string;
   storeId: string;
   orderNumber: string;
+  cartId: string;
   customerId: string;
   customerEmail: string | null;
   channel: string;
@@ -31,6 +32,7 @@ export function toOrderOutput(order: Order): OrderOutput {
     id: order.id,
     storeId: order.storeId,
     orderNumber: order.orderNumber,
+    cartId: order.cartId,
     customerId: order.customerId,
     customerEmail: order.customerEmail,
     channel: order.channel,
