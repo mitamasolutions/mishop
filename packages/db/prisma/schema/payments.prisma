@@ -18,17 +18,18 @@ model StorePaymentMethod {
 }
 
 model Payment {
-  id                  String   @id @default(uuid())
-  storeId             String   @map("store_id")
-  orderId             String   @map("order_id")
-  providerCode        String   @map("provider_code")
-  amount              Decimal  @db.Decimal(12, 2)
+  id                  String    @id @default(uuid())
+  storeId             String    @map("store_id")
+  orderId             String    @map("order_id")
+  order               Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  providerCode        String    @map("provider_code")
+  amount              Decimal   @db.Decimal(12, 2)
   currency            String
-  status              String   @default("pending")
-  providerReference   String?  @map("provider_reference")
+  status              String    @default("pending")
+  providerReference   String?   @map("provider_reference")
   lastProviderEventAt DateTime? @map("last_provider_event_at")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
   transitions PaymentTransition[]
   refunds     PaymentRefund[]

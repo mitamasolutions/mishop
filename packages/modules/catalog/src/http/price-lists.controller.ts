@@ -7,7 +7,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreatePriceListUseCase } from '../application/create-price-list/create-price-list.use-case';
 import { UpdatePriceListUseCase } from '../application/update-price-list/update-price-list.use-case';
 import { SetPriceListStatusUseCase } from '../application/set-price-list-status/set-price-list-status.use-case';
@@ -33,7 +33,6 @@ import { AddPriceListPriceRequestDto, UpdatePriceListPriceRequestDto } from './d
 
 @ApiTags('catalog-price-lists')
 @Controller('catalog/price-lists')
-@NoStoreScope()
 @RequirePermission('products.read')
 export class PriceListsController {
   constructor(

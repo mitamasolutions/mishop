@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Post } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateStockLocationUseCase } from '../application/create-stock-location/create-stock-location.use-case';
 import { UpdateStockLocationUseCase } from '../application/update-stock-location/update-stock-location.use-case';
 import { SetStockLocationStatusUseCase } from '../application/set-stock-location-status/set-stock-location-status.use-case';
@@ -13,7 +13,6 @@ import { SetStockLocationStatusRequestDto } from './dto/set-stock-location-statu
 
 @ApiTags('inventory')
 @Controller('inventory/locations')
-@NoStoreScope()
 @RequirePermission('inventory.read')
 export class StockLocationsController {
   constructor(

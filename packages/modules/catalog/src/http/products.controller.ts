@@ -21,7 +21,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateProductUseCase } from '../application/create-product/create-product.use-case';
 import { UpdateProductUseCase } from '../application/update-product/update-product.use-case';
 import { DeleteProductUseCase } from '../application/delete-product/delete-product.use-case';
@@ -83,7 +83,6 @@ import { GetEffectivePriceRequestDto } from './dto/get-effective-price.request.d
 
 @ApiTags('catalog-products')
 @Controller('catalog/products')
-@NoStoreScope()
 @RequirePermission('products.read')
 export class ProductsController {
   constructor(

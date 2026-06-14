@@ -18,7 +18,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateBrandUseCase } from '../application/create-brand/create-brand.use-case';
 import { UpdateBrandUseCase } from '../application/update-brand/update-brand.use-case';
 import { SetBrandStatusUseCase } from '../application/set-brand-status/set-brand-status.use-case';
@@ -32,7 +32,6 @@ import { SetBrandStatusRequestDto } from './dto/set-brand-status.request.dto';
 
 @ApiTags('catalog-brands')
 @Controller('catalog/brands')
-@NoStoreScope()
 @RequirePermission('brands.read')
 export class BrandsController {
   constructor(

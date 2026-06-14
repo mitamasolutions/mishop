@@ -20,9 +20,9 @@ model StoreShippingMethod {
 }
 
 model StoreShippingMethodZone {
-  methodId String @map("method_id")
+  methodId String              @map("method_id")
   method   StoreShippingMethod @relation(fields: [methodId], references: [id], onDelete: Cascade)
-  zoneId   String @map("zone_id")
+  zoneId   String              @map("zone_id")
 
   @@id([methodId, zoneId])
   @@map("store_shipping_method_zones")
@@ -31,6 +31,7 @@ model StoreShippingMethodZone {
 model Shipment {
   id             String   @id @default(uuid())
   orderId        String   @map("order_id")
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
   trackingNumber String?  @map("tracking_number")
   carrier        String?
   status         String   @default("pending")

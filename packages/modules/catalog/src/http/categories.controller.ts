@@ -19,7 +19,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateCategoryUseCase } from '../application/create-category/create-category.use-case';
 import { UpdateCategoryUseCase } from '../application/update-category/update-category.use-case';
 import { MoveCategoryUseCase } from '../application/move-category/move-category.use-case';
@@ -34,7 +34,6 @@ import { MoveCategoryRequestDto } from './dto/move-category.request.dto';
 
 @ApiTags('catalog-categories')
 @Controller('catalog/categories')
-@NoStoreScope()
 @RequirePermission('categories.read')
 export class CategoriesController {
   constructor(

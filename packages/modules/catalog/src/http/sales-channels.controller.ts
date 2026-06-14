@@ -7,7 +7,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateSalesChannelUseCase } from '../application/create-sales-channel/create-sales-channel.use-case';
 import { UpdateSalesChannelUseCase } from '../application/update-sales-channel/update-sales-channel.use-case';
 import { SetSalesChannelStatusUseCase } from '../application/set-sales-channel-status/set-sales-channel-status.use-case';
@@ -21,7 +21,6 @@ import { SetSalesChannelStatusRequestDto } from './dto/set-sales-channel-status.
 
 @ApiTags('catalog-sales-channels')
 @Controller('catalog/sales-channels')
-@NoStoreScope()
 @RequirePermission('sales-channels.read')
 export class SalesChannelsController {
   constructor(

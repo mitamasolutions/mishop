@@ -25,8 +25,9 @@ interface StoreContextRequest {
 }
 
 /**
- * Lee `X-Store-Id`, valida que el usuario tenga rol en esa tienda (o sea
- * Super Admin) y que la tienda exista y esté activa. Rutas `@Public()` o
+ * Lee `X-Store-Id` o resuelve una tienda por defecto para instalaciones
+ * single-store. Valida que el usuario tenga rol en esa tienda (o sea Super
+ * Admin) y que la tienda exista y esté activa. Rutas `@Public()` o
  * `@NoStoreScope()` se omiten.
  */
 @Injectable()
@@ -60,8 +61,7 @@ export class StoreContextGuard implements CanActivate {
       throw new UnauthorizedException('No autenticado');
     }
 
-    const header = request.headers['x-store-id'];
-    const storeId = Array.isArray(header) ? header[0] : header;
+    const storeId = await this.resolveStoreId(request, user);
     if (!storeId) {
       throw new BadRequestException('Falta el encabezado X-Store-Id');
     }
@@ -77,5 +77,32 @@ export class StoreContextGuard implements CanActivate {
 
     request.store = { id: store.id, code: store.code, name: store.name };
     return true;
+  }
+
+  private async resolveStoreId(request: StoreContextRequest, user: AuthenticatedUser): Promise<string | undefined> {
+    const header = request.headers['x-store-id'];
+    const headerStoreId = Array.isArray(header) ? header[0] : header;
+    if (headerStoreId) {
+      return headerStoreId;
+    }
+
+    const configuredDefault = process.env.DEFAULT_STORE_ID;
+    if (configuredDefault && (user.isSuperAdmin || user.storeRoles.some((role) => role.storeId === configuredDefault))) {
+      return configuredDefault;
+    }
+
+    if (!user.isSuperAdmin && user.storeRoles.length === 1) {
+      return user.storeRoles[0]?.storeId;
+    }
+
+    const activeStores = (await this.stores.findAll()).filter((store) => store.isActive);
+    if (activeStores.length === 1) {
+      const [store] = activeStores;
+      if (store && (user.isSuperAdmin || user.storeRoles.some((role) => role.storeId === store.id))) {
+        return store.id;
+      }
+    }
+
+    return undefined;
   }
 }

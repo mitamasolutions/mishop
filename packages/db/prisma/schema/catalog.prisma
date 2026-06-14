@@ -14,16 +14,16 @@ enum ProductStatus {
 /// Producto. Un producto siempre tiene al menos una variante (el "simple"
 /// es un producto con una sola variante por defecto).
 model Product {
-  id          String        @id @default(uuid())
-  title       String
-  handle      String        @unique
-  subtitle    String?
-  description String?
-  status      ProductStatus @default(draft)
-  thumbnail   String?
-  isGiftcard  Boolean       @default(false) @map("is_giftcard")
-  discountable Boolean      @default(true)
-  taxCategory  String       @default("standard") @map("tax_category")
+  id           String        @id @default(uuid())
+  title        String
+  handle       String        @unique
+  subtitle     String?
+  description  String?
+  status       ProductStatus @default(draft)
+  thumbnail    String?
+  isGiftcard   Boolean       @default(false) @map("is_giftcard")
+  discountable Boolean       @default(true)
+  taxCategory  String        @default("standard") @map("tax_category")
 
   // Dimensiones físicas (para envío y POS)
   weight   Float?
@@ -37,10 +37,10 @@ model Product {
   metaDescription String? @map("meta_description")
 
   // Taxonomías de cardinalidad 1
-  typeId String? @map("type_id")
-  type   ProductType? @relation(fields: [typeId], references: [id])
-  brandId String? @map("brand_id")
-  brand   Brand?  @relation(fields: [brandId], references: [id])
+  typeId  String?      @map("type_id")
+  type    ProductType? @relation(fields: [typeId], references: [id])
+  brandId String?      @map("brand_id")
+  brand   Brand?       @relation(fields: [brandId], references: [id])
 
   externalId String? @map("external_id")
   metadata   Json?
@@ -57,9 +57,10 @@ model Product {
   salesChannels  SalesChannel[]           @relation("ProductSalesChannels")
   specifications ProductSpecification[]
   images         ProductImage[]
+  cartLines      CartLine[]
   // Relacionados / cross-sell (auto-referencia muchos-a-muchos dirigida)
-  relatedFrom ProductRelation[] @relation("RelationSource")
-  relatedTo   ProductRelation[] @relation("RelationTarget")
+  relatedFrom    ProductRelation[]        @relation("RelationSource")
+  relatedTo      ProductRelation[]        @relation("RelationTarget")
 
   @@index([brandId])
   @@index([typeId])
@@ -147,22 +148,22 @@ model SalesChannel {
 /// Categoría jerárquica (árbol con materialized path `mpath`). Un producto
 /// puede pertenecer a varias categorías.
 model ProductCategory {
-  id               String    @id @default(uuid())
+  id               String            @id @default(uuid())
   name             String
   description      String?
-  handle           String    @unique
+  handle           String            @unique
   mpath            String?
-  isActive         Boolean   @default(true) @map("is_active")
-  isInternal       Boolean   @default(false) @map("is_internal")
-  rank             Int       @default(0)
-  parentCategoryId String?   @map("parent_category_id")
+  isActive         Boolean           @default(true) @map("is_active")
+  isInternal       Boolean           @default(false) @map("is_internal")
+  rank             Int               @default(0)
+  parentCategoryId String?           @map("parent_category_id")
   parent           ProductCategory?  @relation("CategoryTree", fields: [parentCategoryId], references: [id])
   children         ProductCategory[] @relation("CategoryTree")
-  metaTitle        String?   @map("meta_title")
-  metaDescription  String?   @map("meta_description")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  deletedAt        DateTime? @map("deleted_at")
+  metaTitle        String?           @map("meta_title")
+  metaDescription  String?           @map("meta_description")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  deletedAt        DateTime?         @map("deleted_at")
 
   products ProductCategoryProduct[]
 
@@ -172,9 +173,9 @@ model ProductCategory {
 
 /// Tabla puente Producto ↔ Categoría.
 model ProductCategoryProduct {
-  productId  String @map("product_id")
-  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  categoryId String @map("category_id")
+  productId  String          @map("product_id")
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  categoryId String          @map("category_id")
   category   ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([productId, categoryId])
@@ -200,14 +201,14 @@ model ProductOption {
 
 /// Valor de una opción (ej. "M", "Rojo").
 model ProductOptionValue {
-  id        String    @id @default(uuid())
+  id        String        @id @default(uuid())
   value     String
-  optionId  String    @map("option_id")
+  optionId  String        @map("option_id")
   option    ProductOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
   metadata  Json?
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  deletedAt DateTime?     @map("deleted_at")
 
   variants ProductVariantOption[]
 
@@ -217,20 +218,20 @@ model ProductOptionValue {
 
 /// Variante: la unidad vendible. Aquí viven SKU, precio, costo y oferta.
 model ProductVariant {
-  id              String   @id @default(uuid())
-  title           String
-  sku             String   @unique
-  barcode         String?
-  ean             String?
-  upc             String?
-  allowBackorder  Boolean  @default(false) @map("allow_backorder")
-  manageInventory Boolean  @default(true) @map("manage_inventory")
-  lowStockThreshold Int?   @map("low_stock_threshold")
+  id                String  @id @default(uuid())
+  title             String
+  sku               String  @unique
+  barcode           String?
+  ean               String?
+  upc               String?
+  allowBackorder    Boolean @default(false) @map("allow_backorder")
+  manageInventory   Boolean @default(true) @map("manage_inventory")
+  lowStockThreshold Int?    @map("low_stock_threshold")
   taxCategory       String? @map("tax_category")
 
   // Precio base y costo (la moneda activa de la plataforma en esta fase).
   // El esquema multi-moneda completo vive en PriceSet/Price.
-  cost         Decimal? @db.Decimal(12, 2)
+  cost         Decimal?  @db.Decimal(12, 2)
   // Oferta puntual por variante (vía híbrida con PriceList para campañas).
   salePrice    Decimal?  @map("sale_price") @db.Decimal(12, 2)
   saleStartsAt DateTime? @map("sale_starts_at")
@@ -240,10 +241,10 @@ model ProductVariant {
   length      Float?
   height      Float?
   width       Float?
-  variantRank Int?     @map("variant_rank")
+  variantRank Int?   @map("variant_rank")
 
-  productId String   @map("product_id")
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   metadata  Json?
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -254,6 +255,7 @@ model ProductVariant {
   priceSet      PriceSet?
   images        ProductImage[]
   inventoryLink ProductVariantInventoryItem?
+  cartLines     CartLine[]
 
   @@index([productId])
   @@map("product_variants")
@@ -261,9 +263,9 @@ model ProductVariant {
 
 /// Tabla puente Variante ↔ Valor de opción (define la combinación).
 model ProductVariantOption {
-  variantId     String @map("variant_id")
-  variant       ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  optionValueId String @map("option_value_id")
+  variantId     String             @map("variant_id")
+  variant       ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  optionValueId String             @map("option_value_id")
   optionValue   ProductOptionValue @relation(fields: [optionValueId], references: [id], onDelete: Cascade)
 
   @@id([variantId, optionValueId])
@@ -292,13 +294,13 @@ enum ProductRelationType {
 }
 
 model ProductRelation {
-  id        String   @id @default(uuid())
-  sourceId  String   @map("source_id")
-  source    Product  @relation("RelationSource", fields: [sourceId], references: [id], onDelete: Cascade)
-  targetId  String   @map("target_id")
-  target    Product  @relation("RelationTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  id        String              @id @default(uuid())
+  sourceId  String              @map("source_id")
+  source    Product             @relation("RelationSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId  String              @map("target_id")
+  target    Product             @relation("RelationTarget", fields: [targetId], references: [id], onDelete: Cascade)
   type      ProductRelationType @default(related)
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime            @default(now()) @map("created_at")
 
   @@unique([sourceId, targetId, type])
   @@index([sourceId])
@@ -309,11 +311,11 @@ model ProductRelation {
 
 /// Conjunto de precios de una variante. Agrupa el precio base y los tier prices.
 model PriceSet {
-  id        String   @id @default(uuid())
-  variantId String   @unique @map("variant_id")
+  id        String         @id @default(uuid())
+  variantId String         @unique @map("variant_id")
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
 
   prices Price[]
 
@@ -324,17 +326,17 @@ model PriceSet {
 /// minQuantity es un tier price (precio por cantidad). currencyCode permite
 /// multi-moneda futura. Puede pertenecer a una lista de precios (campaña).
 model Price {
-  id           String   @id @default(uuid())
-  priceSetId   String   @map("price_set_id")
-  priceSet     PriceSet @relation(fields: [priceSetId], references: [id], onDelete: Cascade)
-  currencyCode String   @map("currency_code")
-  amount       Decimal  @db.Decimal(12, 2)
-  minQuantity  Int?     @map("min_quantity")
-  maxQuantity  Int?     @map("max_quantity")
-  priceListId  String?  @map("price_list_id")
+  id           String     @id @default(uuid())
+  priceSetId   String     @map("price_set_id")
+  priceSet     PriceSet   @relation(fields: [priceSetId], references: [id], onDelete: Cascade)
+  currencyCode String     @map("currency_code")
+  amount       Decimal    @db.Decimal(12, 2)
+  minQuantity  Int?       @map("min_quantity")
+  maxQuantity  Int?       @map("max_quantity")
+  priceListId  String?    @map("price_list_id")
   priceList    PriceList? @relation(fields: [priceListId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
   @@index([priceSetId])
   @@index([priceListId])

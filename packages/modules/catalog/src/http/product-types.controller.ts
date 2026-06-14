@@ -22,7 +22,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import {
   CreateValueTaxonomyUseCase,
   DeleteValueTaxonomyUseCase,
@@ -37,7 +37,6 @@ import { CATALOG_TOKENS } from '../catalog.tokens';
 
 @ApiTags('catalog-product-types')
 @Controller('catalog/product-types')
-@NoStoreScope()
 @RequirePermission('product-types.read')
 export class ProductTypesController {
   constructor(

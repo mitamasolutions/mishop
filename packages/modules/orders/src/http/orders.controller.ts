@@ -1,7 +1,7 @@
 import { BadRequestException, Body, ConflictException, Controller, Get, Headers, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { CurrentUser, NoStoreScope, Public, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentStore, CurrentUser, Public, RequirePermission, type ActiveStore, type AuthenticatedUser } from '@mitama/contracts';
 import {
   AddOrderNoteUseCase,
   CancelOrderUseCase,
@@ -25,10 +25,6 @@ class TransitionRequestDto {
 
   @IsOptional()
   @IsString()
-  actorId?: string | null;
-
-  @IsOptional()
-  @IsString()
   reason?: string | null;
 }
 
@@ -38,10 +34,6 @@ class NoteRequestDto {
 }
 
 class ListOrdersQueryDto {
-  @IsOptional()
-  @IsString()
-  storeId?: string;
-
   @IsOptional()
   @IsIn(['pending', 'confirmed', 'completed', 'cancelled'])
   status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
@@ -65,7 +57,6 @@ class ListOrdersQueryDto {
 
 @ApiTags('orders')
 @Controller('orders')
-@NoStoreScope()
 @RequirePermission('orders.read')
 export class OrdersController {
   constructor(
@@ -92,8 +83,8 @@ export class OrdersController {
 
   @Get()
   @ApiOperation({ summary: 'Lista y filtra órdenes' })
-  async list(@Query() query: ListOrdersQueryDto): Promise<OrderOutput[]> {
-    const result = await this.listOrders.execute(query);
+  async list(@Query() query: ListOrdersQueryDto, @CurrentStore() store?: ActiveStore): Promise<OrderOutput[]> {
+    const result = await this.listOrders.execute({ ...query, storeId: store?.id });
     if (result.isOk()) return result.value;
     throw new BadRequestException('No se pudieron listar las órdenes');
   }

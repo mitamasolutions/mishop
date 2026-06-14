@@ -57,6 +57,14 @@ describe('PermissionsGuard', () => {
       ),
     ).toThrow(ForbiddenException);
   });
+
+  it('usa la única tienda con permiso cuando falta X-Store-Id', () => {
+    const guard = new PermissionsGuard(new Reflector());
+    const request = { user: userWith('orders.read'), headers: {} };
+
+    expect(guard.canActivate(contextFor({ handler: scopedHandler, request }))).toBe(true);
+    expect(request.headers['x-store-id']).toBe('store-1');
+  });
 });
 
 function undecoratedHandler(): void {}
@@ -82,7 +90,7 @@ function userWith(...permissions: AuthenticatedUser['storeRoles'][number]['permi
 
 function contextFor(input: {
   handler: () => void;
-  request: { user?: AuthenticatedUser; headers?: Record<string, string> };
+  request: { user?: AuthenticatedUser; headers?: Record<string, string | undefined> };
 }): ExecutionContext {
   return {
     getType: () => 'http',

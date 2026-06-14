@@ -114,14 +114,10 @@ describe('Multi-tenant anti-fuga (e2e)', () => {
     await request(app.getHttpServer()).get('/settings').expect(401);
   });
 
-  it('rechaza con 403 si falta el encabezado X-Store-Id en una ruta con permiso requerido', async () => {
-    // PermissionsGuard se ejecuta antes que StoreContextGuard (orden de
-    // imports en AppModule), así que sin X-Store-Id no encuentra ningún
-    // storeRole y falla cerrado con 403 antes de llegar al chequeo de
-    // encabezado de StoreContextGuard.
+  it('usa la única tienda del usuario si falta X-Store-Id en modo single-store', async () => {
     const res = await request(app.getHttpServer()).get('/settings').set('Authorization', `Bearer ${tokenA}`);
-    expect(res.status).toBe(403);
-    expect(res.body.message).toContain('No tienes permiso');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
   });
 
   it('rechaza con 403 si el usuario no tiene rol en la tienda solicitada', async () => {

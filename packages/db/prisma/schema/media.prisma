@@ -6,17 +6,17 @@
 /// Imagen de catálogo. Si variantId es null, es imagen general del producto;
 /// si apunta a una variante, es específica de esa variante.
 model ProductImage {
-  id        String   @id @default(uuid())
+  id        String          @id @default(uuid())
   url       String
-  altText   String?  @map("alt_text")
-  rank      Int      @default(0)
-  productId String   @map("product_id")
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variantId String?  @map("variant_id")
+  altText   String?         @map("alt_text")
+  rank      Int             @default(0)
+  productId String          @map("product_id")
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?         @map("variant_id")
   variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   metadata  Json?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
 
   @@index([productId])
   @@index([variantId])

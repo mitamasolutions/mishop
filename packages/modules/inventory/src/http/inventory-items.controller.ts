@@ -8,7 +8,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateInventoryItemUseCase } from '../application/create-inventory-item/create-inventory-item.use-case';
 import { UpdateInventoryItemUseCase } from '../application/update-inventory-item/update-inventory-item.use-case';
 import { GetInventoryItemUseCase } from '../application/get-inventory-item/get-inventory-item.use-case';
@@ -30,7 +30,6 @@ import { SetInventoryLevelRequestDto } from './dto/set-inventory-level.request.d
 
 @ApiTags('inventory')
 @Controller('inventory/items')
-@NoStoreScope()
 @RequirePermission('inventory.read')
 export class InventoryItemsController {
   constructor(

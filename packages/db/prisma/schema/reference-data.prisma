@@ -99,14 +99,14 @@ model Territory {
   isActive Boolean @default(true) @map("is_active")
 
   // Configuración de envío
-  automaticFulfillment          Boolean  @default(false) @map("automatic_fulfillment")
-  minSubtotal                   Decimal? @map("min_subtotal")
-  minSubtotalWithTax            Boolean  @default(false) @map("min_subtotal_with_tax")
-  freeShippingThreshold         Decimal? @map("free_shipping_threshold")
-  freeShippingThresholdWithTax  Boolean  @default(false) @map("free_shipping_threshold_with_tax")
-  freeShippingNoDiscount        Boolean  @default(false) @map("free_shipping_no_discount")
-  shippingCost                  Decimal? @map("shipping_cost")
-  description                   String?
+  automaticFulfillment         Boolean  @default(false) @map("automatic_fulfillment")
+  minSubtotal                  Decimal? @map("min_subtotal")
+  minSubtotalWithTax           Boolean  @default(false) @map("min_subtotal_with_tax")
+  freeShippingThreshold        Decimal? @map("free_shipping_threshold")
+  freeShippingThresholdWithTax Boolean  @default(false) @map("free_shipping_threshold_with_tax")
+  freeShippingNoDiscount       Boolean  @default(false) @map("free_shipping_no_discount")
+  shippingCost                 Decimal? @map("shipping_cost")
+  description                  String?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -121,12 +121,12 @@ model Territory {
 
 /// Tercer nivel jerárquico: agrupador geográfico más fino, pertenece a un Territorio.
 model Zone {
-  id          String  @id @default(uuid())
-  territoryId String  @map("territory_id")
+  id          String    @id @default(uuid())
+  territoryId String    @map("territory_id")
   territory   Territory @relation(fields: [territoryId], references: [id])
   name        String
   code        String
-  isActive    Boolean @default(true) @map("is_active")
+  isActive    Boolean   @default(true) @map("is_active")
   description String?
 
   createdAt DateTime  @default(now()) @map("created_at")

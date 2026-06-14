@@ -14,9 +14,9 @@ model ActivityLogEntry {
   diff       Json?
   createdAt  DateTime @default(now()) @map("created_at")
 
-  @@map("activity_log_entries")
   @@index([userId])
   @@index([storeId])
   @@index([entityType, entityId])
   @@index([createdAt])
+  @@map("activity_log_entries")
 }

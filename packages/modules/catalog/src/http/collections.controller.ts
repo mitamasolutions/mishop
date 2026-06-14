@@ -18,7 +18,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateCollectionUseCase } from '../application/create-collection/create-collection.use-case';
 import { UpdateCollectionUseCase } from '../application/update-collection/update-collection.use-case';
 import { ListCollectionsUseCase } from '../application/list-collections/list-collections.use-case';
@@ -30,7 +30,6 @@ import { UpdateCollectionRequestDto } from './dto/update-collection.request.dto'
 
 @ApiTags('catalog-collections')
 @Controller('catalog/collections')
-@NoStoreScope()
 @RequirePermission('collections.read')
 export class CollectionsController {
   constructor(

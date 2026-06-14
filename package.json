@@ -15,6 +15,8 @@
     "test": "turbo run test",
     "db:generate": "yarn workspace @mitama/db db:generate",
     "db:migrate": "yarn workspace @mitama/db db:migrate",
+    "db:deploy": "yarn workspace @mitama/db db:deploy",
+    "db:reset": "yarn workspace @mitama/db db:reset",
     "db:seed": "yarn workspace @mitama/db db:seed",
     "new:module": "node tools/new-module.mjs"
   },

@@ -75,9 +75,18 @@ export class PermissionsGuard implements CanActivate {
 
     const header = request.headers['x-store-id'];
     const storeId = Array.isArray(header) ? header[0] : header;
-    const storeRole = user.storeRoles.find((role) => role.storeId === storeId);
-    if (!storeRole || !storeRole.permissions.includes(permission)) {
+    const matchingRoles = user.storeRoles.filter((role) => role.permissions.includes(permission));
+    const storeRole = storeId
+      ? matchingRoles.find((role) => role.storeId === storeId)
+      : matchingRoles.length === 1
+        ? matchingRoles[0]
+        : undefined;
+    if (!storeRole) {
       throw new ForbiddenException('No tienes permiso para realizar esta acción');
+    }
+
+    if (!storeId) {
+      request.headers['x-store-id'] = storeRole.storeId;
     }
 
     return true;

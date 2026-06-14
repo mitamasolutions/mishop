@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Headers, HttpCode, HttpException, HttpStatus, NotFoundException, Param, Post, Query, RawBodyRequest, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, Public, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentStore, CurrentUser, Public, RequirePermission, type ActiveStore, type AuthenticatedUser } from '@mitama/contracts';
 import {
   AuthorizePaymentUseCase,
   CapturePaymentUseCase,
@@ -14,7 +14,6 @@ import { InvalidWebhookSignatureError, PaymentNotFoundError, TransientPaymentPro
 import type { PaymentOutput } from '../application/payment.dto';
 
 class AuthorizePaymentRequestDto {
-  storeId!: string;
   orderId!: string;
   providerCode!: string;
   amount!: number;
@@ -27,7 +26,6 @@ class RefundPaymentRequestDto {
 
 @ApiTags('payments')
 @Controller('payments')
-@NoStoreScope()
 @RequirePermission('payments.read')
 export class PaymentsController {
   constructor(
@@ -52,8 +50,9 @@ export class PaymentsController {
   @Post('authorize')
   @RequirePermission('payments.create')
   @ApiOperation({ summary: 'Crea un intento de pago y autoriza o captura según provider' })
-  async authorize(@Body() body: AuthorizePaymentRequestDto): Promise<PaymentOutput> {
-    return this.unwrap(await this.authorizePayment.execute(body));
+  async authorize(@Body() body: AuthorizePaymentRequestDto, @CurrentStore() store?: ActiveStore): Promise<PaymentOutput> {
+    if (!store) throw new BadRequestException('Falta tienda activa');
+    return this.unwrap(await this.authorizePayment.execute({ ...body, storeId: store.id }));
   }
 
   @Post(':paymentId/capture')

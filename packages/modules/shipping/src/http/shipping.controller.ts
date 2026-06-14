@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, NotFoundException, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { NoStoreScope, Public, RequirePermission } from '@mitama/contracts';
+import { Public, RequirePermission } from '@mitama/contracts';
 import { CalculateShippingRatesUseCase, CreateShipmentUseCase, UpdateShipmentStatusUseCase } from '../application/shipping-use-cases';
 import { ShipmentNotFoundError } from '../domain/errors';
 import type { ShippingAddress } from '../domain/shipping-method.entity';
@@ -27,7 +27,6 @@ class UpdateShipmentRequestDto {
 
 @ApiTags('shipping')
 @Controller('shipping')
-@NoStoreScope()
 export class ShippingController {
   constructor(
     private readonly calculateRates: CalculateShippingRatesUseCase,

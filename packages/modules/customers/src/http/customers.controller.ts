@@ -1,7 +1,7 @@
 import { BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
-import { NoStoreScope, Public, RequirePermission } from '@mitama/contracts';
+import { Public, RequirePermission } from '@mitama/contracts';
 import { RegisterCustomerUseCase } from '../application/register-customer/register-customer.use-case';
 import { CreateGuestCustomerUseCase } from '../application/create-guest-customer/create-guest-customer.use-case';
 import { GetCustomerUseCase } from '../application/get-customer/get-customer.use-case';
@@ -92,7 +92,6 @@ class AddressRequestDto {
 
 @ApiTags('customers')
 @Controller('customers')
-@NoStoreScope()
 @RequirePermission('customers.read')
 export class CustomersController {
   constructor(

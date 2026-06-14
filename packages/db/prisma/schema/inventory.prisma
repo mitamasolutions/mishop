@@ -21,14 +21,14 @@ model StockLocation {
 /// Ítem de inventario: lo que realmente se cuenta. Se enlaza a la variante
 /// vía ProductVariantInventoryItem. Tiene su propio SKU para trazabilidad.
 model InventoryItem {
-  id              String    @id @default(uuid())
-  sku             String?   @unique
-  title           String?
-  requiresShipping Boolean  @default(true) @map("requires_shipping")
-  metadata        Json?
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
+  id               String    @id @default(uuid())
+  sku              String?   @unique
+  title            String?
+  requiresShipping Boolean   @default(true) @map("requires_shipping")
+  metadata         Json?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
 
   levels       InventoryLevel[]
   variantLinks ProductVariantInventoryItem[]
@@ -39,14 +39,14 @@ model InventoryItem {
 /// Puente Variante ↔ InventoryItem. requiredQuantity permite kits a futuro
 /// (cuántas unidades del item consume una variante); hoy es 1.
 model ProductVariantInventoryItem {
-  id              String   @id @default(uuid())
-  variantId       String   @unique @map("variant_id")
-  variant         ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  inventoryItemId String   @map("inventory_item_id")
-  inventoryItem   InventoryItem  @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-  requiredQuantity Int     @default(1) @map("required_quantity")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               String         @id @default(uuid())
+  variantId        String         @unique @map("variant_id")
+  variant          ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  inventoryItemId  String         @map("inventory_item_id")
+  inventoryItem    InventoryItem  @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  requiredQuantity Int            @default(1) @map("required_quantity")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
 
   @@index([inventoryItemId])
   @@map("product_variant_inventory_item")
@@ -55,17 +55,17 @@ model ProductVariantInventoryItem {
 /// Nivel de stock de un item en una ubicación. reserved lo poblará el módulo
 /// de órdenes; incoming es mercancía en tránsito.
 model InventoryLevel {
-  id                String   @id @default(uuid())
-  inventoryItemId   String   @map("inventory_item_id")
-  inventoryItem     InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-  locationId        String   @map("location_id")
-  location          StockLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  stockedQuantity   Decimal  @default(0) @map("stocked_quantity") @db.Decimal(12, 2)
-  reservedQuantity  Decimal  @default(0) @map("reserved_quantity") @db.Decimal(12, 2)
-  incomingQuantity  Decimal  @default(0) @map("incoming_quantity") @db.Decimal(12, 2)
-  version           Int      @default(0)
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  id               String        @id @default(uuid())
+  inventoryItemId  String        @map("inventory_item_id")
+  inventoryItem    InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  locationId       String        @map("location_id")
+  location         StockLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  stockedQuantity  Decimal       @default(0) @map("stocked_quantity") @db.Decimal(12, 2)
+  reservedQuantity Decimal       @default(0) @map("reserved_quantity") @db.Decimal(12, 2)
+  incomingQuantity Decimal       @default(0) @map("incoming_quantity") @db.Decimal(12, 2)
+  version          Int           @default(0)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
 
   @@unique([inventoryItemId, locationId])
   @@index([locationId])

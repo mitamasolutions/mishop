@@ -1,18 +1,18 @@
 // Módulo reviews: moderación y rating agregado por reviews aprobadas.
 
 model ProductReview {
-  id               String   @id @default(uuid())
-  storeId          String   @map("store_id")
-  productId        String   @map("product_id")
-  customerId       String   @map("customer_id")
+  id               String    @id @default(uuid())
+  storeId          String    @map("store_id")
+  productId        String    @map("product_id")
+  customerId       String    @map("customer_id")
   rating           Int
   title            String?
   body             String
-  status           String   @default("pending")
-  moderatorId      String?  @map("moderator_id")
-  moderationReason String?  @map("moderation_reason")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  status           String    @default("pending")
+  moderatorId      String?   @map("moderator_id")
+  moderationReason String?   @map("moderation_reason")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
   moderatedAt      DateTime? @map("moderated_at")
 
   @@unique([storeId, productId, customerId])
