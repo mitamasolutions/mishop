@@ -7,7 +7,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreatePriceListUseCase } from '../application/create-price-list/create-price-list.use-case';
 import { UpdatePriceListUseCase } from '../application/update-price-list/update-price-list.use-case';
 import { SetPriceListStatusUseCase } from '../application/set-price-list-status/set-price-list-status.use-case';
@@ -34,6 +34,7 @@ import { AddPriceListPriceRequestDto, UpdatePriceListPriceRequestDto } from './d
 @ApiTags('catalog-price-lists')
 @Controller('catalog/price-lists')
 @NoStoreScope()
+@RequirePermission('products.read')
 export class PriceListsController {
   constructor(
     private readonly createPriceList: CreatePriceListUseCase,
@@ -68,6 +69,7 @@ export class PriceListsController {
   }
 
   @Post()
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Crea una lista de precios (campaña)' })
   @ApiCreatedResponse({ description: 'Lista de precios creada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -80,6 +82,7 @@ export class PriceListsController {
   }
 
   @Patch(':id')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Actualiza una lista de precios' })
   @ApiOkResponse({ description: 'Lista de precios actualizada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -97,6 +100,7 @@ export class PriceListsController {
   }
 
   @Patch(':id/status')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Cambia el estado (borrador/activa) de una lista de precios' })
   @ApiOkResponse({ description: 'Lista de precios actualizada' })
   @ApiNotFoundResponse({ description: 'La lista de precios no existe' })
@@ -113,6 +117,7 @@ export class PriceListsController {
   }
 
   @Delete(':id')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Elimina (baja lógica) una lista de precios' })
   @ApiOkResponse({ description: 'Lista de precios eliminada' })
   @ApiNotFoundResponse({ description: 'La lista de precios no existe' })
@@ -127,6 +132,7 @@ export class PriceListsController {
   // ----- Precios override de variantes -----
 
   @Post(':id/prices')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Agrega un precio override de variante a la lista' })
   @ApiCreatedResponse({ description: 'Lista de precios actualizada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos o rango de cantidades inválido' })
@@ -144,6 +150,7 @@ export class PriceListsController {
   }
 
   @Patch(':id/prices/:priceId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Actualiza un precio override de variante' })
   @ApiOkResponse({ description: 'Lista de precios actualizada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos o rango de cantidades inválido' })
@@ -162,6 +169,7 @@ export class PriceListsController {
   }
 
   @Delete(':id/prices/:priceId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Elimina un precio override de variante' })
   @ApiOkResponse({ description: 'Lista de precios actualizada' })
   @ApiNotFoundResponse({ description: 'La lista de precios o el precio no existen' })

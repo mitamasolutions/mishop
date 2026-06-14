@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
+  ALLOW_AUTHENTICATED_KEY,
   IS_PUBLIC_KEY,
   NO_STORE_SCOPE_KEY,
   REQUIRE_PERMISSION_KEY,
@@ -14,9 +15,8 @@ interface PermissionsRequest {
 }
 
 /**
- * Exige el permiso de `@RequirePermission()` en la tienda activa
- * (`X-Store-Id`), o cualquier permiso si el usuario es Super Admin. Rutas
- * `@NoStoreScope()` exigen Super Admin cuando declaran un permiso.
+ * Exige permisos de forma fail-closed: toda ruta no pública debe declarar
+ * `@RequirePermission()` o `@AllowAuthenticated()` explícitamente.
  */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -35,18 +35,27 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    const permission = this.reflector.getAllAndOverride<Permission | undefined>(REQUIRE_PERMISSION_KEY, [
+    const allowAuthenticated = this.reflector.getAllAndOverride<boolean>(ALLOW_AUTHENTICATED_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-    if (!permission) {
-      return true;
-    }
 
     const request = context.switchToHttp().getRequest<PermissionsRequest>();
     const user = request.user;
     if (!user) {
       throw new UnauthorizedException('No autenticado');
+    }
+
+    if (allowAuthenticated) {
+      return true;
+    }
+
+    const permission = this.reflector.getAllAndOverride<Permission | undefined>(REQUIRE_PERMISSION_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!permission) {
+      throw new ForbiddenException('La ruta no declara un permiso requerido');
     }
 
     if (user.isSuperAdmin) {
@@ -58,6 +67,9 @@ export class PermissionsGuard implements CanActivate {
       context.getClass(),
     ]);
     if (noStoreScope) {
+      if (user.storeRoles.some((role) => role.permissions.includes(permission))) {
+        return true;
+      }
       throw new ForbiddenException('No tienes permiso para realizar esta acción');
     }
 

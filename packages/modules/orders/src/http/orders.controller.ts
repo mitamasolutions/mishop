@@ -1,7 +1,7 @@
 import { BadRequestException, Body, ConflictException, Controller, Get, Headers, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { NoStoreScope, Public } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, Public, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import {
   AddOrderNoteUseCase,
   CancelOrderUseCase,
@@ -33,9 +33,6 @@ class TransitionRequestDto {
 }
 
 class NoteRequestDto {
-  @IsString()
-  authorId!: string;
-
   @IsString()
   body!: string;
 }
@@ -69,6 +66,7 @@ class ListOrdersQueryDto {
 @ApiTags('orders')
 @Controller('orders')
 @NoStoreScope()
+@RequirePermission('orders.read')
 export class OrdersController {
   constructor(
     private readonly createOrder: CreateOrderUseCase,
@@ -101,34 +99,55 @@ export class OrdersController {
   }
 
   @Post(':orderId/order-state')
+  @RequirePermission('orders.update')
   @ApiOperation({ summary: 'Cambia estado de orden respetando la máquina' })
-  async orderState(@Param('orderId') orderId: string, @Body() body: TransitionRequestDto): Promise<OrderOutput> {
-    const result = await this.changeOrderState.execute({ orderId, to: body.to as never, actorId: body.actorId, reason: body.reason });
+  async orderState(
+    @Param('orderId') orderId: string,
+    @Body() body: TransitionRequestDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ): Promise<OrderOutput> {
+    const result = await this.changeOrderState.execute({ orderId, to: body.to as never, actorId: user?.id ?? null, reason: body.reason });
     return this.unwrap(result);
   }
 
   @Post(':orderId/payment-state')
+  @RequirePermission('orders.update')
   @ApiOperation({ summary: 'Cambia estado de pago respetando la máquina' })
-  async paymentState(@Param('orderId') orderId: string, @Body() body: TransitionRequestDto): Promise<OrderOutput> {
-    const result = await this.changePaymentState.execute({ orderId, to: body.to as never, actorId: body.actorId, reason: body.reason });
+  async paymentState(
+    @Param('orderId') orderId: string,
+    @Body() body: TransitionRequestDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ): Promise<OrderOutput> {
+    const result = await this.changePaymentState.execute({ orderId, to: body.to as never, actorId: user?.id ?? null, reason: body.reason });
     return this.unwrap(result);
   }
 
   @Post(':orderId/cancel')
+  @RequirePermission('orders.cancel')
   @ApiOperation({ summary: 'Cancela una orden y libera stock' })
-  async cancel(@Param('orderId') orderId: string, @Body() body: Partial<TransitionRequestDto>): Promise<OrderOutput> {
-    const result = await this.cancelOrder.execute({ orderId, actorId: body.actorId, reason: body.reason });
+  async cancel(
+    @Param('orderId') orderId: string,
+    @Body() body: Partial<TransitionRequestDto>,
+    @CurrentUser() user?: AuthenticatedUser,
+  ): Promise<OrderOutput> {
+    const result = await this.cancelOrder.execute({ orderId, actorId: user?.id ?? null, reason: body.reason });
     return this.unwrap(result);
   }
 
   @Post(':orderId/notes')
+  @RequirePermission('orders.update')
   @ApiOperation({ summary: 'Agrega nota interna a la orden' })
-  async note(@Param('orderId') orderId: string, @Body() body: NoteRequestDto): Promise<OrderOutput> {
-    const result = await this.addNote.execute({ orderId, authorId: body.authorId, body: body.body });
+  async note(
+    @Param('orderId') orderId: string,
+    @Body() body: NoteRequestDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ): Promise<OrderOutput> {
+    const result = await this.addNote.execute({ orderId, authorId: user?.id ?? '', body: body.body });
     return this.unwrap(result);
   }
 
   @Post(':orderId/resend-confirmation')
+  @RequirePermission('orders.update')
   @ApiOperation({ summary: 'Reenvía confirmación de orden' })
   async resend(@Param('orderId') orderId: string): Promise<void> {
     const result = await this.resendConfirmation.execute(orderId);

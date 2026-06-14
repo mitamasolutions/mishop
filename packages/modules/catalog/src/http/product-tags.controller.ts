@@ -22,7 +22,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import {
   CreateValueTaxonomyUseCase,
   DeleteValueTaxonomyUseCase,
@@ -38,6 +38,7 @@ import { CATALOG_TOKENS } from '../catalog.tokens';
 @ApiTags('catalog-product-tags')
 @Controller('catalog/product-tags')
 @NoStoreScope()
+@RequirePermission('product-tags.read')
 export class ProductTagsController {
   constructor(
     @Inject(CATALOG_TOKENS.createProductTagUseCase) private readonly createUseCase: CreateValueTaxonomyUseCase,
@@ -68,6 +69,7 @@ export class ProductTagsController {
   }
 
   @Post()
+  @RequirePermission('product-tags.create')
   @ApiOperation({ summary: 'Crea una etiqueta de producto' })
   @ApiCreatedResponse({ description: 'Etiqueta creada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -88,6 +90,7 @@ export class ProductTagsController {
   }
 
   @Patch(':id')
+  @RequirePermission('product-tags.update')
   @ApiOperation({ summary: 'Renombra una etiqueta de producto' })
   @ApiOkResponse({ description: 'Etiqueta actualizada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -113,6 +116,7 @@ export class ProductTagsController {
   }
 
   @Delete(':id')
+  @RequirePermission('product-tags.delete')
   @HttpCode(204)
   @ApiOperation({ summary: 'Elimina una etiqueta de producto' })
   @ApiNoContentResponse({ description: 'Etiqueta eliminada' })

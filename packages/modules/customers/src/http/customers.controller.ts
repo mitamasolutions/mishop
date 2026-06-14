@@ -1,7 +1,7 @@
 import { BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
-import { NoStoreScope, Public } from '@mitama/contracts';
+import { NoStoreScope, Public, RequirePermission } from '@mitama/contracts';
 import { RegisterCustomerUseCase } from '../application/register-customer/register-customer.use-case';
 import { CreateGuestCustomerUseCase } from '../application/create-guest-customer/create-guest-customer.use-case';
 import { GetCustomerUseCase } from '../application/get-customer/get-customer.use-case';
@@ -93,6 +93,7 @@ class AddressRequestDto {
 @ApiTags('customers')
 @Controller('customers')
 @NoStoreScope()
+@RequirePermission('customers.read')
 export class CustomersController {
   constructor(
     private readonly registerCustomer: RegisterCustomerUseCase,
@@ -129,12 +130,14 @@ export class CustomersController {
   }
 
   @Post(':customerId/addresses')
+  @RequirePermission('customers.update')
   @ApiOperation({ summary: 'Agrega una dirección al comprador' })
   async addAddress(@Param('customerId') customerId: string, @Body() body: AddressRequestDto): Promise<CustomerOutput> {
     return this.unwrapAddressResult(await this.manageAddress.execute({ action: 'add', customerId, ...body }));
   }
 
   @Patch(':customerId/addresses/:addressId')
+  @RequirePermission('customers.update')
   @ApiOperation({ summary: 'Actualiza una dirección del comprador' })
   async updateAddress(
     @Param('customerId') customerId: string,
@@ -145,6 +148,7 @@ export class CustomersController {
   }
 
   @Delete(':customerId/addresses/:addressId')
+  @RequirePermission('customers.update')
   @ApiOperation({ summary: 'Elimina una dirección del comprador' })
   async removeAddress(@Param('customerId') customerId: string, @Param('addressId') addressId: string): Promise<CustomerOutput> {
     return this.unwrapAddressResult(await this.manageAddress.execute({ action: 'remove', customerId, addressId }));

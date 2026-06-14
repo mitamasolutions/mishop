@@ -7,7 +7,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateSalesChannelUseCase } from '../application/create-sales-channel/create-sales-channel.use-case';
 import { UpdateSalesChannelUseCase } from '../application/update-sales-channel/update-sales-channel.use-case';
 import { SetSalesChannelStatusUseCase } from '../application/set-sales-channel-status/set-sales-channel-status.use-case';
@@ -22,6 +22,7 @@ import { SetSalesChannelStatusRequestDto } from './dto/set-sales-channel-status.
 @ApiTags('catalog-sales-channels')
 @Controller('catalog/sales-channels')
 @NoStoreScope()
+@RequirePermission('sales-channels.read')
 export class SalesChannelsController {
   constructor(
     private readonly createChannel: CreateSalesChannelUseCase,
@@ -52,6 +53,7 @@ export class SalesChannelsController {
   }
 
   @Post()
+  @RequirePermission('sales-channels.create')
   @ApiOperation({ summary: 'Crea un canal de venta' })
   @ApiCreatedResponse({ description: 'Canal de venta creado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -67,6 +69,7 @@ export class SalesChannelsController {
   }
 
   @Patch(':id')
+  @RequirePermission('sales-channels.update')
   @ApiOperation({ summary: 'Actualiza un canal de venta' })
   @ApiOkResponse({ description: 'Canal de venta actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -88,6 +91,7 @@ export class SalesChannelsController {
   }
 
   @Patch(':id/status')
+  @RequirePermission('sales-channels.update')
   @ApiOperation({ summary: 'Activa o desactiva un canal de venta' })
   @ApiOkResponse({ description: 'Estado actualizado' })
   @ApiNotFoundResponse({ description: 'El canal de venta no existe' })

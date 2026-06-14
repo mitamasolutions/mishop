@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Headers, HttpCode, HttpException, HttpStatus, NotFoundException, Param, Post, Query, RawBodyRequest, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { NoStoreScope, Public } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, Public, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import {
   AuthorizePaymentUseCase,
   CapturePaymentUseCase,
@@ -25,13 +25,10 @@ class RefundPaymentRequestDto {
   amount!: number;
 }
 
-class MarkManualPaymentPaidRequestDto {
-  actorId!: string;
-}
-
 @ApiTags('payments')
 @Controller('payments')
 @NoStoreScope()
+@RequirePermission('payments.read')
 export class PaymentsController {
   constructor(
     private readonly listMethods: ListPaymentMethodsUseCase,
@@ -53,30 +50,38 @@ export class PaymentsController {
   }
 
   @Post('authorize')
+  @RequirePermission('payments.create')
   @ApiOperation({ summary: 'Crea un intento de pago y autoriza o captura según provider' })
   async authorize(@Body() body: AuthorizePaymentRequestDto): Promise<PaymentOutput> {
     return this.unwrap(await this.authorizePayment.execute(body));
   }
 
   @Post(':paymentId/capture')
+  @RequirePermission('payments.update')
   @ApiOperation({ summary: 'Captura un pago autorizado' })
   async capture(@Param('paymentId') paymentId: string): Promise<PaymentOutput> {
     return this.unwrap(await this.capturePayment.execute({ paymentId }));
   }
 
   @Post(':paymentId/void')
+  @RequirePermission('payments.update')
   @ApiOperation({ summary: 'Anula una autorización de pago' })
   async void(@Param('paymentId') paymentId: string): Promise<PaymentOutput> {
     return this.unwrap(await this.voidPayment.execute({ paymentId }));
   }
 
   @Post(':paymentId/manual-paid')
+  @RequirePermission('payments.update')
   @ApiOperation({ summary: 'Marca pago manual/efectivo como pagado' })
-  async manualPaid(@Param('paymentId') paymentId: string, @Body() body: MarkManualPaymentPaidRequestDto): Promise<PaymentOutput> {
-    return this.unwrap(await this.markManualPaid.execute({ paymentId, actorId: body.actorId }));
+  async manualPaid(
+    @Param('paymentId') paymentId: string,
+    @CurrentUser() user?: AuthenticatedUser,
+  ): Promise<PaymentOutput> {
+    return this.unwrap(await this.markManualPaid.execute({ paymentId, actorId: user?.id ?? '' }));
   }
 
   @Post(':paymentId/refunds')
+  @RequirePermission('payments.refund')
   @ApiOperation({ summary: 'Solicita reembolso total o parcial' })
   async refund(@Param('paymentId') paymentId: string, @Body() body: RefundPaymentRequestDto): Promise<PaymentOutput> {
     return this.unwrap(await this.refundPayment.execute({ paymentId, amount: body.amount }));

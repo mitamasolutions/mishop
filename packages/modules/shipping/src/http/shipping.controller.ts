@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, NotFoundException, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { NoStoreScope, Public } from '@mitama/contracts';
+import { NoStoreScope, Public, RequirePermission } from '@mitama/contracts';
 import { CalculateShippingRatesUseCase, CreateShipmentUseCase, UpdateShipmentStatusUseCase } from '../application/shipping-use-cases';
 import { ShipmentNotFoundError } from '../domain/errors';
 import type { ShippingAddress } from '../domain/shipping-method.entity';
@@ -45,6 +45,7 @@ export class ShippingController {
   }
 
   @Post('shipments')
+  @RequirePermission('shipments.create')
   @ApiOperation({ summary: 'Crea tracking de envío para una orden' })
   async create(@Body() body: CreateShipmentRequestDto) {
     const result = await this.createShipment.execute(body);
@@ -53,6 +54,7 @@ export class ShippingController {
   }
 
   @Post('shipments/:shipmentId/status')
+  @RequirePermission('shipments.update')
   @ApiOperation({ summary: 'Actualiza tracking y estado del envío' })
   async status(@Param('shipmentId') shipmentId: string, @Body() body: UpdateShipmentRequestDto) {
     const result = await this.updateShipment.execute({ shipmentId, status: body.status, trackingNumber: body.trackingNumber, carrier: body.carrier });

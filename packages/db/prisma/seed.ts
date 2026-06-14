@@ -18,16 +18,7 @@ const SUPER_ADMIN_EMAIL = 'admin@mitama.local';
 const SUPER_ADMIN_NAME = 'Super Admin';
 const DEMO_STORE_CODE = 'tienda-demo';
 
-const STORE_ADMIN_PERMISSIONS: Permission[] = [
-  'stores.read',
-  'stores.update',
-  'settings.read',
-  'settings.update',
-  'users.read',
-  'users.invite',
-  'users.update',
-  'activity-log.read',
-];
+const STORE_ADMIN_PERMISSIONS: Permission[] = [...PERMISSIONS];
 
 const OPERATOR_PERMISSIONS: Permission[] = ['stores.read', 'settings.read', 'activity-log.read', 'users.read'];
 

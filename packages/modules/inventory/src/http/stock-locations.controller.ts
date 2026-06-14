@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Post } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateStockLocationUseCase } from '../application/create-stock-location/create-stock-location.use-case';
 import { UpdateStockLocationUseCase } from '../application/update-stock-location/update-stock-location.use-case';
 import { SetStockLocationStatusUseCase } from '../application/set-stock-location-status/set-stock-location-status.use-case';
@@ -14,6 +14,7 @@ import { SetStockLocationStatusRequestDto } from './dto/set-stock-location-statu
 @ApiTags('inventory')
 @Controller('inventory/locations')
 @NoStoreScope()
+@RequirePermission('inventory.read')
 export class StockLocationsController {
   constructor(
     private readonly createLocation: CreateStockLocationUseCase,
@@ -31,6 +32,7 @@ export class StockLocationsController {
   }
 
   @Post()
+  @RequirePermission('inventory.create')
   @ApiOperation({ summary: 'Crea una ubicación de stock' })
   @ApiCreatedResponse({ description: 'Ubicación creada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -50,6 +52,7 @@ export class StockLocationsController {
   }
 
   @Patch(':id')
+  @RequirePermission('inventory.update')
   @ApiOperation({ summary: 'Actualiza una ubicación de stock' })
   @ApiOkResponse({ description: 'Ubicación actualizada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -71,6 +74,7 @@ export class StockLocationsController {
   }
 
   @Patch(':id/status')
+  @RequirePermission('inventory.update')
   @ApiOperation({ summary: 'Activa o desactiva una ubicación de stock' })
   @ApiOkResponse({ description: 'Estado actualizado' })
   @ApiNotFoundResponse({ description: 'La ubicación no existe' })

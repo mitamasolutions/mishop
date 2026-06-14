@@ -22,7 +22,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import {
   CreateValueTaxonomyUseCase,
   DeleteValueTaxonomyUseCase,
@@ -38,6 +38,7 @@ import { CATALOG_TOKENS } from '../catalog.tokens';
 @ApiTags('catalog-product-types')
 @Controller('catalog/product-types')
 @NoStoreScope()
+@RequirePermission('product-types.read')
 export class ProductTypesController {
   constructor(
     @Inject(CATALOG_TOKENS.createProductTypeUseCase) private readonly createUseCase: CreateValueTaxonomyUseCase,
@@ -68,6 +69,7 @@ export class ProductTypesController {
   }
 
   @Post()
+  @RequirePermission('product-types.create')
   @ApiOperation({ summary: 'Crea un tipo de producto' })
   @ApiCreatedResponse({ description: 'Tipo de producto creado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -88,6 +90,7 @@ export class ProductTypesController {
   }
 
   @Patch(':id')
+  @RequirePermission('product-types.update')
   @ApiOperation({ summary: 'Renombra un tipo de producto' })
   @ApiOkResponse({ description: 'Tipo de producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -113,6 +116,7 @@ export class ProductTypesController {
   }
 
   @Delete(':id')
+  @RequirePermission('product-types.delete')
   @HttpCode(204)
   @ApiOperation({ summary: 'Elimina un tipo de producto' })
   @ApiNoContentResponse({ description: 'Tipo de producto eliminado' })

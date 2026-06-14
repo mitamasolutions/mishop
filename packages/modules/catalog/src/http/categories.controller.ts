@@ -19,7 +19,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateCategoryUseCase } from '../application/create-category/create-category.use-case';
 import { UpdateCategoryUseCase } from '../application/update-category/update-category.use-case';
 import { MoveCategoryUseCase } from '../application/move-category/move-category.use-case';
@@ -35,6 +35,7 @@ import { MoveCategoryRequestDto } from './dto/move-category.request.dto';
 @ApiTags('catalog-categories')
 @Controller('catalog/categories')
 @NoStoreScope()
+@RequirePermission('categories.read')
 export class CategoriesController {
   constructor(
     private readonly createCategory: CreateCategoryUseCase,
@@ -66,6 +67,7 @@ export class CategoriesController {
   }
 
   @Post()
+  @RequirePermission('categories.create')
   @ApiOperation({ summary: 'Crea una categoría' })
   @ApiCreatedResponse({ description: 'Categoría creada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -90,6 +92,7 @@ export class CategoriesController {
   }
 
   @Patch(':id')
+  @RequirePermission('categories.update')
   @ApiOperation({ summary: 'Actualiza una categoría' })
   @ApiOkResponse({ description: 'Categoría actualizada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -115,6 +118,7 @@ export class CategoriesController {
   }
 
   @Patch(':id/move')
+  @RequirePermission('categories.update')
   @ApiOperation({ summary: 'Mueve una categoría en el árbol (drag & drop): cambia padre y/o rango' })
   @ApiOkResponse({ description: 'Categoría movida' })
   @ApiBadRequestResponse({ description: 'Padre inválido' })
@@ -136,6 +140,7 @@ export class CategoriesController {
   }
 
   @Delete(':id')
+  @RequirePermission('categories.delete')
   @ApiOperation({ summary: 'Elimina una categoría; sus hijos suben un nivel en el árbol' })
   @ApiOkResponse({ description: 'Categoría eliminada' })
   @ApiNotFoundResponse({ description: 'La categoría no existe' })

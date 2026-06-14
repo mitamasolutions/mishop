@@ -21,7 +21,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateProductUseCase } from '../application/create-product/create-product.use-case';
 import { UpdateProductUseCase } from '../application/update-product/update-product.use-case';
 import { DeleteProductUseCase } from '../application/delete-product/delete-product.use-case';
@@ -84,6 +84,7 @@ import { GetEffectivePriceRequestDto } from './dto/get-effective-price.request.d
 @ApiTags('catalog-products')
 @Controller('catalog/products')
 @NoStoreScope()
+@RequirePermission('products.read')
 export class ProductsController {
   constructor(
     private readonly createProduct: CreateProductUseCase,
@@ -144,6 +145,7 @@ export class ProductsController {
   }
 
   @Post()
+  @RequirePermission('products.create')
   @ApiOperation({ summary: 'Crea un producto (siempre con al menos una variante)' })
   @ApiCreatedResponse({ description: 'Producto creado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -160,6 +162,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Actualiza los datos generales de un producto' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -178,6 +181,7 @@ export class ProductsController {
   }
 
   @Patch(':id/status')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Cambia el estado de publicación de un producto' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiNotFoundResponse({ description: 'El producto no existe' })
@@ -194,6 +198,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @RequirePermission('products.delete')
   @ApiOperation({ summary: 'Elimina (baja lógica) un producto' })
   @ApiOkResponse({ description: 'Producto eliminado' })
   @ApiNotFoundResponse({ description: 'El producto no existe' })
@@ -208,6 +213,7 @@ export class ProductsController {
   // ----- Opciones -----
 
   @Post(':id/options')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Agrega una opción de variante (ej. "Talla") con sus valores iniciales' })
   @ApiCreatedResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -225,6 +231,7 @@ export class ProductsController {
   }
 
   @Patch(':id/options/:optionId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Actualiza el título de una opción' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -248,6 +255,7 @@ export class ProductsController {
   }
 
   @Delete(':id/options/:optionId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Elimina una opción y limpia las referencias en las variantes existentes' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiNotFoundResponse({ description: 'El producto o la opción no existen' })
@@ -264,6 +272,7 @@ export class ProductsController {
   }
 
   @Post(':id/options/:optionId/values')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Agrega un valor a una opción' })
   @ApiCreatedResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -287,6 +296,7 @@ export class ProductsController {
   }
 
   @Delete(':id/options/:optionId/values/:valueId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Elimina un valor de opción y lo quita de las variantes que lo referencien' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiNotFoundResponse({ description: 'El producto, la opción o el valor no existen' })
@@ -311,6 +321,7 @@ export class ProductsController {
   // ----- Variantes -----
 
   @Post(':id/variants')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Agrega una variante (SKU único, opcionalmente ligada a una combinación de opciones)' })
   @ApiCreatedResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos o combinación de opciones inválida' })
@@ -329,6 +340,7 @@ export class ProductsController {
   }
 
   @Patch(':id/variants/:variantId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Actualiza una variante' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos o combinación de opciones inválida' })
@@ -353,6 +365,7 @@ export class ProductsController {
   }
 
   @Delete(':id/variants/:variantId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Elimina una variante (no permitido si es la única del producto)' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiConflictResponse({ description: 'Un producto debe tener al menos una variante' })
@@ -372,6 +385,7 @@ export class ProductsController {
   // ----- Precios -----
 
   @Put(':id/variants/:variantId/prices/base')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Crea o actualiza el precio base de una variante en una moneda' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -395,6 +409,7 @@ export class ProductsController {
   }
 
   @Post(':id/variants/:variantId/prices/tiers')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Agrega un precio por cantidad (tier price) a una variante' })
   @ApiCreatedResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos o rango de cantidades inválido' })
@@ -418,6 +433,7 @@ export class ProductsController {
   }
 
   @Patch(':id/variants/:variantId/prices/tiers/:priceId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Actualiza un precio por cantidad (tier price) de una variante' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos o rango de cantidades inválido' })
@@ -443,6 +459,7 @@ export class ProductsController {
   }
 
   @Delete(':id/variants/:variantId/prices/tiers/:priceId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Elimina un precio por cantidad (tier price) de una variante' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiNotFoundResponse({ description: 'El producto, la variante o el precio no existen' })
@@ -486,6 +503,7 @@ export class ProductsController {
   // ----- Especificaciones -----
 
   @Post(':id/specifications')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Agrega un atributo de especificación descriptivo' })
   @ApiCreatedResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -503,6 +521,7 @@ export class ProductsController {
   }
 
   @Patch(':id/specifications/:specificationId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Actualiza un atributo de especificación' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -526,6 +545,7 @@ export class ProductsController {
   }
 
   @Delete(':id/specifications/:specificationId')
+  @RequirePermission('products.update')
   @ApiOperation({ summary: 'Elimina un atributo de especificación' })
   @ApiOkResponse({ description: 'Producto actualizado' })
   @ApiNotFoundResponse({ description: 'El producto o la especificación no existen' })

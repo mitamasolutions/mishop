@@ -8,7 +8,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateInventoryItemUseCase } from '../application/create-inventory-item/create-inventory-item.use-case';
 import { UpdateInventoryItemUseCase } from '../application/update-inventory-item/update-inventory-item.use-case';
 import { GetInventoryItemUseCase } from '../application/get-inventory-item/get-inventory-item.use-case';
@@ -31,6 +31,7 @@ import { SetInventoryLevelRequestDto } from './dto/set-inventory-level.request.d
 @ApiTags('inventory')
 @Controller('inventory/items')
 @NoStoreScope()
+@RequirePermission('inventory.read')
 export class InventoryItemsController {
   constructor(
     private readonly createItem: CreateInventoryItemUseCase,
@@ -75,6 +76,7 @@ export class InventoryItemsController {
   }
 
   @Post()
+  @RequirePermission('inventory.create')
   @ApiOperation({ summary: 'Crea un ítem de inventario' })
   @ApiCreatedResponse({ description: 'Ítem de inventario creado' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -95,6 +97,7 @@ export class InventoryItemsController {
   }
 
   @Patch(':id')
+  @RequirePermission('inventory.update')
   @ApiOperation({ summary: 'Actualiza un ítem de inventario' })
   @ApiOkResponse({ description: 'Ítem de inventario actualizado' })
   @ApiNotFoundResponse({ description: 'El ítem de inventario no existe' })
@@ -116,6 +119,7 @@ export class InventoryItemsController {
   }
 
   @Put(':id/levels/:locationId')
+  @RequirePermission('inventory.update')
   @ApiOperation({ summary: 'Establece el nivel de inventario de un ítem en una ubicación' })
   @ApiOkResponse({ description: 'Nivel de inventario actualizado' })
   @ApiBadRequestResponse({ description: 'Cantidad inválida' })
@@ -144,6 +148,7 @@ export class InventoryItemsController {
   }
 
   @Delete(':id/levels/:locationId')
+  @RequirePermission('inventory.delete')
   @ApiOperation({ summary: 'Elimina el nivel de inventario de un ítem en una ubicación' })
   @ApiOkResponse({ description: 'Nivel de inventario eliminado' })
   @ApiNotFoundResponse({ description: 'El ítem de inventario o el nivel no existen' })

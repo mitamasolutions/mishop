@@ -8,7 +8,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateStoreUseCase } from '../application/create-store/create-store.use-case';
 import { UpdateStoreUseCase } from '../application/update-store/update-store.use-case';
 import { SetStoreStatusUseCase } from '../application/set-store-status/set-store-status.use-case';
@@ -23,6 +23,7 @@ import { SetStoreStatusRequestDto } from './dto/set-store-status.request.dto';
 @ApiTags('stores')
 @Controller('stores')
 @NoStoreScope()
+@RequirePermission('stores.read')
 export class StoresController {
   constructor(
     private readonly createStore: CreateStoreUseCase,
@@ -53,6 +54,7 @@ export class StoresController {
   }
 
   @Post()
+  @RequirePermission('stores.create')
   @ApiOperation({ summary: 'Crea una tienda' })
   @ApiCreatedResponse({ description: 'Tienda creada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -77,6 +79,7 @@ export class StoresController {
   }
 
   @Patch(':id')
+  @RequirePermission('stores.update')
   @ApiOperation({ summary: 'Actualiza una tienda' })
   @ApiOkResponse({ description: 'Tienda actualizada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -98,6 +101,7 @@ export class StoresController {
   }
 
   @Patch(':id/status')
+  @RequirePermission('stores.update')
   @ApiOperation({ summary: 'Activa o desactiva una tienda' })
   @ApiOkResponse({ description: 'Estado actualizado' })
   @ApiNotFoundResponse({ description: 'La tienda no existe' })

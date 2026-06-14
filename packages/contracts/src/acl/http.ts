@@ -13,6 +13,11 @@ export const IS_PUBLIC_KEY = 'mitama:is-public';
 /** La ruta no requiere access token (login, refresh, reference-data, etc). */
 export const Public = (): MethodDecorator & ClassDecorator => SetMetadata(IS_PUBLIC_KEY, true);
 
+export const ALLOW_AUTHENTICATED_KEY = 'mitama:allow-authenticated';
+/** La ruta solo requiere una sesión válida, sin permiso granular. */
+export const AllowAuthenticated = (): MethodDecorator & ClassDecorator =>
+  SetMetadata(ALLOW_AUTHENTICATED_KEY, true);
+
 export const NO_STORE_SCOPE_KEY = 'mitama:no-store-scope';
 /** La ruta no requiere `X-Store-Id` (gestión global de usuarios/roles/tiendas). */
 export const NoStoreScope = (): MethodDecorator & ClassDecorator =>
@@ -20,7 +25,7 @@ export const NoStoreScope = (): MethodDecorator & ClassDecorator =>
 
 export const REQUIRE_PERMISSION_KEY = 'mitama:require-permission';
 /** La ruta exige el permiso indicado en la tienda activa (o Super Admin). */
-export const RequirePermission = (permission: Permission): MethodDecorator =>
+export const RequirePermission = (permission: Permission): MethodDecorator & ClassDecorator =>
   SetMetadata(REQUIRE_PERMISSION_KEY, permission);
 
 /** Permisos efectivos de un usuario en una tienda (rol predefinido o personalizado). */

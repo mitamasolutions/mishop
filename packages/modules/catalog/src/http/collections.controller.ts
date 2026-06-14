@@ -18,7 +18,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, type AuthenticatedUser } from '@mitama/contracts';
+import { CurrentUser, NoStoreScope, RequirePermission, type AuthenticatedUser } from '@mitama/contracts';
 import { CreateCollectionUseCase } from '../application/create-collection/create-collection.use-case';
 import { UpdateCollectionUseCase } from '../application/update-collection/update-collection.use-case';
 import { ListCollectionsUseCase } from '../application/list-collections/list-collections.use-case';
@@ -31,6 +31,7 @@ import { UpdateCollectionRequestDto } from './dto/update-collection.request.dto'
 @ApiTags('catalog-collections')
 @Controller('catalog/collections')
 @NoStoreScope()
+@RequirePermission('collections.read')
 export class CollectionsController {
   constructor(
     private readonly createCollection: CreateCollectionUseCase,
@@ -60,6 +61,7 @@ export class CollectionsController {
   }
 
   @Post()
+  @RequirePermission('collections.create')
   @ApiOperation({ summary: 'Crea una colección' })
   @ApiCreatedResponse({ description: 'Colección creada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
@@ -80,6 +82,7 @@ export class CollectionsController {
   }
 
   @Patch(':id')
+  @RequirePermission('collections.update')
   @ApiOperation({ summary: 'Actualiza una colección' })
   @ApiOkResponse({ description: 'Colección actualizada' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })

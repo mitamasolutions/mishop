@@ -11,7 +11,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import { CurrentUser, NoStoreScope, Public, type AuthenticatedUser } from '@mitama/contracts';
+import { AllowAuthenticated, CurrentUser, NoStoreScope, Public, type AuthenticatedUser } from '@mitama/contracts';
 import { LoginUseCase } from '../application/login/login.use-case';
 import { RefreshSessionUseCase } from '../application/refresh-session/refresh-session.use-case';
 import { LogoutUseCase } from '../application/logout/logout.use-case';
@@ -86,6 +86,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @AllowAuthenticated()
   @HttpCode(204)
   @ApiOperation({ summary: 'Cierra la sesión, revocando la familia del refresh token' })
   @ApiOkResponse({ description: 'Sesión cerrada' })
@@ -143,6 +144,7 @@ export class AuthController {
   }
 
   @Post('change-password')
+  @AllowAuthenticated()
   @HttpCode(204)
   @ApiOperation({ summary: 'Cambia la contraseña del usuario autenticado' })
   @ApiOkResponse({ description: 'Contraseña actualizada' })

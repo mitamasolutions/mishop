@@ -1,5 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, Get, Headers, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { RequirePermission } from '@mitama/contracts';
 import { IsArray, IsBoolean, IsIn, IsNumber, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
 import { CouponNotApplicableError, CouponNotFoundError, DiscountNotFoundError, NewsletterSubscriptionNotFoundError, PromotionValidationError, RewardProgramNotConfiguredError, TooManyCouponsError } from '../domain/errors';
 import type { DiscountScope, DiscountType, NewsletterStatus } from '../domain/promotion.models';
@@ -69,6 +70,7 @@ class RewardConfigDto {
 
 @ApiTags('promotions')
 @Controller('promotions')
+@RequirePermission('promotions.read')
 export class PromotionsController {
   constructor(
     private readonly createDiscount: CreateDiscountUseCase,
@@ -86,6 +88,7 @@ export class PromotionsController {
   ) {}
 
   @Post('discounts')
+  @RequirePermission('promotions.create')
   @ApiOperation({ summary: 'Crea un descuento' })
   async discount(@Body() body: CreateDiscountRequestDto) {
     const result = await this.createDiscount.execute({ ...body, maxDiscountAmount: body.maxDiscountAmount ?? null, startsAt: body.startsAt ? new Date(body.startsAt) : null, endsAt: body.endsAt ? new Date(body.endsAt) : null, conditions: body.conditions ?? {} });
@@ -94,6 +97,7 @@ export class PromotionsController {
   }
 
   @Post('coupons')
+  @RequirePermission('promotions.create')
   @ApiOperation({ summary: 'Crea un cupón normalizado' })
   async coupon(@Body() body: CreateCouponRequestDto) {
     const result = await this.createCoupon.execute(toCouponInput(body));
@@ -102,6 +106,7 @@ export class PromotionsController {
   }
 
   @Post('coupons/bulk')
+  @RequirePermission('promotions.create')
   @ApiOperation({ summary: 'Genera cupones masivos de un solo uso' })
   async bulkCoupons(@Body() body: GenerateCouponsRequestDto) {
     const result = await this.generateCoupons.execute({ ...toCouponInput(body), quantity: body.quantity });
@@ -110,6 +115,7 @@ export class PromotionsController {
   }
 
   @Post('preview')
+  @RequirePermission('promotions.read')
   @ApiOperation({ summary: 'Evalúa descuentos sin consumir cupones' })
   async preview(@Body() body: PreviewRequestDto) {
     const result = await this.previewPromotions.execute(body);
@@ -118,6 +124,7 @@ export class PromotionsController {
   }
 
   @Post('redeem-coupon')
+  @RequirePermission('promotions.redeem')
   @ApiOperation({ summary: 'Consume cupón de forma idempotente' })
   async redeem(@Body() body: PreviewRequestDto, @Headers('idempotency-key') idempotencyKey?: string) {
     if (!idempotencyKey) throw new BadRequestException('El header Idempotency-Key es obligatorio');
@@ -127,6 +134,7 @@ export class PromotionsController {
   }
 
   @Post('reward-program')
+  @RequirePermission('promotions.update')
   async rewardProgram(@Body() body: RewardConfigDto) {
     const result = await this.configureRewards.execute({ ...body, maxRedeemPercent: body.maxRedeemPercent ?? null, expiresAfterDays: body.expiresAfterDays ?? null });
     if (result.isErr()) throw new BadRequestException(result.error.message);
@@ -134,6 +142,7 @@ export class PromotionsController {
   }
 
   @Post('reward-points/accrue')
+  @RequirePermission('promotions.update')
   async accrue(@Body() body: { storeId: string; customerId: string; orderId: string; paidAmount: number }, @Headers('idempotency-key') idempotencyKey?: string) {
     if (!idempotencyKey) throw new BadRequestException('El header Idempotency-Key es obligatorio');
     const result = await this.accrueRewards.execute({ ...body, idempotencyKey });
@@ -142,11 +151,13 @@ export class PromotionsController {
   }
 
   @Post('reward-points/reverse')
+  @RequirePermission('promotions.update')
   async reversePoints(@Body() body: { storeId: string; customerId: string; orderId: string; points: number }) {
     return (await this.reverseRewards.execute(body)).unwrapOr({ points: 0 });
   }
 
   @Post('newsletter/subscribe')
+  @RequirePermission('promotions.create')
   async subscribe(@Body() body: { storeId: string; email: string }) {
     const result = await this.subscribeNewsletter.execute(body);
     if (result.isErr()) throw new BadRequestException('No se pudo crear la suscripción');
@@ -154,6 +165,7 @@ export class PromotionsController {
   }
 
   @Post('newsletter/confirm/:token')
+  @RequirePermission('promotions.update')
   async confirm(@Param('token') token: string) {
     const result = await this.confirmNewsletter.execute({ token });
     if (result.isErr()) return this.handleError(result.error);
@@ -161,6 +173,7 @@ export class PromotionsController {
   }
 
   @Post('newsletter/unsubscribe')
+  @RequirePermission('promotions.update')
   async unsubscribe(@Body() body: { storeId: string; email: string }) {
     const result = await this.unsubscribeNewsletter.execute(body);
     if (result.isErr()) return this.handleError(result.error);

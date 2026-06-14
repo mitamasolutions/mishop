@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Public, RequirePermission } from '@mitama/contracts';
 import { DuplicateReviewError, ReviewNotEditableError, ReviewNotFoundError, ReviewValidationError, VerifiedPurchaseRequiredError } from '../domain/errors';
 import type { ReviewStatus } from '../domain/review.models';
 import { CreateReviewUseCase, EditPendingReviewUseCase, GetProductRatingUseCase, ListProductReviewsUseCase, ModerateReviewUseCase } from '../application/review-use-cases';
@@ -30,6 +31,7 @@ class ModerateReviewRequestDto {
 
 @ApiTags('reviews')
 @Controller('reviews')
+@RequirePermission('reviews.read')
 export class ReviewsController {
   constructor(
     private readonly createReview: CreateReviewUseCase,
@@ -40,6 +42,7 @@ export class ReviewsController {
   ) {}
 
   @Post()
+  @RequirePermission('reviews.create')
   @ApiOperation({ summary: 'Crea review pendiente para compra verificada' })
   async create(@Body() body: CreateReviewRequestDto) {
     const result = await this.createReview.execute(body);
@@ -48,6 +51,7 @@ export class ReviewsController {
   }
 
   @Patch(':id')
+  @RequirePermission('reviews.update')
   @ApiOperation({ summary: 'Edita una review mientras está pendiente' })
   async edit(@Param('id') id: string, @Body() body: EditReviewRequestDto) {
     const result = await this.editReview.execute({ id, ...body });
@@ -56,6 +60,7 @@ export class ReviewsController {
   }
 
   @Post(':id/moderate')
+  @RequirePermission('reviews.moderate')
   @ApiOperation({ summary: 'Aprueba o rechaza una review' })
   async moderate(@Param('id') id: string, @Body() body: ModerateReviewRequestDto) {
     const result = await this.moderateReview.execute({ id, ...body });
@@ -64,11 +69,13 @@ export class ReviewsController {
   }
 
   @Get('products/:productId')
+  @Public()
   async list(@Param('productId') productId: string, @Query('storeId') storeId: string, @Query('status') status?: ReviewStatus) {
     return (await this.listReviews.execute({ storeId, productId, status })).unwrapOr([]);
   }
 
   @Get('products/:productId/rating')
+  @Public()
   async rating(@Param('productId') productId: string, @Query('storeId') storeId: string) {
     return (await this.getRating.execute({ storeId, productId })).unwrapOr({ storeId, productId, averageRating: 0, reviewCount: 0 });
   }
