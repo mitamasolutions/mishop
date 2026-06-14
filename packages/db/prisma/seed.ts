@@ -31,9 +31,17 @@ const STORE_ADMIN_PERMISSIONS: Permission[] = [
 
 const OPERATOR_PERMISSIONS: Permission[] = ['stores.read', 'settings.read', 'activity-log.read', 'users.read'];
 
+const TAX_RULES = [
+  { regionId: 'mexico', category: 'standard', rate: '0.16' },
+  { regionId: 'mexico', category: 'zero', rate: '0' },
+  { regionId: 'mexico', category: 'exempt', rate: '0' },
+];
+
 const PAYMENT_PROVIDERS = [
   { code: 'stripe', name: 'Stripe' },
   { code: 'mercado-pago', name: 'MercadoPago' },
+  { code: 'manual', name: 'Transferencia manual' },
+  { code: 'cash', name: 'Efectivo' },
   { code: 'paypal', name: 'PayPal' },
   { code: 'transferencia', name: 'Transferencia bancaria' },
   { code: 'efectivo', name: 'Efectivo (contra entrega)' },
@@ -109,6 +117,14 @@ async function seedReferenceData(): Promise<void> {
       update: { name: provider.name },
     });
   }
+
+  for (const rule of TAX_RULES) {
+    await prisma.taxRule.upsert({
+      where: { regionId_category: { regionId: rule.regionId, category: rule.category } },
+      create: rule,
+      update: { rate: rule.rate },
+    });
+  }
 }
 
 async function seedRoles(): Promise<{ superAdmin: { id: string } }> {
@@ -159,7 +175,7 @@ async function seedSuperAdminUser(superAdminRoleId: string): Promise<void> {
   }
 }
 
-async function seedDemoStore(): Promise<void> {
+async function seedDemoStore(): Promise<{ id: string }> {
   const data: Prisma.StoreCreateInput = {
     code: DEMO_STORE_CODE,
     name: 'Tienda Demo',
@@ -168,10 +184,39 @@ async function seedDemoStore(): Promise<void> {
     isActive: true,
   };
 
-  await prisma.store.upsert({
+  const store = await prisma.store.upsert({
     where: { code: DEMO_STORE_CODE },
     create: data,
     update: { name: data.name, isActive: true },
+  });
+  await seedStoreCheckoutSettings(store.id);
+  return { id: store.id };
+}
+
+async function seedStoreCheckoutSettings(storeId: string): Promise<void> {
+  for (const method of [
+    { providerCode: 'stripe', displayName: 'Stripe', captureMode: 'automatic' },
+    { providerCode: 'mercado-pago', displayName: 'Mercado Pago', captureMode: 'automatic' },
+    { providerCode: 'manual', displayName: 'Transferencia bancaria', captureMode: 'manual' },
+    { providerCode: 'cash', displayName: 'Efectivo', captureMode: 'manual' },
+  ]) {
+    await prisma.storePaymentMethod.upsert({
+      where: { storeId_providerCode: { storeId, providerCode: method.providerCode } },
+      create: { storeId, providerCode: method.providerCode, displayName: method.displayName, captureMode: method.captureMode, enabled: true },
+      update: { displayName: method.displayName, captureMode: method.captureMode, enabled: true },
+    });
+  }
+
+  await prisma.storeShippingMethod.upsert({
+    where: { id: `${storeId}-pickup` },
+    create: { id: `${storeId}-pickup`, storeId, providerCode: 'default', name: 'Pickup en tienda', enabled: true, strategy: 'pickup', baseAmount: 0 },
+    update: { name: 'Pickup en tienda', enabled: true, strategy: 'pickup', baseAmount: 0 },
+  });
+
+  await prisma.storeTaxSetting.upsert({
+    where: { storeId },
+    create: { storeId, regionId: 'mexico', providerCode: 'mx-iva', pricesIncludeTax: false },
+    update: { regionId: 'mexico', providerCode: 'mx-iva' },
   });
 }
 

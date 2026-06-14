@@ -1,0 +1,24 @@
+// Módulo taxes: reglas fiscales por región/categoría y configuración por tienda.
+
+model TaxRule {
+  id        String   @id @default(uuid())
+  regionId  String   @map("region_id")
+  category  String
+  rate      Decimal  @db.Decimal(5, 4)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([regionId, category])
+  @@map("tax_rules")
+}
+
+model StoreTaxSetting {
+  storeId          String   @id @map("store_id")
+  regionId         String   @map("region_id")
+  providerCode     String   @default("mx-iva") @map("provider_code")
+  pricesIncludeTax Boolean  @default(false) @map("prices_include_tax")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("store_tax_settings")
+}

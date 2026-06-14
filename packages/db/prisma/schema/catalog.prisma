@@ -23,6 +23,7 @@ model Product {
   thumbnail   String?
   isGiftcard  Boolean       @default(false) @map("is_giftcard")
   discountable Boolean      @default(true)
+  taxCategory  String       @default("standard") @map("tax_category")
 
   // Dimensiones físicas (para envío y POS)
   weight   Float?
@@ -225,6 +226,7 @@ model ProductVariant {
   allowBackorder  Boolean  @default(false) @map("allow_backorder")
   manageInventory Boolean  @default(true) @map("manage_inventory")
   lowStockThreshold Int?   @map("low_stock_threshold")
+  taxCategory       String? @map("tax_category")
 
   // Precio base y costo (la moneda activa de la plataforma en esta fase).
   // El esquema multi-moneda completo vive en PriceSet/Price.

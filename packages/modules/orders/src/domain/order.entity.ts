@@ -3,7 +3,7 @@ import { CompletedOrderCannotBeCancelledError, InvalidOrderStateTransitionError,
 import type { CheckoutCartSnapshot } from './checkout-cart';
 
 export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
-export type OrderPaymentStatus = 'pending' | 'authorized' | 'paid' | 'refunded' | 'failed';
+export type OrderPaymentStatus = 'pending' | 'authorized' | 'paid' | 'partially_refunded' | 'refunded' | 'failed' | 'voided' | 'cancelled';
 
 export interface OrderLineProps {
   id: string;
@@ -70,10 +70,13 @@ const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 };
 
 const PAYMENT_TRANSITIONS: Record<OrderPaymentStatus, OrderPaymentStatus[]> = {
-  pending: ['authorized', 'failed'],
-  authorized: ['paid', 'failed'],
-  paid: ['refunded'],
+  pending: ['authorized', 'paid', 'failed', 'cancelled'],
+  authorized: ['paid', 'failed', 'voided', 'cancelled'],
+  paid: ['partially_refunded', 'refunded', 'failed'],
+  partially_refunded: ['refunded'],
   refunded: [],
+  voided: [],
+  cancelled: [],
   failed: [],
 };
 
@@ -156,7 +159,8 @@ export class Order extends Entity<OrderProps> {
     this.props.updatedAt = new Date();
   }
 
-  transitionPayment(to: OrderPaymentStatus, actorId: string | null, reason: string | null): void {
+  transitionPayment(to: OrderPaymentStatus, actorId: string | null, reason: string | null): boolean {
+    if (this.props.paymentStatus === to) return false;
     if (!PAYMENT_TRANSITIONS[this.props.paymentStatus].includes(to)) throw new InvalidPaymentStateTransitionError(this.props.paymentStatus, to);
     this.recordTransition('payment', this.props.paymentStatus, to, actorId, reason);
     this.props.paymentStatus = to;
@@ -165,6 +169,7 @@ export class Order extends Entity<OrderProps> {
       this.props.status = 'confirmed';
     }
     this.props.updatedAt = new Date();
+    return true;
   }
 
   cancel(actorId: string | null, reason: string | null): void {

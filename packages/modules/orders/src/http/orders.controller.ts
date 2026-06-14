@@ -50,8 +50,8 @@ class ListOrdersQueryDto {
   status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
   @IsOptional()
-  @IsIn(['pending', 'authorized', 'paid', 'refunded', 'failed'])
-  paymentStatus?: 'pending' | 'authorized' | 'paid' | 'refunded' | 'failed';
+  @IsIn(['pending', 'authorized', 'paid', 'partially_refunded', 'refunded', 'failed', 'voided', 'cancelled'])
+  paymentStatus?: 'pending' | 'authorized' | 'paid' | 'partially_refunded' | 'refunded' | 'failed' | 'voided' | 'cancelled';
 
   @IsOptional()
   @IsString()

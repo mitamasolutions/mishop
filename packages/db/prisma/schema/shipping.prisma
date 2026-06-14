@@ -1,0 +1,42 @@
+// Módulo shipping: métodos por tienda, zonas aplicables y tracking manual.
+
+model StoreShippingMethod {
+  id             String   @id @default(uuid())
+  storeId        String   @map("store_id")
+  providerCode   String   @default("default") @map("provider_code")
+  name           String
+  enabled        Boolean  @default(true)
+  strategy       String
+  baseAmount     Decimal  @default(0) @map("base_amount") @db.Decimal(12, 2)
+  perKgAmount    Decimal  @default(0) @map("per_kg_amount") @db.Decimal(12, 2)
+  freeOverAmount Decimal? @map("free_over_amount") @db.Decimal(12, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  zones StoreShippingMethodZone[]
+
+  @@index([storeId, enabled])
+  @@map("store_shipping_methods")
+}
+
+model StoreShippingMethodZone {
+  methodId String @map("method_id")
+  method   StoreShippingMethod @relation(fields: [methodId], references: [id], onDelete: Cascade)
+  zoneId   String @map("zone_id")
+
+  @@id([methodId, zoneId])
+  @@map("store_shipping_method_zones")
+}
+
+model Shipment {
+  id             String   @id @default(uuid())
+  orderId        String   @map("order_id")
+  trackingNumber String?  @map("tracking_number")
+  carrier        String?
+  status         String   @default("pending")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([orderId])
+  @@map("shipments")
+}

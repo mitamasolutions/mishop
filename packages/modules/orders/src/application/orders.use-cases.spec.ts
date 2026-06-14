@@ -3,6 +3,7 @@ import { InMemoryEventBus } from '@mitama/core';
 import { InMemoryCheckoutCartReader } from '../infra/in-memory-checkout-cart.reader';
 import { InMemoryOrderRepository } from '../infra/in-memory-order.repository';
 import { InMemoryStockReservationService } from '../infra/in-memory-stock-reservation.service';
+import { PaymentEventsHandler } from '../infra/payment-events.handler';
 import type { EmailQueue } from '../domain/email-queue';
 import { IdempotencyConflictError } from '../domain/errors';
 import { CancelOrderUseCase, ChangePaymentStateUseCase, CreateOrderUseCase } from './order-use-cases';
@@ -59,12 +60,10 @@ describe('orders use cases', () => {
     const order = (await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' })).value;
     const paid = await ctx.payment.execute({ orderId: order.id, to: 'paid' });
 
-    expect(paid.isErr()).toBe(true);
-    await ctx.payment.execute({ orderId: order.id, to: 'authorized' });
-    const captured = await ctx.payment.execute({ orderId: order.id, to: 'paid' });
-    expect(captured.isOk()).toBe(true);
+    expect(paid.isOk()).toBe(true);
+    const staleAuthorization = await ctx.payment.execute({ orderId: order.id, to: 'authorized' });
+    expect(staleAuthorization.isErr()).toBe(true);
     expect(ctx.events).toContain('order.created');
-    expect(ctx.events).toContain('payment.authorized');
     expect(ctx.events).toContain('payment.paid');
   });
 
@@ -85,6 +84,21 @@ describe('orders use cases', () => {
     if (winner) await ctx.cancel.execute({ orderId: winner.id, reason: 'test' });
     expect(ctx.stock.available.get('loc-1:v1')).toBe(1);
   });
+
+  it('no duplica correo cuando llega dos veces el mismo evento de pago', async () => {
+    const ctx = context();
+    ctx.stock.available.set('loc-1:v1', 2);
+    ctx.carts.carts.set('cart-1', readyCart('cart-1'));
+    const order = (await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' })).value;
+    new PaymentEventsHandler(ctx.bus, ctx.orders, ctx.email).onModuleInit();
+
+    await ctx.bus.publish({ name: 'payment.paid', occurredAt: new Date(), payload: { orderId: order.id } });
+    await ctx.bus.publish({ name: 'payment.paid', occurredAt: new Date(), payload: { orderId: order.id } });
+    const stored = await ctx.orders.findById(order.id);
+
+    expect(stored?.transitionPayment('paid', null, 'sin cambio')).toBe(false);
+    expect(ctx.email.jobs.filter((job) => job === 'payment.paid')).toHaveLength(1);
+  });
 });
 
 function context() {
@@ -101,6 +115,9 @@ function context() {
   return {
     carts,
     stock,
+    bus,
+    email,
+    orders,
     events,
     create: new CreateOrderUseCase(orders, carts, stock, bus, email),
     payment: new ChangePaymentStateUseCase(orders, bus, email),

@@ -22,6 +22,8 @@ import { PrismaCheckoutCartReader } from './infra/prisma-checkout-cart.reader';
 import { PrismaEmailQueue } from './infra/prisma-email-queue';
 import { PrismaOrderRepository } from './infra/prisma-order.repository';
 import { PrismaStockReservationService } from './infra/prisma-stock-reservation.service';
+import { PaymentEventsHandler } from './infra/payment-events.handler';
+import { ShipmentEventsHandler } from './infra/shipment-events.handler';
 import { OrdersController } from './http/orders.controller';
 
 @Module({
@@ -31,6 +33,16 @@ import { OrdersController } from './http/orders.controller';
     { provide: ORDERS_TOKENS.checkoutCartReader, useClass: PrismaCheckoutCartReader },
     { provide: ORDERS_TOKENS.stockReservationService, useClass: PrismaStockReservationService },
     { provide: ORDERS_TOKENS.emailQueue, useClass: PrismaEmailQueue },
+    {
+      provide: PaymentEventsHandler,
+      useFactory: (eventBus: EventBus, orders: OrderRepository, email: EmailQueue) => new PaymentEventsHandler(eventBus, orders, email),
+      inject: [EVENT_BUS, ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue],
+    },
+    {
+      provide: ShipmentEventsHandler,
+      useFactory: (eventBus: EventBus, email: EmailQueue) => new ShipmentEventsHandler(eventBus, email),
+      inject: [EVENT_BUS, ORDERS_TOKENS.emailQueue],
+    },
     {
       provide: CreateOrderUseCase,
       useFactory: (orders: OrderRepository, carts: CheckoutCartReader, stock: StockReservationService, eventBus: EventBus, email: EmailQueue) =>

@@ -1,0 +1,83 @@
+// Módulo payments: intentos de pago, métodos por tienda, webhooks e historial.
+
+model StorePaymentMethod {
+  id                   String   @id @default(uuid())
+  storeId              String   @map("store_id")
+  providerCode         String   @map("provider_code")
+  displayName          String   @map("display_name")
+  enabled              Boolean  @default(true)
+  encryptedCredentials String?  @map("encrypted_credentials")
+  webhookSecret        String?  @map("webhook_secret")
+  captureMode          String   @default("automatic") @map("capture_mode")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@unique([storeId, providerCode])
+  @@index([storeId, enabled])
+  @@map("store_payment_methods")
+}
+
+model Payment {
+  id                  String   @id @default(uuid())
+  storeId             String   @map("store_id")
+  orderId             String   @map("order_id")
+  providerCode        String   @map("provider_code")
+  amount              Decimal  @db.Decimal(12, 2)
+  currency            String
+  status              String   @default("pending")
+  providerReference   String?  @map("provider_reference")
+  lastProviderEventAt DateTime? @map("last_provider_event_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  transitions PaymentTransition[]
+  refunds     PaymentRefund[]
+
+  @@index([storeId, orderId])
+  @@index([providerCode, providerReference])
+  @@map("payments")
+}
+
+model PaymentTransition {
+  id        String   @id @default(uuid())
+  paymentId String   @map("payment_id")
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  from      String
+  to        String
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([paymentId])
+  @@map("payment_transitions")
+}
+
+model PaymentRefund {
+  id                String   @id @default(uuid())
+  paymentId         String   @map("payment_id")
+  payment           Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount            Decimal  @db.Decimal(12, 2)
+  status            String   @default("pending")
+  providerReference String?  @map("provider_reference")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([paymentId])
+  @@map("payment_refunds")
+}
+
+model PaymentWebhookEvent {
+  id           String    @id @default(uuid())
+  providerCode String    @map("provider_code")
+  eventId      String    @map("event_id")
+  rawBody      String    @map("raw_body")
+  status       String    @default("received")
+  attempts     Int       @default(0)
+  maxAttempts  Int       @default(5) @map("max_attempts")
+  lastError    String?   @map("last_error")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  processedAt  DateTime? @map("processed_at")
+
+  @@unique([providerCode, eventId])
+  @@index([status, createdAt])
+  @@map("payment_webhook_events")
+}

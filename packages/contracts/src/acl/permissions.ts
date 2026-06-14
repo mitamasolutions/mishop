@@ -62,6 +62,8 @@ export const PERMISSIONS = [
   'sales-channels.delete',
   'inventory.read',
   'inventory.update',
+  'payments.refund',
+  'shipments.update',
   'media.read',
   'media.create',
   'media.delete',

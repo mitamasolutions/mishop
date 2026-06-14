@@ -17,6 +17,9 @@ import { InventoryModule } from '@mitama/inventory';
 import { CustomersModule } from '@mitama/customers';
 import { CartModule } from '@mitama/cart';
 import { OrdersModule } from '@mitama/orders';
+import { PaymentsModule } from '@mitama/payments';
+import { ShippingModule } from '@mitama/shipping';
+import { TaxesModule } from '@mitama/taxes';
 import { EventBusModule } from './event-bus.module';
 import { HealthController } from './health.controller';
 
@@ -35,7 +38,10 @@ import { HealthController } from './health.controller';
     InventoryModule,
     CustomersModule,
     CartModule,
+    TaxesModule,
+    ShippingModule,
     OrdersModule,
+    PaymentsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
