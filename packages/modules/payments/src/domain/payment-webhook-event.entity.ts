@@ -2,6 +2,7 @@ export type PaymentWebhookEventStatus = 'received' | 'processed' | 'failed';
 
 export interface PaymentWebhookEventProps {
   id: string;
+  storeId: string;
   providerCode: string;
   eventId: string;
   rawBody: string;
@@ -14,9 +15,10 @@ export interface PaymentWebhookEventProps {
 }
 
 export class PaymentWebhookEvent {
-  static create(input: { providerCode: string; eventId: string; rawBody: string }): PaymentWebhookEventProps {
+  static create(input: { storeId: string; providerCode: string; eventId: string; rawBody: string }): PaymentWebhookEventProps {
     return {
       id: crypto.randomUUID(),
+      storeId: input.storeId,
       providerCode: input.providerCode,
       eventId: input.eventId,
       rawBody: input.rawBody,

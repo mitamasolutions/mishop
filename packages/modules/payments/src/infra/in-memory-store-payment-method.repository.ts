@@ -3,10 +3,10 @@ import type { StorePaymentMethod, StorePaymentMethodRepository } from '../domain
 
 @Injectable()
 export class InMemoryStorePaymentMethodRepository implements StorePaymentMethodRepository {
-  private readonly methods = new Map<string, StorePaymentMethod>();
+  readonly methods = new Map<string, StorePaymentMethod>();
 
   constructor() {
-    for (const providerCode of ['manual', 'cash', 'stripe', 'mercado-pago']) {
+    for (const providerCode of ['manual', 'cash', 'mercado-pago']) {
       const displayName = providerCode === 'mercado-pago' ? 'Mercado Pago' : providerCode[0]!.toUpperCase() + providerCode.slice(1);
       void this.save({
         id: `default-${providerCode}`,
@@ -14,7 +14,7 @@ export class InMemoryStorePaymentMethodRepository implements StorePaymentMethodR
         providerCode,
         displayName,
         enabled: true,
-        encryptedCredentials: null,
+        credentials: providerCode === 'mercado-pago' ? { accessToken: 'test-access-token', publicKey: 'test-public-key' } : {},
         webhookSecret: 'test-secret',
         captureMode: providerCode === 'manual' || providerCode === 'cash' ? 'manual' : 'automatic',
       });
@@ -29,7 +29,15 @@ export class InMemoryStorePaymentMethodRepository implements StorePaymentMethodR
     return (await this.findEnabled(storeId)).find((method) => method.providerCode === providerCode) ?? null;
   }
 
+  async findByProvider(storeId: string, providerCode: string): Promise<StorePaymentMethod | null> {
+    return (
+      [...this.methods.values()].find(
+        (method) => method.providerCode === providerCode && (method.storeId === storeId || method.storeId === 'default'),
+      ) ?? null
+    );
+  }
+
   async save(method: StorePaymentMethod): Promise<void> {
-    this.methods.set(`${method.storeId}:${method.providerCode}`, { ...method });
+    this.methods.set(`${method.storeId}:${method.providerCode}`, { ...method, credentials: { ...method.credentials } });
   }
 }

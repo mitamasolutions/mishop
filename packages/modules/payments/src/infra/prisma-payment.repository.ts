@@ -20,6 +20,15 @@ export class PrismaPaymentRepository implements PaymentRepository {
     return rows.map((row) => this.toDomain(row));
   }
 
+  async findByProviderReference(storeId: string, providerCode: string, providerReference: string): Promise<Payment | null> {
+    const row = await this.prisma.payment.findFirst({
+      where: { storeId, providerCode, providerReference },
+      include: PAYMENT_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+    });
+    return row ? this.toDomain(row) : null;
+  }
+
   async save(payment: Payment): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await tx.payment.upsert({ where: { id: payment.id }, create: this.toPaymentRow(payment), update: this.toPaymentRow(payment) });

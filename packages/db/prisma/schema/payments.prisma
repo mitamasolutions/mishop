@@ -68,10 +68,7 @@ model PaymentRefund {
 
 model PaymentWebhookEvent {
   id           String    @id @default(uuid())
-  // storeId nullable de forma transitoria: F0 (r20) crea la columna y la unicidad
-  // multi-tenant; F3 (r14) deriva storeId desde el Payment y lo hace NOT NULL,
-  // dropeando el unique legado `(providerCode, eventId)`.
-  storeId      String?   @map("store_id")
+  storeId      String    @map("store_id")
   providerCode String    @map("provider_code")
   eventId      String    @map("event_id")
   rawBody      String    @map("raw_body")
@@ -82,7 +79,6 @@ model PaymentWebhookEvent {
   createdAt    DateTime  @default(now()) @map("created_at")
   processedAt  DateTime? @map("processed_at")
 
-  @@unique([providerCode, eventId])
   @@unique([storeId, providerCode, eventId])
   @@index([status, createdAt])
   @@map("payment_webhook_events")

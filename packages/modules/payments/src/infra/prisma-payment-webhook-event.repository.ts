@@ -17,14 +17,16 @@ export class PrismaPaymentWebhookEventRepository implements PaymentWebhookEventR
     }
   }
 
-  async findByProviderAndEventId(providerCode: string, eventId: string): Promise<PaymentWebhookEventProps | null> {
-    const row = await this.prisma.paymentWebhookEvent.findUnique({ where: { providerCode_eventId: { providerCode, eventId } } });
-    return row ? { ...row, status: row.status as PaymentWebhookEventStatus } : null;
+  async findByStoreProviderAndEventId(storeId: string, providerCode: string, eventId: string): Promise<PaymentWebhookEventProps | null> {
+    const row = await this.prisma.paymentWebhookEvent.findUnique({
+      where: { storeId_providerCode_eventId: { storeId, providerCode, eventId } },
+    });
+    return row ? { ...row, storeId: row.storeId ?? '', status: row.status as PaymentWebhookEventStatus } : null;
   }
 
   async save(event: PaymentWebhookEventProps): Promise<void> {
     await this.prisma.paymentWebhookEvent.upsert({
-      where: { providerCode_eventId: { providerCode: event.providerCode, eventId: event.eventId } },
+      where: { storeId_providerCode_eventId: { storeId: event.storeId, providerCode: event.providerCode, eventId: event.eventId } },
       create: event,
       update: event,
     });

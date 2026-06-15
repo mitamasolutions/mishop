@@ -4,11 +4,10 @@ import type { OrderForPaymentsPort } from '@mitama/contracts';
 import { Payment } from '../domain/payment.entity';
 import { PaymentWebhookEvent } from '../domain/payment-webhook-event.entity';
 import type { PaymentProviderRegistry } from '../domain/payment-provider';
-import type { PaymentProviderConfigResolver } from '../domain/payment-provider-config-resolver';
 import type { PaymentRepository } from '../domain/payment.repository';
 import type { PaymentWebhookEventRepository } from '../domain/payment-webhook-event.repository';
 import type { PublicStorePaymentMethod, StorePaymentMethodRepository } from '../domain/store-payment-method.repository';
-import { toPublicPaymentMethod } from '../domain/store-payment-method.repository';
+import { toDecryptedConfig, toPublicPaymentMethod } from '../domain/store-payment-method.repository';
 import {
   DuplicateWebhookEventError,
   InvalidPaymentTransitionError,
@@ -28,10 +27,58 @@ import {
 import { toPaymentOutput, type PaymentOutput } from './payment.dto';
 
 export class ListPaymentMethodsUseCase implements UseCase<string, Result<PublicStorePaymentMethod[], never>> {
-  constructor(private readonly methods: StorePaymentMethodRepository) {}
+  constructor(
+    private readonly methods: StorePaymentMethodRepository,
+    private readonly registry: PaymentProviderRegistry,
+  ) {}
 
   async execute(storeId: string): Promise<Result<PublicStorePaymentMethod[], never>> {
-    return ok((await this.methods.findEnabled(storeId)).map(toPublicPaymentMethod));
+    // Selector de checkout: solo métodos habilitados Y bien configurados.
+    // Los mal configurados se reportan vía ResolveAvailablePaymentMethodsUseCase
+    // para alerta en admin (r14 · sprint1_cierre).
+    const enabled = await this.methods.findEnabled(storeId);
+    const configured = enabled.filter((method) => {
+      const provider = this.registry.get(method.providerCode);
+      if (!provider) return false;
+      return provider.validateConfig(toDecryptedConfig(method)).state === 'configured';
+    });
+    return ok(configured.map(toPublicPaymentMethod));
+  }
+}
+
+export interface AvailablePaymentMethod {
+  method: PublicStorePaymentMethod;
+  status: 'configured' | 'misconfigured';
+  /** Razón del estado misconfigured (campos faltantes). Vacío si está OK. */
+  misconfigurationReason?: string;
+}
+
+/**
+ * Lista completa para el admin: incluye habilitados configurados Y mal
+ * configurados (con razón) para mostrar alertas. Métodos no habilitados se
+ * omiten. (r14 · sprint1_cierre)
+ */
+export class ResolveAvailablePaymentMethodsUseCase
+  implements UseCase<string, Result<AvailablePaymentMethod[], never>>
+{
+  constructor(
+    private readonly methods: StorePaymentMethodRepository,
+    private readonly registry: PaymentProviderRegistry,
+  ) {}
+
+  async execute(storeId: string): Promise<Result<AvailablePaymentMethod[], never>> {
+    const enabled = await this.methods.findEnabled(storeId);
+    const items: AvailablePaymentMethod[] = enabled.map((method) => {
+      const provider = this.registry.get(method.providerCode);
+      if (!provider) {
+        return { method: toPublicPaymentMethod(method), status: 'misconfigured', misconfigurationReason: `Provider ${method.providerCode} no registrado` };
+      }
+      const status = provider.validateConfig(toDecryptedConfig(method));
+      return status.state === 'configured'
+        ? { method: toPublicPaymentMethod(method), status: 'configured' }
+        : { method: toPublicPaymentMethod(method), status: 'misconfigured', misconfigurationReason: status.reason };
+    });
+    return ok(items);
   }
 }
 
@@ -81,8 +128,11 @@ export class AuthorizePaymentUseCase implements UseCase<AuthorizePaymentInput, R
     if (!method) return err(new PaymentMethodUnavailableError(input.providerCode));
     const provider = this.registry.get(input.providerCode);
     if (!provider) return err(new PaymentProviderNotFoundError(input.providerCode));
+    // Un método mal configurado no puede cobrar (r14 · sprint1_cierre).
+    const configStatus = provider.validateConfig(toDecryptedConfig(method));
+    if (configStatus.state !== 'configured') return err(new PaymentMethodUnavailableError(input.providerCode));
     const payment = Payment.create(input);
-    const result = await provider.authorize({ ...input, paymentId: payment.id, config: method });
+    const result = await provider.authorize({ ...input, paymentId: payment.id, config: toDecryptedConfig(method) });
     if (result.isErr()) return err(result.error);
     try {
       payment.setProviderReference(result.value.providerReference);
@@ -111,7 +161,7 @@ export class CapturePaymentUseCase implements UseCase<{ paymentId: string }, Res
     if (!method) return err(new PaymentMethodUnavailableError(payment.providerCode));
     const provider = this.registry.get(payment.providerCode);
     if (!provider) return err(new PaymentProviderNotFoundError(payment.providerCode));
-    const result = await provider.capture({ paymentId: payment.id, orderId: payment.orderId, amount: payment.amount, currency: payment.currency, config: method });
+    const result = await provider.capture({ paymentId: payment.id, orderId: payment.orderId, amount: payment.amount, currency: payment.currency, config: toDecryptedConfig(method) });
     if (result.isErr()) return err(result.error);
     try {
       payment.setProviderReference(result.value.providerReference);
@@ -140,7 +190,7 @@ export class VoidPaymentUseCase implements UseCase<{ paymentId: string }, Result
     if (!method) return err(new PaymentMethodUnavailableError(payment.providerCode));
     const provider = this.registry.get(payment.providerCode);
     if (!provider) return err(new PaymentProviderNotFoundError(payment.providerCode));
-    const result = await provider.void({ paymentId: payment.id, orderId: payment.orderId, amount: payment.amount, currency: payment.currency, config: method });
+    const result = await provider.void({ paymentId: payment.id, orderId: payment.orderId, amount: payment.amount, currency: payment.currency, config: toDecryptedConfig(method) });
     if (result.isErr()) return err(result.error);
     try {
       payment.transition('voided', 'Void de autorización', result.value.occurredAt);
@@ -195,7 +245,7 @@ export class RefundPaymentUseCase implements UseCase<{ paymentId: string; amount
     } catch (error) {
       return err(error as RefundAmountExceededError | PaymentNotRefundableError);
     }
-    const result = await provider.refund({ paymentId: payment.id, orderId: payment.orderId, amount: input.amount, currency: payment.currency, config: method, refundId: refund.id });
+    const result = await provider.refund({ paymentId: payment.id, orderId: payment.orderId, amount: input.amount, currency: payment.currency, config: toDecryptedConfig(method), refundId: refund.id });
     if (result.isErr()) return err(result.error);
     payment.setRefundProviderReference(refund.id, result.value.providerReference);
     await this.payments.save(payment);
@@ -204,27 +254,49 @@ export class RefundPaymentUseCase implements UseCase<{ paymentId: string; amount
   }
 }
 
-export class HandlePaymentWebhookUseCase implements UseCase<{ providerCode: string; headers: Record<string, string | string[] | undefined>; rawBody: string }, Result<{ duplicate: boolean }, InvalidWebhookSignatureError | PaymentProviderNotFoundError | PaymentNotFoundError | DuplicateWebhookEventError | TransientPaymentProviderError | Error>> {
+export interface HandlePaymentWebhookInput {
+  /** Derivado del path del webhook (`/payments/webhooks/:storeId/:providerCode`). */
+  storeId: string;
+  providerCode: string;
+  headers: Record<string, string | string[] | undefined>;
+  rawBody: string;
+}
+
+export class HandlePaymentWebhookUseCase
+  implements
+    UseCase<
+      HandlePaymentWebhookInput,
+      Result<{ duplicate: boolean }, InvalidWebhookSignatureError | PaymentProviderNotFoundError | PaymentNotFoundError | DuplicateWebhookEventError | TransientPaymentProviderError | Error>
+    >
+{
   constructor(
     private readonly payments: PaymentRepository,
     private readonly webhooks: PaymentWebhookEventRepository,
+    private readonly methods: StorePaymentMethodRepository,
     private readonly registry: PaymentProviderRegistry,
-    private readonly configResolver: PaymentProviderConfigResolver,
     private readonly eventBus: EventBus,
   ) {}
 
-  async execute(input: { providerCode: string; headers: Record<string, string | string[] | undefined>; rawBody: string }): Promise<Result<{ duplicate: boolean }, InvalidWebhookSignatureError | PaymentProviderNotFoundError | PaymentNotFoundError | DuplicateWebhookEventError | TransientPaymentProviderError | Error>> {
+  async execute(
+    input: HandlePaymentWebhookInput,
+  ): Promise<Result<{ duplicate: boolean }, InvalidWebhookSignatureError | PaymentProviderNotFoundError | PaymentNotFoundError | DuplicateWebhookEventError | TransientPaymentProviderError | Error>> {
     const provider = this.registry.get(input.providerCode);
     if (!provider) return err(new PaymentProviderNotFoundError(input.providerCode));
-    const webhookSecret = this.configResolver.getWebhookSecret(input.providerCode);
-    if (!webhookSecret) return err(new InvalidWebhookSignatureError());
-    const config = { webhookSecret };
-    const parsed = await provider.handleWebhook({ ...input, config });
+
+    // El secret vive en StorePaymentMethod (per-tenant): la URL del
+    // webhook es tenant-scoped, así que aquí ya sabemos la tienda y
+    // podemos verificar la firma con el secreto correcto antes de
+    // parsear (r14 · sprint1_cierre).
+    const method = await this.methods.findByProvider(input.storeId, input.providerCode);
+    if (!method || !method.webhookSecret) return err(new InvalidWebhookSignatureError());
+    const config = { webhookSecret: method.webhookSecret, credentials: method.credentials, captureMode: method.captureMode };
+
+    const parsed = await provider.handleWebhook({ providerCode: input.providerCode, headers: input.headers, rawBody: input.rawBody, config });
     if (parsed.isErr()) {
       if (!(parsed.error instanceof TransientPaymentProviderError)) return err(parsed.error);
       const eventId = eventIdFromRawBody(input.rawBody);
       if (!eventId) return err(parsed.error);
-      const event = await this.claimOrLoadEvent(input.providerCode, eventId, input.rawBody);
+      const event = await this.claimOrLoadEvent(input.storeId, input.providerCode, eventId, input.rawBody);
       if (!event) return ok({ duplicate: true });
       event.attempts += 1;
       event.lastError = parsed.error.message;
@@ -236,7 +308,8 @@ export class HandlePaymentWebhookUseCase implements UseCase<{ providerCode: stri
       await this.webhooks.save(event);
       return err(parsed.error);
     }
-    const event = await this.claimOrLoadEvent(input.providerCode, parsed.value.eventId, input.rawBody);
+
+    const event = await this.claimOrLoadEvent(input.storeId, input.providerCode, parsed.value.eventId, input.rawBody);
     if (!event) return ok({ duplicate: true });
     event.attempts += 1;
     event.status = 'received';
@@ -248,8 +321,18 @@ export class HandlePaymentWebhookUseCase implements UseCase<{ providerCode: stri
       return err(new Error(event.lastError));
     }
     await this.webhooks.save(event);
-    const payment = await this.payments.findById(parsed.value.paymentId);
+
+    // Mapeo del pago local: el provider devuelve `paymentId` que puede
+    // ser el id local (legacy/simulado) o un providerReference (MP real).
+    // Tratamos los dos casos.
+    const payment =
+      (await this.payments.findById(parsed.value.paymentId)) ??
+      (await this.payments.findByProviderReference(input.storeId, input.providerCode, parsed.value.providerReference ?? parsed.value.paymentId));
     if (!payment) return err(new PaymentNotFoundError(parsed.value.paymentId));
+    if (payment.storeId !== input.storeId) {
+      // Defensa: alguien envió un webhook a la URL de otra tienda.
+      return err(new PaymentNotFoundError(parsed.value.paymentId));
+    }
     try {
       payment.setProviderReference(parsed.value.providerReference);
       if (parsed.value.status === 'partially_refunded' || parsed.value.status === 'refunded') {
@@ -271,10 +354,10 @@ export class HandlePaymentWebhookUseCase implements UseCase<{ providerCode: stri
     return ok({ duplicate: false });
   }
 
-  private async claimOrLoadEvent(providerCode: string, eventId: string, rawBody: string) {
-    const event = PaymentWebhookEvent.create({ providerCode, eventId, rawBody });
+  private async claimOrLoadEvent(storeId: string, providerCode: string, eventId: string, rawBody: string) {
+    const event = PaymentWebhookEvent.create({ storeId, providerCode, eventId, rawBody });
     if (await this.webhooks.claim(event)) return event;
-    const existing = await this.webhooks.findByProviderAndEventId(providerCode, eventId);
+    const existing = await this.webhooks.findByStoreProviderAndEventId(storeId, providerCode, eventId);
     if (!existing || existing.status === 'processed' || existing.status === 'failed') return null;
     if (existing.lastError === null) return null;
     return existing;

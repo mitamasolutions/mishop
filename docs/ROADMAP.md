@@ -135,7 +135,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 | **F2 · Baseline DB** | ✅ | Baseline limpio, FKs críticas, CHECK constraints, índices parciales (settings/roles + `handle`/`sku` activos), `storeId` en unicidad de webhooks (transitorio nullable → F3 lo hará NOT NULL), `TaxRule.rate >= 0` | — |
 | **F3 · Checkout server-side** | ✅ | Guest customer, validación carrito (expirado/deleted/precio), **recálculo server-side de subtotal/envío/impuestos** vía `CheckoutTaxResolverPort` y `CheckoutShippingResolverPort` (envío no se grava), snapshot inmutable con `taxAmount` por línea y método resuelto server-side, rechazo si la zona deja de cubrir | Validar canal del producto vs carrito (pendiente menor; el storeId ya se valida) |
 | **F4 · Inventario correcto** | ✅ | claim-then-apply en release/consume, reserva→consumo por `payment.paid`, `releaseExpired` | Métricas/logs de reservas (no bloqueante) |
-| **F5 · Pagos manual + Mercado Pago** | 🟡 | Validación contra orden real, manual paid, webhooks idempotentes | Adapter **Mercado Pago real** (firma + credenciales cifradas), `storeId` en unicidad de webhook |
+| **F5 · Pagos manual + Mercado Pago** | ✅ | Plugin Strategy (descriptor + validateConfig + estado configured/misconfigured), `CredentialCipher` AES-256-GCM con `PAYMENTS_ENCRYPTION_KEY` fail-closed, credenciales cifradas por tienda, manual paid, MP Checkout Pro real (HttpMercadoPagoClient + verificación HMAC antes de parsear), webhooks idempotentes por (storeId, providerCode, eventId) — webhook URL tenant-scoped (`/payments/webhooks/:storeId/:providerCode`), `ResolveAvailablePaymentMethods` filtra mal configurados y los reporta para alerta en admin | UI de configuración en F5 (sprint1_cierre) |
 | **F6 · Admin operativo** | 🟡 | Pantalla **Órdenes** (listado/detalle/acciones) | Pantallas **Clientes/Pagos/Envíos**, paginado real, debounce, permisos que deshabilitan, dashboard real |
 | **F7 · Hardening API + Admin** | ✅ | API: CORS whitelist, Helmet/CSP, ValidationPipe, rate limits, env validation. Admin: refresh token en cookie HttpOnly/Secure/SameSite=Lax, `NEXT_PUBLIC_API_URL` obligatoria (build prod falla sin ella), CSP + headers de seguridad en `next.config.ts`, `skipStoreScope` solo definido en api-client (no abusado en llamadas) | — |
 | **F8 · Outbox/worker/observabilidad** | 🟡 | Outbox `order.created` transaccional + dispatcher manual | Outbox para `payment.*`/`order.*`; **worker dedicado** (`apps/worker`); `requestId`; `/health/worker`; métricas |
@@ -144,7 +144,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 ### Brechas bloqueantes (resumen priorizado)
 
 1. ~~**F7 admin** (cookies HttpOnly + CSP)~~ → `sprint1_r22` cerrado (sprint1_cierre · F1).
-2. **F5 segundo corte** (Mercado Pago real) — bloquea cobrar online → `sprint1_r14`.
+2. ~~F5 segundo corte (Mercado Pago real)~~ → `sprint1_r14` cerrado (sprint1_cierre · F3).
 3. **F6 segundo corte** (Clientes/Pagos/Envíos) — bloquea operar 100% desde admin → `sprint1_r23`.
 4. **F8 segundo corte** (worker + observabilidad) — estabilidad operativa → `sprint1_r24`.
 5. **F9 segundo corte** (CI + deploy.sh) — calidad de cambios → `sprint1_r25`.
@@ -168,7 +168,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 | [sprint1_r12_cart](specs/sprint1_r12_cart.md) | 🟡 | F3 | Carrito server-side, checkout |
 | [sprint1_r13_orders](specs/sprint1_r13_orders.md) | ✅ | F3, F8 | Órdenes, snapshot, estados, outbox |
 | [sprint1_r13.1_order_idempotency](specs/sprint1_r13.1_order_idempotency.md) | ✅ | F3 | Idempotencia robusta en CreateOrder |
-| [sprint1_r14_payments](specs/sprint1_r14_payments.md) | 🟡 | F5 | Providers, webhooks, refunds, MP real |
+| [sprint1_r14_payments](specs/sprint1_r14_payments.md) | ✅ | F5 | Providers, webhooks, refunds, MP real |
 | [sprint1_r15_shipping](specs/sprint1_r15_shipping.md) | 🟡 | F5, F6 | Métodos, zonas, pickup, tracking |
 | [sprint1_r16_taxes](specs/sprint1_r16_taxes.md) | 🟡 | F5 | Categorías de impuesto, IVA México |
 | [sprint1_r17_promotions](specs/sprint1_r17_promotions.md) | 🧊 | F0 | Descuentos, cupones, newsletter, rewards |

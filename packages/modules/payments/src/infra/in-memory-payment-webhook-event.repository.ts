@@ -7,17 +7,21 @@ export class InMemoryPaymentWebhookEventRepository implements PaymentWebhookEven
   private readonly events = new Map<string, PaymentWebhookEventProps>();
 
   async claim(event: PaymentWebhookEventProps): Promise<boolean> {
-    const key = `${event.providerCode}:${event.eventId}`;
+    const key = this.key(event.storeId, event.providerCode, event.eventId);
     if (this.events.has(key)) return false;
     this.events.set(key, { ...event });
     return true;
   }
 
-  async findByProviderAndEventId(providerCode: string, eventId: string): Promise<PaymentWebhookEventProps | null> {
-    return this.events.get(`${providerCode}:${eventId}`) ?? null;
+  async findByStoreProviderAndEventId(storeId: string, providerCode: string, eventId: string): Promise<PaymentWebhookEventProps | null> {
+    return this.events.get(this.key(storeId, providerCode, eventId)) ?? null;
   }
 
   async save(event: PaymentWebhookEventProps): Promise<void> {
-    this.events.set(`${event.providerCode}:${event.eventId}`, { ...event });
+    this.events.set(this.key(event.storeId, event.providerCode, event.eventId), { ...event });
+  }
+
+  private key(storeId: string, providerCode: string, eventId: string): string {
+    return `${storeId}::${providerCode}::${eventId}`;
   }
 }

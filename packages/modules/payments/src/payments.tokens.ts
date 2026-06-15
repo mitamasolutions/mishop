@@ -5,4 +5,6 @@ export const PAYMENTS_TOKENS = {
   providerConfigResolver: 'payments.provider-config-resolver',
   providerRegistry: 'payments.provider-registry',
   providers: 'payments.providers',
+  credentialCipher: 'payments.credential-cipher',
+  mercadoPagoClient: 'payments.mercado-pago-client',
 } as const;
