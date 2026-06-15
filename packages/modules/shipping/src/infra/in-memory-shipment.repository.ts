@@ -10,6 +10,10 @@ export class InMemoryShipmentRepository implements ShipmentRepository {
     return this.shipments.get(id) ?? null;
   }
 
+  async findByOrderId(orderId: string): Promise<Shipment[]> {
+    return [...this.shipments.values()].filter((s) => s.orderId === orderId);
+  }
+
   async save(shipment: Shipment): Promise<void> {
     this.shipments.set(shipment.id, shipment);
   }

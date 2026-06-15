@@ -1,7 +1,7 @@
-import { BadRequestException, Body, Controller, NotFoundException, Param, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public, RequirePermission } from '@mitama/contracts';
-import { CalculateShippingRatesUseCase, CreateShipmentUseCase, UpdateShipmentStatusUseCase } from '../application/shipping-use-cases';
+import { CalculateShippingRatesUseCase, CreateShipmentUseCase, ListShipmentsByOrderUseCase, UpdateShipmentStatusUseCase } from '../application/shipping-use-cases';
 import { ShipmentNotFoundError } from '../domain/errors';
 import type { ShippingAddress } from '../domain/shipping-method.entity';
 import type { ShipmentStatus } from '../domain/shipment.entity';
@@ -31,6 +31,7 @@ export class ShippingController {
   constructor(
     private readonly calculateRates: CalculateShippingRatesUseCase,
     private readonly createShipment: CreateShipmentUseCase,
+    private readonly listByOrder: ListShipmentsByOrderUseCase,
     private readonly updateShipment: UpdateShipmentStatusUseCase,
   ) {}
 
@@ -41,6 +42,15 @@ export class ShippingController {
     const result = await this.calculateRates.execute(body);
     if (result.isOk()) return result.value;
     throw new BadRequestException(result.error.message);
+  }
+
+  @Get('by-order/:orderId')
+  @RequirePermission('shipments.read')
+  @ApiOperation({ summary: 'Lista los envíos de una orden (tab Envíos en admin)' })
+  async byOrder(@Param('orderId') orderId: string) {
+    const result = await this.listByOrder.execute(orderId);
+    if (result.isOk()) return result.value;
+    throw new BadRequestException('No se pudieron listar los envíos');
   }
 
   @Post('shipments')

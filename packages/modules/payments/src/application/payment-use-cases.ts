@@ -6,7 +6,7 @@ import { PaymentWebhookEvent } from '../domain/payment-webhook-event.entity';
 import type { PaymentProviderRegistry } from '../domain/payment-provider';
 import type { PaymentRepository } from '../domain/payment.repository';
 import type { PaymentWebhookEventRepository } from '../domain/payment-webhook-event.repository';
-import type { PublicStorePaymentMethod, StorePaymentMethodRepository } from '../domain/store-payment-method.repository';
+import type { PublicStorePaymentMethod, StorePaymentMethod, StorePaymentMethodRepository } from '../domain/store-payment-method.repository';
 import { toDecryptedConfig, toPublicPaymentMethod } from '../domain/store-payment-method.repository';
 import {
   DuplicateWebhookEventError,
@@ -25,6 +25,58 @@ import {
   TransientPaymentProviderError,
 } from '../domain/errors';
 import { toPaymentOutput, type PaymentOutput } from './payment.dto';
+
+/**
+ * Lista pagos por orden (para tab de Pagos en admin · r23 sprint1_cierre).
+ */
+export class ListPaymentsByOrderUseCase implements UseCase<string, Result<PaymentOutput[], never>> {
+  constructor(private readonly payments: PaymentRepository) {}
+  async execute(orderId: string): Promise<Result<PaymentOutput[], never>> {
+    const items = await this.payments.findByOrderId(orderId);
+    return ok(items.map(toPaymentOutput));
+  }
+}
+
+/**
+ * Configura/actualiza un método de pago de tienda desde el admin
+ * (r14/r23 · sprint1_cierre). Cifra credentials en el repo.
+ */
+export interface ConfigureStorePaymentMethodInput {
+  storeId: string;
+  providerCode: string;
+  displayName?: string;
+  enabled?: boolean;
+  webhookSecret?: string | null;
+  captureMode?: 'manual' | 'automatic';
+  credentials?: Record<string, unknown>;
+}
+
+export class ConfigureStorePaymentMethodUseCase
+  implements UseCase<ConfigureStorePaymentMethodInput, Result<PublicStorePaymentMethod, never>>
+{
+  constructor(
+    private readonly methods: StorePaymentMethodRepository,
+    private readonly registry: PaymentProviderRegistry,
+  ) {}
+
+  async execute(input: ConfigureStorePaymentMethodInput): Promise<Result<PublicStorePaymentMethod, never>> {
+    const provider = this.registry.get(input.providerCode);
+    if (!provider) throw new Error(`Provider ${input.providerCode} no registrado`);
+    const existing = await this.methods.findByProvider(input.storeId, input.providerCode);
+    const next: StorePaymentMethod = {
+      id: existing?.id ?? `${input.storeId}-${input.providerCode}`,
+      storeId: input.storeId,
+      providerCode: input.providerCode,
+      displayName: input.displayName ?? existing?.displayName ?? provider.displayName,
+      enabled: input.enabled ?? existing?.enabled ?? false,
+      credentials: input.credentials ?? existing?.credentials ?? {},
+      webhookSecret: input.webhookSecret === undefined ? (existing?.webhookSecret ?? null) : input.webhookSecret,
+      captureMode: input.captureMode ?? existing?.captureMode ?? 'automatic',
+    };
+    await this.methods.save(next);
+    return ok(toPublicPaymentMethod(next));
+  }
+}
 
 export class ListPaymentMethodsUseCase implements UseCase<string, Result<PublicStorePaymentMethod[], never>> {
   constructor(

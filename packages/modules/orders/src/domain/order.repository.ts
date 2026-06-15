@@ -8,6 +8,16 @@ export interface OrderFilter {
   customerId?: string;
   channel?: string;
   orderNumber?: string;
+  /** Paginado server-side (r23 · sprint1_cierre). Default page=1, pageSize=20. */
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedOrders {
+  items: Order[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface StoredIdempotencyRecord {
@@ -29,7 +39,7 @@ export interface SaveOrderOptions {
 
 export interface OrderRepository {
   findById(id: string): Promise<Order | null>;
-  findAll(filter: OrderFilter): Promise<Order[]>;
+  findAll(filter: OrderFilter): Promise<PaginatedOrders>;
   findIdempotency(storeId: string, key: string): Promise<StoredIdempotencyRecord | null>;
   nextOrderNumber(storeId: string, prefix: string): Promise<string>;
   save(order: Order, options?: SaveOrderOptions): Promise<void>;

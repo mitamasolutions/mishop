@@ -13,16 +13,20 @@ export class InMemoryOrderRepository implements OrderRepository {
     return this.orders.get(id) ?? null;
   }
 
-  async findAll(filter: OrderFilter): Promise<Order[]> {
-    return [...this.orders.values()].filter((order) => {
+  async findAll(filter: OrderFilter): Promise<{ items: Order[]; total: number; page: number; pageSize: number }> {
+    const filtered = [...this.orders.values()].filter((order) => {
       if (filter.storeId && order.storeId !== filter.storeId) return false;
       if (filter.status && order.status !== filter.status) return false;
       if (filter.paymentStatus && order.paymentStatus !== filter.paymentStatus) return false;
       if (filter.customerId && order.customerId !== filter.customerId) return false;
       if (filter.channel && order.channel !== filter.channel) return false;
-      if (filter.orderNumber && order.orderNumber !== filter.orderNumber) return false;
+      if (filter.orderNumber && !order.orderNumber.toLowerCase().includes(filter.orderNumber.toLowerCase())) return false;
       return true;
     });
+    const page = filter.page && filter.page > 0 ? filter.page : 1;
+    const pageSize = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 20;
+    const start = (page - 1) * pageSize;
+    return { items: filtered.slice(start, start + pageSize), total: filtered.length, page, pageSize };
   }
 
   async findIdempotency(storeId: string, key: string): Promise<StoredIdempotencyRecord | null> {

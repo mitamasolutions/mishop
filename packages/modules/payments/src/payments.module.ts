@@ -15,8 +15,10 @@ import { PAYMENTS_TOKENS } from './payments.tokens';
 import {
   AuthorizePaymentUseCase,
   CapturePaymentUseCase,
+  ConfigureStorePaymentMethodUseCase,
   HandlePaymentWebhookUseCase,
   ListPaymentMethodsUseCase,
+  ListPaymentsByOrderUseCase,
   MarkManualPaymentPaidUseCase,
   RefundPaymentUseCase,
   ResolveAvailablePaymentMethodsUseCase,
@@ -71,6 +73,17 @@ import { PaymentsController } from './http/payments.controller';
       provide: ResolveAvailablePaymentMethodsUseCase,
       useFactory: (methods: StorePaymentMethodRepository, registry: PaymentProviderRegistry) =>
         new ResolveAvailablePaymentMethodsUseCase(methods, registry),
+      inject: [PAYMENTS_TOKENS.storeMethodRepository, PAYMENTS_TOKENS.providerRegistry],
+    },
+    {
+      provide: ListPaymentsByOrderUseCase,
+      useFactory: (payments: PaymentRepository) => new ListPaymentsByOrderUseCase(payments),
+      inject: [PAYMENTS_TOKENS.paymentRepository],
+    },
+    {
+      provide: ConfigureStorePaymentMethodUseCase,
+      useFactory: (methods: StorePaymentMethodRepository, registry: PaymentProviderRegistry) =>
+        new ConfigureStorePaymentMethodUseCase(methods, registry),
       inject: [PAYMENTS_TOKENS.storeMethodRepository, PAYMENTS_TOKENS.providerRegistry],
     },
     {

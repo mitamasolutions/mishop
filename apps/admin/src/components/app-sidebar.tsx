@@ -6,8 +6,10 @@ import {
   AlertTriangle,
   BadgePercent,
   Boxes,
+  Calendar,
   ChevronDown,
   ClipboardList,
+  CreditCard,
   FolderTree,
   Globe,
   LayoutDashboard,
@@ -28,15 +30,24 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { hasPermission, useAuthStore } from '@/lib/auth-store';
 
-const navItems = [
+const navItems: ReadonlyArray<{
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  permission: string | null;
+  superAdminOnly?: boolean;
+}> = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, permission: null },
   { href: '/ordenes', label: 'Órdenes', icon: Receipt, permission: 'orders.read' },
+  { href: '/clientes', label: 'Clientes', icon: Users, permission: 'customers.read' },
   { href: '/usuarios', label: 'Usuarios', icon: Users, permission: 'users.read' },
   { href: '/roles', label: 'Roles', icon: ShieldCheck, permission: 'roles.read' },
   { href: '/tiendas', label: 'Tiendas', icon: Store, permission: 'stores.read' },
   { href: '/configuracion', label: 'Configuración', icon: Settings, permission: 'settings.read' },
+  { href: '/configuracion/pagos', label: 'Métodos de pago', icon: CreditCard, permission: 'settings.update' },
+  { href: '/tareas-programadas', label: 'Tareas programadas', icon: Calendar, permission: null, superAdminOnly: true },
   { href: '/actividad', label: 'Actividad', icon: ClipboardList, permission: 'activity-log.read' },
-] as const;
+];
 
 const catalogItems = [
   { href: '/catalogos/productos', label: 'Productos', icon: Boxes, permission: 'products.read' },
@@ -82,7 +93,10 @@ export function AppSidebar() {
       </div>
       <nav className="flex flex-col gap-1 p-3" aria-label="Navegación principal">
         {navItems
-          .filter((item) => !item.permission || hasPermission(user, item.permission))
+          .filter((item) => {
+            if (item.superAdminOnly && !user?.isSuperAdmin) return false;
+            return !item.permission || hasPermission(user, item.permission);
+          })
           .map(({ href, label, icon: Icon }) => {
             const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
             return (

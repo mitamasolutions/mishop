@@ -1,7 +1,8 @@
 import { BadRequestException, Body, ConflictException, Controller, Get, Headers, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { CurrentStore, CurrentUser, Public, RequirePermission, type ActiveStore, type AuthenticatedUser } from '@mitama/contracts';
 import {
   AddOrderNoteUseCase,
@@ -56,6 +57,19 @@ class ListOrdersQueryDto {
   @IsOptional()
   @IsString()
   orderNumber?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
 }
 
 @ApiTags('orders')
@@ -89,8 +103,8 @@ export class OrdersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lista y filtra órdenes' })
-  async list(@Query() query: ListOrdersQueryDto, @CurrentStore() store?: ActiveStore): Promise<OrderOutput[]> {
+  @ApiOperation({ summary: 'Lista y filtra órdenes (paginado server-side)' })
+  async list(@Query() query: ListOrdersQueryDto, @CurrentStore() store?: ActiveStore) {
     const result = await this.listOrders.execute({ ...query, storeId: store?.id });
     if (result.isOk()) return result.value;
     throw new BadRequestException('No se pudieron listar las órdenes');
@@ -99,9 +113,9 @@ export class OrdersController {
   @Get(':orderId')
   @ApiOperation({ summary: 'Obtiene una orden por id dentro de la tienda activa' })
   async getById(@Param('orderId') orderId: string, @CurrentStore() store?: ActiveStore): Promise<OrderOutput> {
-    const result = await this.listOrders.execute({ storeId: store?.id });
+    const result = await this.listOrders.execute({ storeId: store?.id, pageSize: 100 });
     if (result.isErr()) throw new BadRequestException('No se pudo recuperar la orden');
-    const match = result.value.find((order) => order.id === orderId);
+    const match = result.value.items.find((order) => order.id === orderId);
     if (!match) throw new NotFoundException(`No se encontró la orden ${orderId}`);
     return match;
   }

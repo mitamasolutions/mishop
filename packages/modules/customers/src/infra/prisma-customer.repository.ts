@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, PrismaService } from '@mitama/db';
 import { Customer, type CustomerAddressProps, normalizeEmail } from '../domain/customer.entity';
-import type { CustomerRepository } from '../domain/customer.repository';
+import type { CustomerRepository, ListCustomersFilter, PaginatedCustomers } from '../domain/customer.repository';
 
 const CUSTOMER_INCLUDE = { addresses: true } satisfies Prisma.CustomerInclude;
 
@@ -22,6 +22,34 @@ export class PrismaCustomerRepository implements CustomerRepository {
       include: CUSTOMER_INCLUDE,
     });
     return row ? this.toDomain(row) : null;
+  }
+
+  async findAll(filter: ListCustomersFilter): Promise<PaginatedCustomers> {
+    const where: Prisma.CustomerWhereInput = {
+      storeId: filter.storeId,
+      ...(filter.q
+        ? {
+            OR: [
+              { email: { contains: filter.q, mode: 'insensitive' } },
+              { firstName: { contains: filter.q, mode: 'insensitive' } },
+              { lastName: { contains: filter.q, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+    const page = filter.page && filter.page > 0 ? filter.page : 1;
+    const pageSize = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 20;
+    const [total, rows] = await Promise.all([
+      this.prisma.customer.count({ where }),
+      this.prisma.customer.findMany({
+        where,
+        include: CUSTOMER_INCLUDE,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+    return { items: rows.map((row) => this.toDomain(row)), total, page, pageSize };
   }
 
   async save(customer: Customer): Promise<void> {

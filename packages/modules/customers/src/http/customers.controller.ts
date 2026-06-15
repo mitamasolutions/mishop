@@ -1,10 +1,12 @@
-import { BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
-import { Public, RequirePermission } from '@mitama/contracts';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsEmail, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { CurrentStore, Public, RequirePermission, type ActiveStore } from '@mitama/contracts';
 import { RegisterCustomerUseCase } from '../application/register-customer/register-customer.use-case';
 import { CreateGuestCustomerUseCase } from '../application/create-guest-customer/create-guest-customer.use-case';
 import { GetCustomerUseCase } from '../application/get-customer/get-customer.use-case';
+import { ListCustomersUseCase } from '../application/list-customers/list-customers.use-case';
 import { ManageCustomerAddressUseCase } from '../application/manage-customer-address/manage-customer-address.use-case';
 import { CustomerAddressNotFoundError, CustomerNotFoundError } from '../domain/errors';
 import type { CustomerOutput } from '../application/customer.dto';
@@ -90,6 +92,25 @@ class AddressRequestDto {
   isDefaultBilling?: boolean;
 }
 
+class ListCustomersQueryDto {
+  @IsOptional()
+  @IsString()
+  q?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
+}
+
 @ApiTags('customers')
 @Controller('customers')
 @RequirePermission('customers.read')
@@ -98,8 +119,17 @@ export class CustomersController {
     private readonly registerCustomer: RegisterCustomerUseCase,
     private readonly createGuestCustomer: CreateGuestCustomerUseCase,
     private readonly getCustomer: GetCustomerUseCase,
+    private readonly listCustomers: ListCustomersUseCase,
     private readonly manageAddress: ManageCustomerAddressUseCase,
   ) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Listado paginado de compradores de la tienda activa' })
+  async list(@Query() query: ListCustomersQueryDto, @CurrentStore() store?: ActiveStore) {
+    const result = await this.listCustomers.execute({ ...query, storeId: store?.id });
+    if (result.isOk()) return result.value;
+    throw new BadRequestException('No se pudieron listar los compradores');
+  }
 
   @Post('register')
   @Public()

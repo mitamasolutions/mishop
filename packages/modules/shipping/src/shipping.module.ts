@@ -5,7 +5,7 @@ import { Global, Module } from '@nestjs/common';
 import { CHECKOUT_SHIPPING_RESOLVER_PORT, EVENT_BUS } from '@mitama/contracts';
 import type { EventBus } from '@mitama/core';
 import { SHIPPING_TOKENS } from './shipping.tokens';
-import { CalculateShippingRatesUseCase, CreateShipmentUseCase, UpdateShipmentStatusUseCase } from './application/shipping-use-cases';
+import { CalculateShippingRatesUseCase, CreateShipmentUseCase, ListShipmentsByOrderUseCase, UpdateShipmentStatusUseCase } from './application/shipping-use-cases';
 import { ShippingProviderRegistry, type ShippingProvider } from './domain/shipping-provider';
 import type { ShippingMethodRepository } from './domain/shipping-method.repository';
 import type { ShipmentRepository } from './domain/shipment.repository';
@@ -34,6 +34,11 @@ import { ShippingController } from './http/shipping.controller';
       inject: [SHIPPING_TOKENS.methodRepository, SHIPPING_TOKENS.providerRegistry],
     },
     { provide: CreateShipmentUseCase, useFactory: (shipments: ShipmentRepository) => new CreateShipmentUseCase(shipments), inject: [SHIPPING_TOKENS.shipmentRepository] },
+    {
+      provide: ListShipmentsByOrderUseCase,
+      useFactory: (shipments: ShipmentRepository) => new ListShipmentsByOrderUseCase(shipments),
+      inject: [SHIPPING_TOKENS.shipmentRepository],
+    },
     {
       provide: UpdateShipmentStatusUseCase,
       useFactory: (shipments: ShipmentRepository, eventBus: EventBus) => new UpdateShipmentStatusUseCase(shipments, eventBus),

@@ -16,17 +16,29 @@ export class PrismaOrderRepository implements OrderRepository {
     return row ? this.toDomain(row) : null;
   }
 
-  async findAll(filter: OrderFilter): Promise<Order[]> {
+  async findAll(filter: OrderFilter): Promise<{ items: Order[]; total: number; page: number; pageSize: number }> {
     const where: Prisma.OrderWhereInput = {
       storeId: filter.storeId,
       status: filter.status,
       paymentStatus: filter.paymentStatus,
       customerId: filter.customerId,
       channel: filter.channel,
-      orderNumber: filter.orderNumber,
+      // Búsqueda parcial por número de orden (insensitive) cuando se envía.
+      orderNumber: filter.orderNumber ? { contains: filter.orderNumber, mode: 'insensitive' } : undefined,
     };
-    const rows = await this.prisma.order.findMany({ where, include: ORDER_INCLUDE, orderBy: { createdAt: 'desc' } });
-    return rows.map((row) => this.toDomain(row));
+    const page = filter.page && filter.page > 0 ? filter.page : 1;
+    const pageSize = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 20;
+    const [total, rows] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        include: ORDER_INCLUDE,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+    return { items: rows.map((row) => this.toDomain(row)), total, page, pageSize };
   }
 
   async findIdempotency(storeId: string, key: string): Promise<StoredIdempotencyRecord | null> {

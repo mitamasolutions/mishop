@@ -4,14 +4,17 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ApiError } from '@/lib/api-client';
 import { listOrders } from '@/lib/api/orders';
 import type { OrderOutput, OrderPaymentStatus, OrderStatus } from '@/lib/api/types';
+import { useDebounce } from '@/lib/use-debounce';
 
 const STATUS_ALL = '__all__';
+const PAGE_SIZE = 20;
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pendiente',
@@ -42,19 +45,32 @@ export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>(STATUS_ALL);
   const [paymentStatus, setPaymentStatus] = useState<string>(STATUS_ALL);
+  const [page, setPage] = useState(1);
   const [items, setItems] = useState<OrderOutput[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const debouncedSearch = useDebounce(search, 300);
+
+  // Reset de página al cambiar filtros
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status, paymentStatus]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     listOrders({
-      orderNumber: search || undefined,
+      orderNumber: debouncedSearch || undefined,
       status: status === STATUS_ALL ? undefined : (status as OrderStatus),
       paymentStatus: paymentStatus === STATUS_ALL ? undefined : (paymentStatus as OrderPaymentStatus),
+      page,
+      pageSize: PAGE_SIZE,
     })
       .then((result) => {
-        if (!cancelled) setItems(result);
+        if (cancelled) return;
+        setItems(result.items);
+        setTotal(result.total);
       })
       .catch((error: unknown) => {
         if (!cancelled) toast.error(error instanceof ApiError ? error.message : 'No se pudieron cargar las órdenes');
@@ -65,7 +81,9 @@ export default function OrdersPage() {
     return () => {
       cancelled = true;
     };
-  }, [search, status, paymentStatus]);
+  }, [debouncedSearch, status, paymentStatus, page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -161,6 +179,20 @@ export default function OrdersPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+        <p>
+          Página {page} de {totalPages} · {total} órdenes
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            Anterior
+          </Button>
+          <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => setPage((p) => p + 1)}>
+            Siguiente
+          </Button>
+        </div>
       </div>
     </div>
   );

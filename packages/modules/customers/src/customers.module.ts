@@ -8,6 +8,7 @@ import type { PasswordHasher } from './domain/password-hasher';
 import { RegisterCustomerUseCase } from './application/register-customer/register-customer.use-case';
 import { CreateGuestCustomerUseCase } from './application/create-guest-customer/create-guest-customer.use-case';
 import { GetCustomerUseCase } from './application/get-customer/get-customer.use-case';
+import { ListCustomersUseCase } from './application/list-customers/list-customers.use-case';
 import { ManageCustomerAddressUseCase } from './application/manage-customer-address/manage-customer-address.use-case';
 import { PrismaCustomerRepository } from './infra/prisma-customer.repository';
 import { Argon2PasswordHasher } from './infra/argon2-password-hasher';
@@ -32,6 +33,11 @@ import { CustomersController } from './http/customers.controller';
     {
       provide: GetCustomerUseCase,
       useFactory: (customers: CustomerRepository) => new GetCustomerUseCase(customers),
+      inject: [CUSTOMERS_TOKENS.customerRepository],
+    },
+    {
+      provide: ListCustomersUseCase,
+      useFactory: (customers: CustomerRepository) => new ListCustomersUseCase(customers),
       inject: [CUSTOMERS_TOKENS.customerRepository],
     },
     {

@@ -7,6 +7,15 @@ import type { ShipmentRepository } from '../domain/shipment.repository';
 import { InvalidShipmentTransitionError, ShipmentNotFoundError } from '../domain/errors';
 import { toShipmentOutput, type ShipmentOutput } from './shipping.dto';
 
+/** Lista shipments por orden (tab Envíos en admin · r23 sprint1_cierre). */
+export class ListShipmentsByOrderUseCase implements UseCase<string, Result<ShipmentOutput[], never>> {
+  constructor(private readonly shipments: ShipmentRepository) {}
+  async execute(orderId: string): Promise<Result<ShipmentOutput[], never>> {
+    const items = await this.shipments.findByOrderId(orderId);
+    return ok(items.map(toShipmentOutput));
+  }
+}
+
 export class CalculateShippingRatesUseCase implements UseCase<ShippingRateRequest, Result<ShippingRate[], Error>> {
   constructor(
     private readonly methods: ShippingMethodRepository,

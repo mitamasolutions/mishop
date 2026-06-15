@@ -28,6 +28,8 @@ import {
   resendOrderConfirmation,
 } from '@/lib/api/orders';
 import type { OrderOutput, OrderPaymentStatus, OrderStatus } from '@/lib/api/types';
+import { OrderPaymentsSection } from '@/components/order-payments-section';
+import { OrderShipmentsSection } from '@/components/order-shipments-section';
 
 const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
@@ -340,6 +342,9 @@ export default function OrderDetailPage({ params }: PageProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <OrderPaymentsSection orderId={order.id} currency={order.currencyCode} />
+      <OrderShipmentsSection orderId={order.id} />
     </div>
   );
 }

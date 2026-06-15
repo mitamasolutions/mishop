@@ -7,6 +7,15 @@ export interface ListOrdersFilter {
   customerId?: string;
   channel?: string;
   orderNumber?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedOrders {
+  items: OrderOutput[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 function buildQuery(filter: ListOrdersFilter): string {
@@ -20,8 +29,8 @@ function buildQuery(filter: ListOrdersFilter): string {
   return query ? `?${query}` : '';
 }
 
-export function listOrders(filter: ListOrdersFilter = {}): Promise<OrderOutput[]> {
-  return apiFetch<OrderOutput[]>(`/orders${buildQuery(filter)}`);
+export function listOrders(filter: ListOrdersFilter = {}): Promise<PaginatedOrders> {
+  return apiFetch<PaginatedOrders>(`/orders${buildQuery(filter)}`);
 }
 
 export function getOrder(orderId: string): Promise<OrderOutput> {

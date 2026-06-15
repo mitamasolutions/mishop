@@ -136,7 +136,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 | **F3 · Checkout server-side** | ✅ | Guest customer, validación carrito (expirado/deleted/precio), **recálculo server-side de subtotal/envío/impuestos** vía `CheckoutTaxResolverPort` y `CheckoutShippingResolverPort` (envío no se grava), snapshot inmutable con `taxAmount` por línea y método resuelto server-side, rechazo si la zona deja de cubrir | Validar canal del producto vs carrito (pendiente menor; el storeId ya se valida) |
 | **F4 · Inventario correcto** | ✅ | claim-then-apply en release/consume, reserva→consumo por `payment.paid`, `releaseExpired` | Métricas/logs de reservas (no bloqueante) |
 | **F5 · Pagos manual + Mercado Pago** | ✅ | Plugin Strategy (descriptor + validateConfig + estado configured/misconfigured), `CredentialCipher` AES-256-GCM con `PAYMENTS_ENCRYPTION_KEY` fail-closed, credenciales cifradas por tienda, manual paid, MP Checkout Pro real (HttpMercadoPagoClient + verificación HMAC antes de parsear), webhooks idempotentes por (storeId, providerCode, eventId) — webhook URL tenant-scoped (`/payments/webhooks/:storeId/:providerCode`), `ResolveAvailablePaymentMethods` filtra mal configurados y los reporta para alerta en admin | UI de configuración en F5 (sprint1_cierre) |
-| **F6 · Admin operativo** | 🟡 | Pantalla **Órdenes** (listado/detalle/acciones) | Pantallas **Clientes/Pagos/Envíos**, paginado real, debounce, permisos que deshabilitan, dashboard real |
+| **F6 · Admin operativo** | ✅ | Pantalla **Órdenes** paginada (server-side, page=20) con búsqueda debounce; pantallas **Clientes** (lista + detalle con direcciones e historial), **Pagos** y **Envíos** como secciones del detalle de orden, **Configuración de métodos de pago** por tienda (descriptor + alerta misconfigured), **Tareas programadas** (Super Admin). Dashboard con 4 KPIs reales (órdenes hoy, pendientes pago, alertas stock, ingresos día). Hook `useDebounce` reutilizable. Acciones ocultas/deshabilitadas por permiso via `hasPermission`. Sidebar con entradas filtradas | — |
 | **F7 · Hardening API + Admin** | ✅ | API: CORS whitelist, Helmet/CSP, ValidationPipe, rate limits, env validation. Admin: refresh token en cookie HttpOnly/Secure/SameSite=Lax, `NEXT_PUBLIC_API_URL` obligatoria (build prod falla sin ella), CSP + headers de seguridad en `next.config.ts`, `skipStoreScope` solo definido en api-client (no abusado en llamadas) | — |
 | **F8 · Outbox/worker/observabilidad** | ✅ | Outbox `order.created` transaccional + dispatcher manual. **F4 sprint1_cierre**: scheduler in-app estilo nopCommerce (`ScheduledTask` + runner @nestjs/schedule, lock por fila, admin Super Admin), tareas por defecto `dispatch-outbox`/`drain-email-queue`/`release-expired-reservations`, `DrainEmailQueueUseCase` con backoff + `EmailSender` port + Log adapter, outbox para `payment.*` y `order.cancelled/completed/refunded`, `requestId` propagado vía `RequestContextService` y `X-Request-Id` header. Worker dedicado ELIMINADO del alcance | Logger estructurado (pino) y `/health/worker` quedan opcionales |
 | **F9 · CI/CD y Deploy** | 🟡 | Dockerfiles api/admin, `docker-compose.prod.yml`, `DEPLOY.md` | CI (`.github/workflows/ci.yml`), `scripts/deploy.sh`, `apps/worker/Dockerfile`, imágenes GHCR |
@@ -145,7 +145,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 
 1. ~~**F7 admin** (cookies HttpOnly + CSP)~~ → `sprint1_r22` cerrado (sprint1_cierre · F1).
 2. ~~F5 segundo corte (Mercado Pago real)~~ → `sprint1_r14` cerrado (sprint1_cierre · F3).
-3. **F6 segundo corte** (Clientes/Pagos/Envíos) — bloquea operar 100% desde admin → `sprint1_r23`.
+3. ~~F6 segundo corte (Clientes/Pagos/Envíos)~~ → `sprint1_r23` cerrado (sprint1_cierre · F5).
 4. ~~F8 segundo corte (worker + observabilidad)~~ → `sprint1_r24` cerrado (sprint1_cierre · F4, scheduler in-app).
 5. **F9 segundo corte** (CI + deploy.sh) — calidad de cambios → `sprint1_r25`.
 6. ~~F3 (recálculo total server-side)~~ → `sprint1_r13` cerrado (sprint1_cierre · F2). ~~F2 / r20~~ cerrado (sprint1_cierre · F0).
@@ -179,7 +179,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 | [sprint1_r20_db_baseline_constraints](specs/sprint1_r20_db_baseline_constraints.md) | ✅ | F2 | Baseline, FKs, CHECK, índices parciales |
 | [sprint1_r21_api_hardening](specs/sprint1_r21_api_hardening.md) | ✅ | F7 | CORS, Helmet/CSP, ValidationPipe, rate limits |
 | [sprint1_r22_admin_hardening](specs/sprint1_r22_admin_hardening.md) | ✅ | F7 | Cookies HttpOnly, CSP next.config |
-| [sprint1_r23_admin_operativo](specs/sprint1_r23_admin_operativo.md) | 🟡 | F6 | Pantallas admin: Órdenes/Clientes/Pagos/Envíos |
+| [sprint1_r23_admin_operativo](specs/sprint1_r23_admin_operativo.md) | ✅ | F6 | Pantallas admin: Órdenes/Clientes/Pagos/Envíos/Tareas/Métodos pago + dashboard real |
 | [sprint1_r24_outbox_worker_observability](specs/sprint1_r24_outbox_worker_observability.md) | ✅ | F8 | Outbox extendido, scheduler in-app (no worker dedicado), requestId |
 | [sprint1_r25_cicd_deploy](specs/sprint1_r25_cicd_deploy.md) | 🟡 | F9 | Docker (hecho), CI + deploy.sh + GHCR |
 

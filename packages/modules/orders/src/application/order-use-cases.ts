@@ -170,11 +170,19 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<Orde
   }
 }
 
-export class ListOrdersUseCase implements UseCase<OrderFilter, Result<OrderOutput[], never>> {
+export interface PaginatedOrderOutput {
+  items: OrderOutput[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export class ListOrdersUseCase implements UseCase<OrderFilter, Result<PaginatedOrderOutput, never>> {
   constructor(private readonly orders: OrderRepository) {}
 
-  async execute(filter: OrderFilter): Promise<Result<OrderOutput[], never>> {
-    return ok((await this.orders.findAll(filter)).map(toOrderOutput));
+  async execute(filter: OrderFilter): Promise<Result<PaginatedOrderOutput, never>> {
+    const result = await this.orders.findAll(filter);
+    return ok({ ...result, items: result.items.map(toOrderOutput) });
   }
 }
 
