@@ -30,10 +30,6 @@ DATABASE_URL=postgresql://usuario:password@host/db?sslmode=require
 JWT_SECRET=...
 JWT_REFRESH_SECRET=...
 
-# Cifrado de credenciales de plugins de pago (AES-256-GCM, ≥16 chars).
-# La API NO inicia sin esta variable (fail-closed · r14).
-PAYMENTS_ENCRYPTION_KEY=...
-
 # Seed inicial (solo primer arranque; rotar después)
 SEED_ADMIN_PASSWORD=...
 
@@ -45,9 +41,17 @@ CORS_ORIGINS=https://admin.tudominio.com
 NEXT_PUBLIC_API_URL=https://api.tudominio.com
 ```
 
+Variable **opcional** recomendada en producción:
+
+```dotenv
+# Cifrado de settings sensibles, incluidas credenciales de plugins de pago.
+# Si se omite, la API arranca y persiste esos settings en plano.
+SETTINGS_ENCRYPTION_KEY=...
+```
+
 Las credenciales de Mercado Pago **NO van en `.env`**: se configuran por
 tienda desde el admin (`/configuracion/pagos`) y se persisten cifradas en
-DB (`store_payment_methods.encrypted_credentials`).
+DB si `SETTINGS_ENCRYPTION_KEY` está definida (`store_payment_methods.encrypted_credentials`).
 
 ## 3. Primer despliegue
 

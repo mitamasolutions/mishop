@@ -91,6 +91,20 @@ describe('Auth cookie HttpOnly (e2e · r22)', () => {
     await request(app.getHttpServer()).post('/auth/refresh').send({}).expect(401);
   });
 
+  it('refresh ignora cualquier refreshToken enviado por body', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password: PASSWORD })
+      .expect(201);
+    const cookie = (login.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('mitama_refresh='));
+    const token = cookie!.split(';')[0]!.replace('mitama_refresh=', '');
+
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .send({ refreshToken: token })
+      .expect(401);
+  });
+
   it('logout limpia la cookie HttpOnly y revoca el refresh', async () => {
     const login = await request(app.getHttpServer())
       .post('/auth/login')

@@ -29,7 +29,7 @@ import { InMemoryPaymentRepository } from '../infra/in-memory-payment.repository
 import { InMemoryPaymentWebhookEventRepository } from '../infra/in-memory-payment-webhook-event.repository';
 import { InMemoryStorePaymentMethodRepository } from '../infra/in-memory-store-payment-method.repository';
 import { ManualPaymentProvider } from '../infra/manual-payment.provider';
-import { CredentialCipher } from '../infra/credential-cipher';
+import { CredentialCipher, resolveCredentialCipher } from '../infra/credential-cipher';
 import {
   AuthorizePaymentUseCase,
   HandlePaymentWebhookUseCase,
@@ -153,8 +153,8 @@ describe('payment use cases (r14 · sprint1_cierre)', () => {
     const rawBody = JSON.stringify({ eventId: 'evt-1', paymentId: payment.value.id, status: 'paid' });
     const headers = { 'x-test-signature': sign(rawBody) };
 
-    const first = await webhook.execute({ storeId: 'default', providerCode: 'test', headers, rawBody });
-    const second = await webhook.execute({ storeId: 'default', providerCode: 'test', headers, rawBody });
+    const first = await webhook.execute({ providerCode: 'test', headers, rawBody });
+    const second = await webhook.execute({ providerCode: 'test', headers, rawBody });
 
     expect(first.isOk() && first.value.duplicate).toBe(false);
     expect(second.isOk() && second.value.duplicate).toBe(true);
@@ -185,8 +185,8 @@ describe('payment use cases (r14 · sprint1_cierre)', () => {
 
     const rawBodyA = JSON.stringify({ eventId: 'evt-shared', paymentId: paymentA.value.id, status: 'paid' });
     const rawBodyB = JSON.stringify({ eventId: 'evt-shared', paymentId: paymentB.value.id, status: 'paid' });
-    const a = await webhook.execute({ storeId: 'default', providerCode: 'test', headers: { 'x-test-signature': sign(rawBodyA) }, rawBody: rawBodyA });
-    const b = await setupB.webhook.execute({ storeId: 'store-b', providerCode: 'test', headers: { 'x-test-signature': sign(rawBodyB) }, rawBody: rawBodyB });
+    const a = await webhook.execute({ providerCode: 'test', headers: { 'x-test-signature': sign(rawBodyA) }, rawBody: rawBodyA });
+    const b = await setupB.webhook.execute({ providerCode: 'test', headers: { 'x-test-signature': sign(rawBodyB) }, rawBody: rawBodyB });
 
     expect(a.isOk() && a.value.duplicate).toBe(false);
     expect(b.isOk() && b.value.duplicate).toBe(false);
@@ -197,7 +197,7 @@ describe('payment use cases (r14 · sprint1_cierre)', () => {
     const payment = await authorize.execute({ storeId: 'default', orderId: 'order-1', providerCode: 'test', amount: 100, currency: 'MXN' });
     const rawBody = JSON.stringify({ eventId: 'evt-1', paymentId: payment.value.id, status: 'failed' });
 
-    const result = await webhook.execute({ storeId: 'default', providerCode: 'test', headers: { 'x-test-signature': 'bad' }, rawBody });
+    const result = await webhook.execute({ providerCode: 'test', headers: { 'x-test-signature': 'bad' }, rawBody });
     const stored = await payments.findById(payment.value.id);
 
     expect(result.isErr() && result.error).toBeInstanceOf(InvalidWebhookSignatureError);
@@ -209,7 +209,7 @@ describe('payment use cases (r14 · sprint1_cierre)', () => {
     const payment = await authorize.execute({ storeId: 'default', orderId: 'order-1', providerCode: 'test', amount: 100, currency: 'MXN' });
     const rawBody = JSON.stringify({ eventId: 'evt-1', paymentId: payment.value.id, status: 'paid', transientFailure: true });
 
-    const result = await webhook.execute({ storeId: 'default', providerCode: 'test', headers: { 'x-test-signature': sign(rawBody) }, rawBody });
+    const result = await webhook.execute({ providerCode: 'test', headers: { 'x-test-signature': sign(rawBody) }, rawBody });
 
     expect(result.isErr() && result.error).toBeInstanceOf(TransientPaymentProviderError);
   });
@@ -219,7 +219,7 @@ describe('payment use cases (r14 · sprint1_cierre)', () => {
     const payment = await authorize.execute({ storeId: 'default', orderId: 'order-1', providerCode: 'test', amount: 100, currency: 'MXN' });
     const rawBody = JSON.stringify({ eventId: 'evt-old', paymentId: payment.value.id, status: 'authorized', occurredAt: '2020-01-01T00:00:00.000Z' });
 
-    const result = await webhook.execute({ storeId: 'default', providerCode: 'test', headers: { 'x-test-signature': sign(rawBody) }, rawBody });
+    const result = await webhook.execute({ providerCode: 'test', headers: { 'x-test-signature': sign(rawBody) }, rawBody });
     const stored = await payments.findById(payment.value.id);
 
     expect(result.isOk()).toBe(true);
@@ -297,6 +297,16 @@ describe('payment use cases (r14 · sprint1_cierre)', () => {
 });
 
 describe('CredentialCipher (AES-256-GCM)', () => {
+  it('sin SETTINGS_ENCRYPTION_KEY guarda y lee JSON en plano', () => {
+    const cipher = resolveCredentialCipher({});
+    const original = { apiKey: 'sk_plain' };
+    const stored = cipher.encryptJson(original);
+
+    expect(cipher.enabled).toBe(false);
+    expect(stored).toBe(JSON.stringify(original));
+    expect(cipher.decryptJson<typeof original>(stored)).toEqual(original);
+  });
+
   it('cifra y descifra JSON round-trip', () => {
     const cipher = new CredentialCipher('a-secret-of-sufficient-length-and-entropy');
     const original = { apiKey: 'sk_live_xxx', publicKey: 'pk_live_yyy' };

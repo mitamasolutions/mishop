@@ -28,12 +28,13 @@ export class PrismaCheckoutCartReader implements CheckoutCartReader {
       const variant = await this.prisma.productVariant.findUnique({
         where: { id: line.variantId },
         include: {
-          product: { select: { status: true, deletedAt: true, taxCategory: true, weight: true } },
+          product: { select: { status: true, deletedAt: true, taxCategory: true, weight: true, salesChannels: true } },
           priceSet: { include: { prices: true } },
         },
       });
       if (!variant || variant.deletedAt) return null;
       if (!variant.product || variant.product.deletedAt || variant.product.status !== 'published') return null;
+      if (!productIsVisibleInChannel(variant.product.salesChannels, cart.channel)) return null;
 
       const currentPrice = pickCurrentPrice(variant.priceSet?.prices ?? [], line.currencyCode, line.quantity);
       if (currentPrice === null) return null;
@@ -91,6 +92,18 @@ export class PrismaCheckoutCartReader implements CheckoutCartReader {
   async markOrdered(cartId: string): Promise<void> {
     await this.prisma.cart.update({ where: { id: cartId }, data: { status: 'ordered' } });
   }
+}
+
+function productIsVisibleInChannel(
+  channels: Array<{ id: string; name: string; isActive: boolean; deletedAt: Date | null }>,
+  cartChannel: string,
+): boolean {
+  return channels.some(
+    (channel) =>
+      channel.isActive &&
+      !channel.deletedAt &&
+      (channel.id === cartChannel || channel.name.toLowerCase() === cartChannel.toLowerCase()),
+  );
 }
 
 /**

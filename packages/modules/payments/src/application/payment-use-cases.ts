@@ -2,8 +2,8 @@ import { err, ok, type EventBus, type Result, type UseCase } from '@mitama/core'
 import type { DomainEvent } from '@mitama/core';
 import type { OrderForPaymentsPort } from '@mitama/contracts';
 import { Payment } from '../domain/payment.entity';
-import { PaymentWebhookEvent } from '../domain/payment-webhook-event.entity';
-import type { PaymentProviderRegistry } from '../domain/payment-provider';
+import { PaymentWebhookEvent, type PaymentWebhookEventProps } from '../domain/payment-webhook-event.entity';
+import type { PaymentProviderRegistry, PaymentWebhookResult } from '../domain/payment-provider';
 import type { PaymentRepository } from '../domain/payment.repository';
 import type { PaymentWebhookEventRepository } from '../domain/payment-webhook-event.repository';
 import type { PublicStorePaymentMethod, StorePaymentMethod, StorePaymentMethodRepository } from '../domain/store-payment-method.repository';
@@ -307,8 +307,6 @@ export class RefundPaymentUseCase implements UseCase<{ paymentId: string; amount
 }
 
 export interface HandlePaymentWebhookInput {
-  /** Derivado del path del webhook (`/payments/webhooks/:storeId/:providerCode`). */
-  storeId: string;
   providerCode: string;
   headers: Record<string, string | string[] | undefined>;
   rawBody: string;
@@ -335,62 +333,78 @@ export class HandlePaymentWebhookUseCase
     const provider = this.registry.get(input.providerCode);
     if (!provider) return err(new PaymentProviderNotFoundError(input.providerCode));
 
-    // El secret vive en StorePaymentMethod (per-tenant): la URL del
-    // webhook es tenant-scoped, así que aquí ya sabemos la tienda y
-    // podemos verificar la firma con el secreto correcto antes de
-    // parsear (r14 · sprint1_cierre).
-    const method = await this.methods.findByProvider(input.storeId, input.providerCode);
-    if (!method || !method.webhookSecret) return err(new InvalidWebhookSignatureError());
-    const config = { webhookSecret: method.webhookSecret, credentials: method.credentials, captureMode: method.captureMode };
+    const methods = await this.methods.findEnabledByProviderAcrossStores(input.providerCode);
+    for (const method of methods) {
+      const parsed = await provider.handleWebhook({ providerCode: input.providerCode, headers: input.headers, rawBody: input.rawBody, config: toDecryptedConfig(method) });
+      if (parsed.isErr()) {
+        if (parsed.error instanceof InvalidWebhookSignatureError) continue;
+        if (parsed.error instanceof TransientPaymentProviderError) return this.recordTransientWebhook(input, method, parsed.error);
+        return err(parsed.error);
+      }
 
-    const parsed = await provider.handleWebhook({ providerCode: input.providerCode, headers: input.headers, rawBody: input.rawBody, config });
-    if (parsed.isErr()) {
-      if (!(parsed.error instanceof TransientPaymentProviderError)) return err(parsed.error);
-      const eventId = eventIdFromRawBody(input.rawBody);
-      if (!eventId) return err(parsed.error);
-      const event = await this.claimOrLoadEvent(input.storeId, input.providerCode, eventId, input.rawBody);
+      const payment = await this.resolveWebhookPayment(input.providerCode, parsed.value);
+      if (!payment) return err(new PaymentNotFoundError(parsed.value.paymentId));
+
+      const storeMethod = await this.methods.findByProvider(payment.storeId, input.providerCode);
+      if (!storeMethod || !storeMethod.webhookSecret) return err(new InvalidWebhookSignatureError());
+      if (storeMethod.storeId !== method.storeId) {
+        const storeParsed = await provider.handleWebhook({ providerCode: input.providerCode, headers: input.headers, rawBody: input.rawBody, config: toDecryptedConfig(storeMethod) });
+        if (storeParsed.isErr()) return err(storeParsed.error);
+      }
+
+      const event = await this.claimOrLoadEvent(payment.storeId, input.providerCode, parsed.value.eventId, input.rawBody);
       if (!event) return ok({ duplicate: true });
       event.attempts += 1;
-      event.lastError = parsed.error.message;
+      event.status = 'received';
+      event.lastError = null;
       if (event.attempts > event.maxAttempts) {
         event.status = 'failed';
+        event.lastError = 'El webhook excedió el máximo de reintentos';
         await this.webhooks.save(event);
-        return err(new Error('El webhook excedió el máximo de reintentos'));
+        return err(new Error(event.lastError));
       }
       await this.webhooks.save(event);
-      return err(parsed.error);
+
+      return this.applyWebhookToPayment(payment, event, parsed.value);
     }
 
-    const event = await this.claimOrLoadEvent(input.storeId, input.providerCode, parsed.value.eventId, input.rawBody);
+    return err(new InvalidWebhookSignatureError());
+  }
+
+  private async recordTransientWebhook(input: HandlePaymentWebhookInput, method: StorePaymentMethod, error: TransientPaymentProviderError) {
+    const eventId = eventIdFromRawBody(input.rawBody);
+    const paymentReference = paymentReferenceFromRawBody(input.rawBody);
+    if (!eventId || !paymentReference) return err(error);
+    const payment = await this.resolveWebhookPayment(input.providerCode, { paymentId: paymentReference, providerReference: paymentReference } as PaymentWebhookResult);
+    if (!payment) return err(new PaymentNotFoundError(paymentReference));
+    if (payment.storeId !== method.storeId) return err(new InvalidWebhookSignatureError());
+    const event = await this.claimOrLoadEvent(payment.storeId, input.providerCode, eventId, input.rawBody);
     if (!event) return ok({ duplicate: true });
     event.attempts += 1;
-    event.status = 'received';
-    event.lastError = null;
+    event.lastError = error.message;
     if (event.attempts > event.maxAttempts) {
       event.status = 'failed';
-      event.lastError = 'El webhook excedió el máximo de reintentos';
       await this.webhooks.save(event);
-      return err(new Error(event.lastError));
+      return err(new Error('El webhook excedió el máximo de reintentos'));
     }
     await this.webhooks.save(event);
+    return err(error);
+  }
 
-    // Mapeo del pago local: el provider devuelve `paymentId` que puede
-    // ser el id local (legacy/simulado) o un providerReference (MP real).
-    // Tratamos los dos casos.
-    const payment =
-      (await this.payments.findById(parsed.value.paymentId)) ??
-      (await this.payments.findByProviderReference(input.storeId, input.providerCode, parsed.value.providerReference ?? parsed.value.paymentId));
-    if (!payment) return err(new PaymentNotFoundError(parsed.value.paymentId));
-    if (payment.storeId !== input.storeId) {
-      // Defensa: alguien envió un webhook a la URL de otra tienda.
-      return err(new PaymentNotFoundError(parsed.value.paymentId));
-    }
+  private async resolveWebhookPayment(providerCode: string, parsed: Pick<PaymentWebhookResult, 'paymentId' | 'providerReference'>): Promise<Payment | null> {
+    const local = await this.payments.findById(parsed.paymentId);
+    if (local?.providerCode === providerCode) return local;
+    const reference = parsed.providerReference ?? parsed.paymentId;
+    return this.payments.findByProviderReferenceAnyStore(providerCode, reference);
+  }
+
+  private async applyWebhookToPayment(payment: Payment, event: PaymentWebhookEventProps, parsed: PaymentWebhookResult) {
     try {
-      payment.setProviderReference(parsed.value.providerReference);
-      if (parsed.value.status === 'partially_refunded' || parsed.value.status === 'refunded') {
-        payment.markRefundSucceeded({ refundReference: parsed.value.refundReference ?? parsed.value.providerReference ?? null, providerReference: parsed.value.providerReference ?? null, amount: parsed.value.amount ?? null, occurredAt: parsed.value.occurredAt });
+      payment.setProviderReference(parsed.providerReference);
+      if (parsed.status === 'partially_refunded' || parsed.status === 'refunded') {
+        payment.markRefundSucceeded({ refundReference: parsed.refundReference ?? parsed.providerReference ?? null, providerReference: parsed.providerReference ?? null, amount: parsed.amount ?? null, occurredAt: parsed.occurredAt });
       } else {
-        payment.transition(parsed.value.status, `Webhook ${parsed.value.eventId}`, parsed.value.occurredAt);
+        payment.transition(parsed.status, `Webhook ${parsed.eventId}`, parsed.occurredAt);
       }
     } catch (error) {
       event.status = 'failed';
@@ -418,8 +432,21 @@ export class HandlePaymentWebhookUseCase
 
 function eventIdFromRawBody(rawBody: string): string | null {
   try {
-    const parsed = JSON.parse(rawBody) as { eventId?: unknown };
-    return typeof parsed.eventId === 'string' ? parsed.eventId : null;
+    const parsed = JSON.parse(rawBody) as { eventId?: unknown; data?: { id?: unknown }; action?: unknown; type?: unknown };
+    if (typeof parsed.eventId === 'string') return parsed.eventId;
+    if (typeof parsed.data?.id === 'string') return `${parsed.data.id}:${typeof parsed.action === 'string' ? parsed.action : typeof parsed.type === 'string' ? parsed.type : 'update'}`;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function paymentReferenceFromRawBody(rawBody: string): string | null {
+  try {
+    const parsed = JSON.parse(rawBody) as { paymentId?: unknown; data?: { id?: unknown } };
+    if (typeof parsed.paymentId === 'string') return parsed.paymentId;
+    if (typeof parsed.data?.id === 'string') return parsed.data.id;
+    return null;
   } catch {
     return null;
   }

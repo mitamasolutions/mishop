@@ -9,5 +9,6 @@ export interface PaymentRepository {
    * proveedor (ej. MP) en vez del id local.
    */
   findByProviderReference(storeId: string, providerCode: string, providerReference: string): Promise<Payment | null>;
+  findByProviderReferenceAnyStore(providerCode: string, providerReference: string): Promise<Payment | null>;
   save(payment: Payment): Promise<void>;
 }

@@ -6,7 +6,7 @@
 > **migrados aquí y eliminados**. Este ROADMAP refleja el **estado actual real** y,
 > cuando hay divergencia con la planeación histórica, gana el estado entregado.
 >
-> Última actualización: 2026-06-14.
+> Última actualización: 2026-06-15.
 
 ## Objetivo del proyecto
 
@@ -72,10 +72,10 @@ Aplican a **todos** los sprints. Ningún sprint/hito se cierra sin cumplir su Do
 
 ---
 
-## 1. Estado del proyecto (snapshot 2026-06-14)
+## 1. Estado del proyecto (snapshot 2026-06-15)
 
 Modular monolith hexagonal en TypeScript (NestJS + Prisma + Next.js admin).
-16 módulos de negocio registrados en `apps/api/src/app.module.ts`.
+17 módulos de negocio registrados en `apps/api/src/app.module.ts`.
 
 | Módulo | Estado | Notas |
 |---|---|---|
@@ -87,12 +87,13 @@ Modular monolith hexagonal en TypeScript (NestJS + Prisma + Next.js admin).
 | `catalog` | ✅ Completo | Productos, variantes, taxonomías, precios, SEO. |
 | `inventory` | ✅ Completo | Stock por ubicación, reservas claim-then-apply. |
 | `media` | 🟡 Parcial | `ProductImage` persistido; backend configurable por afinar. |
-| `customers` | 🟡 Parcial | CRUD + guest checkout; falta pantalla admin y segmentación. |
-| `cart` | 🟡 Parcial | Server-side + validación primer corte; recalculo total server-side pendiente. |
-| `orders` | 🟡 Parcial | Núcleo completo (idempotencia, outbox `order.created`, estados); recalculo total server-side pendiente. |
-| `payments` | 🟡 Parcial | Manual + validación contra orden + webhooks idempotentes; Mercado Pago real pendiente. |
-| `shipping` | 🟡 Parcial | Métodos/zonas; tracking y UI admin pendientes. |
-| `taxes` | 🟡 Parcial | Reglas por región; cálculo completo en checkout pendiente. |
+| `customers` | ✅ Completo MVP | CRUD + guest checkout; pantalla admin de clientes con detalle, direcciones e historial. Segmentación queda fuera del MVP. |
+| `cart` | ✅ Completo MVP | Server-side + checkout; adapter Prisma valida publicación y canal del producto antes de agregar/confirmar. |
+| `orders` | ✅ Completo MVP | Idempotencia, outbox, estados, recálculo server-side de subtotal/envío/impuestos y validación de canal del producto en checkout. |
+| `payments` | ✅ Completo MVP | Manual + Mercado Pago Checkout Pro + plugins; `SETTINGS_ENCRYPTION_KEY` opcional; webhook deriva `storeId` del pago antes de registrar idempotencia. |
+| `shipping` | ✅ Completo MVP | Métodos/zonas, cálculo server-side, tracking manual y UI admin de envíos. |
+| `taxes` | ✅ Completo MVP | Reglas por región/categoría y cálculo de checkout server-side; envío no gravado en MVP. |
+| `scheduled-tasks` | ✅ Completo MVP | Scheduler in-app, tareas por defecto, lock por fila y administración Super Admin. |
 | `promotions` | 🧊 Congelado | Descuentos/cupones/newsletter/rewards; fuera del checkout MVP. |
 | `giftcards` | 🧊 Congelado | Gift cards; release en cancel/refund entregado. |
 | `reviews` | 🧊 Congelado | Reviews moderadas; proyección compra verificada entregada. |
@@ -123,13 +124,19 @@ single-store por defecto y deploy reproducible en VPS/Docker.
 
 ### Veredicto actual: ✅ LISTO — Sprint 1 cerrado (sprint1_cierre)
 
-Las 6 brechas bloqueantes del plan de cierre (F0/r20, F1/r22, F2/r13,
-F3/r14, F4/r24, F5/r23, F6/r25) están entregadas y verificadas. El núcleo
-y las capas operativas del MVP cumplen el criterio de "vendible":
-hardening, totales server-side, plugins de pago con MP y cifrado, scheduler
-in-app + outbox extendido, admin operativo, y CI/CD reproducible.
+Las brechas bloqueantes detectadas en la validación del cierre quedaron
+resueltas: refresh cookie-only, checkout con validación de canal del producto,
+cifrado opcional vía `SETTINGS_ENCRYPTION_KEY`, webhooks que derivan `storeId`
+del pago antes de registrar idempotencia, y eliminación de `console.log` runtime.
 
-**Listo para pasar al Sprint 2 (tienda pública)**.
+**Listo para pasar al Sprint 2 (tienda pública)**, sujeto a mantener verde el
+pipeline completo (`lint`, `test`, `build`, migraciones y seed en CI).
+
+Nota de consumo por storefront: el Sprint 1 deja listo el núcleo ecommerce y los
+flujos públicos de carrito/checkout base, pero la tienda pública todavía debe
+abrir una fachada pública de catálogo y un endpoint/flujo público para iniciar
+pagos de comprador. Hoy `catalog/*` es API de administración y
+`payments/authorize` exige permiso admin.
 
 ### Hitos del Sprint 1 (fases de endurecimiento)
 
@@ -138,22 +145,22 @@ in-app + outbox extendido, admin operativo, y CI/CD reproducible.
 | **F0 · Congelar alcance** | ✅ | `promotions`/`giftcards`/`reviews` fuera del checkout; endpoints MVP documentados | — |
 | **F1 · Seguridad/RBAC/single-store** | ✅ | `PermissionsGuard` fail-closed, `@RequirePermission` consistente, store desde contexto | — |
 | **F2 · Baseline DB** | ✅ | Baseline limpio, FKs críticas, CHECK constraints, índices parciales (settings/roles + `handle`/`sku` activos), `storeId` en unicidad de webhooks (transitorio nullable → F3 lo hará NOT NULL), `TaxRule.rate >= 0` | — |
-| **F3 · Checkout server-side** | ✅ | Guest customer, validación carrito (expirado/deleted/precio), **recálculo server-side de subtotal/envío/impuestos** vía `CheckoutTaxResolverPort` y `CheckoutShippingResolverPort` (envío no se grava), snapshot inmutable con `taxAmount` por línea y método resuelto server-side, rechazo si la zona deja de cubrir | Validar canal del producto vs carrito (pendiente menor; el storeId ya se valida) |
+| **F3 · Checkout server-side** | ✅ | Guest customer, validación carrito (expirado/deleted/precio/canal), **recálculo server-side de subtotal/envío/impuestos** vía `CheckoutTaxResolverPort` y `CheckoutShippingResolverPort` (envío no se grava), snapshot inmutable con `taxAmount` por línea y método resuelto server-side, rechazo si la zona deja de cubrir | — |
 | **F4 · Inventario correcto** | ✅ | claim-then-apply en release/consume, reserva→consumo por `payment.paid`, `releaseExpired` | Métricas/logs de reservas (no bloqueante) |
-| **F5 · Pagos manual + Mercado Pago** | ✅ | Plugin Strategy (descriptor + validateConfig + estado configured/misconfigured), `CredentialCipher` AES-256-GCM con `PAYMENTS_ENCRYPTION_KEY` fail-closed, credenciales cifradas por tienda, manual paid, MP Checkout Pro real (HttpMercadoPagoClient + verificación HMAC antes de parsear), webhooks idempotentes por (storeId, providerCode, eventId) — webhook URL tenant-scoped (`/payments/webhooks/:storeId/:providerCode`), `ResolveAvailablePaymentMethods` filtra mal configurados y los reporta para alerta en admin | UI de configuración en F5 (sprint1_cierre) |
+| **F5 · Pagos manual + Mercado Pago** | ✅ | Plugin Strategy (descriptor + validateConfig + estado configured/misconfigured), manual pending→paid, MP Checkout Pro real, webhooks con firma antes de parsear, idempotencia por `(storeId, providerCode, eventId)` usando `storeId` derivado del pago, métodos mal configurados excluidos del checkout y visibles como alerta admin, settings sensibles con `SETTINGS_ENCRYPTION_KEY` opcional | — |
 | **F6 · Admin operativo** | ✅ | Pantalla **Órdenes** paginada (server-side, page=20) con búsqueda debounce; pantallas **Clientes** (lista + detalle con direcciones e historial), **Pagos** y **Envíos** como secciones del detalle de orden, **Configuración de métodos de pago** por tienda (descriptor + alerta misconfigured), **Tareas programadas** (Super Admin). Dashboard con 4 KPIs reales (órdenes hoy, pendientes pago, alertas stock, ingresos día). Hook `useDebounce` reutilizable. Acciones ocultas/deshabilitadas por permiso via `hasPermission`. Sidebar con entradas filtradas | — |
-| **F7 · Hardening API + Admin** | ✅ | API: CORS whitelist, Helmet/CSP, ValidationPipe, rate limits, env validation. Admin: refresh token en cookie HttpOnly/Secure/SameSite=Lax, `NEXT_PUBLIC_API_URL` obligatoria (build prod falla sin ella), CSP + headers de seguridad en `next.config.ts`, `skipStoreScope` solo definido en api-client (no abusado en llamadas) | — |
-| **F8 · Outbox/worker/observabilidad** | ✅ | Outbox `order.created` transaccional + dispatcher manual. **F4 sprint1_cierre**: scheduler in-app estilo nopCommerce (`ScheduledTask` + runner @nestjs/schedule, lock por fila, admin Super Admin), tareas por defecto `dispatch-outbox`/`drain-email-queue`/`release-expired-reservations`, `DrainEmailQueueUseCase` con backoff + `EmailSender` port + Log adapter, outbox para `payment.*` y `order.cancelled/completed/refunded`, `requestId` propagado vía `RequestContextService` y `X-Request-Id` header. Worker dedicado ELIMINADO del alcance | Logger estructurado (pino) y `/health/worker` quedan opcionales |
-| **F9 · CI/CD y Deploy** | ✅ | Dockerfiles api/admin, `docker-compose.prod.yml`, `DEPLOY.md`. **F6 sprint1_cierre**: CI con Postgres 16 real (lint+build+migrate+seed+tests e2e), bloquea merge si rojo; publica imágenes a GHCR (api+admin) por SHA y `latest` en push a `main`; `scripts/deploy.sh` reproducible (git pull → install → migrate → up → healthcheck con backoff + rollback automático); `.env.example` documenta `PAYMENTS_ENCRYPTION_KEY`; `DEPLOY.md` reescrito sin cron externo (tareas in-app) | — |
+| **F7 · Hardening API + Admin** | ✅ | API: CORS whitelist, Helmet/CSP, ValidationPipe, rate limits, env validation. Admin: refresh token en cookie HttpOnly/Secure/SameSite=Lax, `/auth/refresh` y `/auth/logout` leen solo cookie, `NEXT_PUBLIC_API_URL` obligatoria (build prod falla sin ella), CSP + headers de seguridad en `next.config.ts`, uso limitado de `skipStoreScope` | — |
+| **F8 · Outbox/worker/observabilidad** | ✅ | Outbox `order.created` transaccional + dispatcher manual. **F4 sprint1_cierre**: scheduler in-app estilo nopCommerce (`ScheduledTask` + runner @nestjs/schedule, lock por fila, admin Super Admin), tareas por defecto `dispatch-outbox`/`drain-email-queue`/`release-expired-reservations`, `DrainEmailQueueUseCase` con backoff + `EmailSender` port + Log adapter, outbox para `payment.*` y `order.cancelled/completed/refunded`, `requestId` propagado vía `RequestContextService` y `X-Request-Id` header, sin `console.log` runtime. Worker dedicado ELIMINADO del alcance | Logger estructurado (pino) queda como mejora transversal no bloqueante |
+| **F9 · CI/CD y Deploy** | ✅ | Dockerfiles api/admin, `docker-compose.prod.yml`, `DEPLOY.md`. **F6 sprint1_cierre**: CI con Postgres 16 real (lint+build+migrate+seed+tests), publica imágenes a GHCR (api+admin) por SHA y `latest` en push a `main`; `scripts/deploy.sh` reproducible (git pull → install → migrate → up → healthcheck con backoff + rollback automático); `.env.example`, CI y deploy usan/documentan `SETTINGS_ENCRYPTION_KEY` opcional; `DEPLOY.md` sin cron externo (tareas in-app) | — |
 
 ### Brechas bloqueantes (resumen priorizado)
 
-1. ~~**F7 admin** (cookies HttpOnly + CSP)~~ → `sprint1_r22` cerrado (sprint1_cierre · F1).
-2. ~~F5 segundo corte (Mercado Pago real)~~ → `sprint1_r14` cerrado (sprint1_cierre · F3).
-3. ~~F6 segundo corte (Clientes/Pagos/Envíos)~~ → `sprint1_r23` cerrado (sprint1_cierre · F5).
-4. ~~F8 segundo corte (worker + observabilidad)~~ → `sprint1_r24` cerrado (sprint1_cierre · F4, scheduler in-app).
-5. ~~F9 segundo corte (CI + deploy.sh)~~ → `sprint1_r25` cerrado (sprint1_cierre · F6).
-6. ~~F3 (recálculo total server-side)~~ → `sprint1_r13` cerrado (sprint1_cierre · F2). ~~F2 / r20~~ cerrado (sprint1_cierre · F0).
+1. ~~F5/r14 pagos + settings~~ → `SETTINGS_ENCRYPTION_KEY` opcional y webhooks con `storeId` derivado del pago.
+2. ~~F7/r22 hardening auth~~ → refresh/logout cookie-only, sin fallback por body.
+3. ~~F3/r13 checkout~~ → validación de canal del producto en Prisma antes de carrito/confirmación.
+4. ~~F8/r24 observabilidad~~ → eliminado `console.log` runtime restante.
+5. ~~F9/r25 CI/deploy docs/env~~ → `.env.example`, CI y deploy alineados a `SETTINGS_ENCRYPTION_KEY` opcional.
+6. ~~F0/r20 constraints DB~~, ~~F5/r23 admin operativo~~ y ~~F4/r24 scheduler/outbox~~ entregados.
 
 ### Trazabilidad requisito ↔ spec
 
@@ -171,9 +178,9 @@ in-app + outbox extendido, admin operativo, y CI/CD reproducible.
 | [sprint1_r10_media](specs/sprint1_r10_media.md) | 🟡 | — | Imágenes por producto/variante |
 | [sprint1_r11_customers](specs/sprint1_r11_customers.md) | 🟡 | F3, F6 | Clientes, direcciones, guest |
 | [sprint1_r12_cart](specs/sprint1_r12_cart.md) | 🟡 | F3 | Carrito server-side, checkout |
-| [sprint1_r13_orders](specs/sprint1_r13_orders.md) | ✅ | F3, F8 | Órdenes, snapshot, estados, outbox |
+| [sprint1_r13_orders](specs/sprint1_r13_orders.md) | ✅ | F3, F8 | Órdenes, snapshot, estados, outbox, validación de canal de producto en checkout |
 | [sprint1_r13.1_order_idempotency](specs/sprint1_r13.1_order_idempotency.md) | ✅ | F3 | Idempotencia robusta en CreateOrder |
-| [sprint1_r14_payments](specs/sprint1_r14_payments.md) | ✅ | F5 | Providers, webhooks, refunds, MP real |
+| [sprint1_r14_payments](specs/sprint1_r14_payments.md) | ✅ | F5 | Providers, webhooks, refunds, MP real, `SETTINGS_ENCRYPTION_KEY` opcional, derivación de `storeId` del pago |
 | [sprint1_r15_shipping](specs/sprint1_r15_shipping.md) | 🟡 | F5, F6 | Métodos, zonas, pickup, tracking |
 | [sprint1_r16_taxes](specs/sprint1_r16_taxes.md) | 🟡 | F5 | Categorías de impuesto, IVA México |
 | [sprint1_r17_promotions](specs/sprint1_r17_promotions.md) | 🧊 | F0 | Descuentos, cupones, newsletter, rewards |
@@ -183,10 +190,10 @@ in-app + outbox extendido, admin operativo, y CI/CD reproducible.
 | [sprint1_r19.1_reviews_verified_purchase](specs/sprint1_r19.1_reviews_verified_purchase.md) | ✅ | F0 | Proyección por eventos (boundary fix) |
 | [sprint1_r20_db_baseline_constraints](specs/sprint1_r20_db_baseline_constraints.md) | ✅ | F2 | Baseline, FKs, CHECK, índices parciales |
 | [sprint1_r21_api_hardening](specs/sprint1_r21_api_hardening.md) | ✅ | F7 | CORS, Helmet/CSP, ValidationPipe, rate limits |
-| [sprint1_r22_admin_hardening](specs/sprint1_r22_admin_hardening.md) | ✅ | F7 | Cookies HttpOnly, CSP next.config |
+| [sprint1_r22_admin_hardening](specs/sprint1_r22_admin_hardening.md) | ✅ | F7 | Cookies HttpOnly, refresh/logout cookie-only, CSP next.config |
 | [sprint1_r23_admin_operativo](specs/sprint1_r23_admin_operativo.md) | ✅ | F6 | Pantallas admin: Órdenes/Clientes/Pagos/Envíos/Tareas/Métodos pago + dashboard real |
-| [sprint1_r24_outbox_worker_observability](specs/sprint1_r24_outbox_worker_observability.md) | ✅ | F8 | Outbox extendido, scheduler in-app (no worker dedicado), requestId |
-| [sprint1_r25_cicd_deploy](specs/sprint1_r25_cicd_deploy.md) | ✅ | F9 | Docker, CI con Postgres real, deploy.sh, GHCR |
+| [sprint1_r24_outbox_worker_observability](specs/sprint1_r24_outbox_worker_observability.md) | ✅ | F8 | Outbox extendido, scheduler in-app (no worker dedicado), requestId, sin `console.log` runtime |
+| [sprint1_r25_cicd_deploy](specs/sprint1_r25_cicd_deploy.md) | ✅ | F9 | Docker, CI con Postgres real, deploy.sh, GHCR, variables de cifrado alineadas |
 
 ---
 
@@ -195,6 +202,19 @@ in-app + outbox extendido, admin operativo, y CI/CD reproducible.
 Se abre **solo** cuando el Sprint 1 cumpla su criterio de salida. Construye
 `apps/web`: la tienda pública que consume el catálogo y el checkout del MVP ya
 existentes (API + Admin). Cierra el ciclo comprador end-to-end con UI.
+
+**Prerequisitos técnicos detectados al validar Sprint 1:**
+
+- Exponer una API pública de catálogo para storefront: productos publicados,
+  categorías/colecciones/marcas, precios efectivos, variantes, imágenes y SEO,
+  filtrados por tienda/canal. Los controllers actuales de `catalog/*` son de
+  administración y requieren permisos.
+- Exponer un flujo público de inicio de pago para comprador o integrar la
+  autorización de pago en la confirmación de orden. Actualmente
+  `POST /payments/authorize` requiere `payments.create`.
+- Definir contrato estable para `storeId/channel` desde storefront: hoy carrito,
+  métodos de pago y shipping aceptan datos públicos, pero la UI pública debe
+  resolver tienda/canal sin depender de sesión admin.
 
 **Alcance propuesto (por detallar con spec-dev al planear):**
 

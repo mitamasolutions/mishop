@@ -29,6 +29,10 @@ export class InMemoryStorePaymentMethodRepository implements StorePaymentMethodR
     return (await this.findEnabled(storeId)).find((method) => method.providerCode === providerCode) ?? null;
   }
 
+  async findEnabledByProviderAcrossStores(providerCode: string): Promise<StorePaymentMethod[]> {
+    return [...this.methods.values()].filter((method) => method.enabled && method.providerCode === providerCode);
+  }
+
   async findByProvider(storeId: string, providerCode: string): Promise<StorePaymentMethod | null> {
     return (
       [...this.methods.values()].find(

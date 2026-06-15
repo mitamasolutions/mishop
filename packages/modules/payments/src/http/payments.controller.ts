@@ -160,15 +160,33 @@ export class PaymentsController {
   @Public()
   @Throttle({ webhook: { limit: 60, ttl: 60000 } })
   @HttpCode(200)
-  @ApiOperation({ summary: 'Recibe webhooks de pago por (tienda, provider)' })
+  @ApiOperation({ summary: 'Recibe webhooks de pago legacy por (tienda, provider); la tienda efectiva se deriva del pago' })
   async webhook(
-    @Param('storeId') storeId: string,
+    @Param('storeId') _storeId: string,
     @Param('providerCode') providerCode: string,
     @Headers() headers: Record<string, string | string[] | undefined>,
     @Req() request: RawBodyRequest<{ rawBody?: Buffer }>,
   ): Promise<{ ok: true; duplicate: boolean }> {
     const rawBody = request.rawBody?.toString('utf8') ?? '';
-    const result = await this.handleWebhook.execute({ storeId, providerCode, headers, rawBody });
+    const result = await this.handleWebhook.execute({ providerCode, headers, rawBody });
+    if (result.isOk()) return { ok: true, duplicate: result.value.duplicate };
+    if (result.error instanceof InvalidWebhookSignatureError) throw new HttpException(result.error.message, HttpStatus.UNAUTHORIZED);
+    if (result.error instanceof TransientPaymentProviderError) throw new HttpException(result.error.message, HttpStatus.SERVICE_UNAVAILABLE);
+    throw new BadRequestException(result.error.message);
+  }
+
+  @Post('webhooks/:providerCode')
+  @Public()
+  @Throttle({ webhook: { limit: 60, ttl: 60000 } })
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Recibe webhooks de pago; deriva tienda desde el pago referido' })
+  async webhookByProvider(
+    @Param('providerCode') providerCode: string,
+    @Headers() headers: Record<string, string | string[] | undefined>,
+    @Req() request: RawBodyRequest<{ rawBody?: Buffer }>,
+  ): Promise<{ ok: true; duplicate: boolean }> {
+    const rawBody = request.rawBody?.toString('utf8') ?? '';
+    const result = await this.handleWebhook.execute({ providerCode, headers, rawBody });
     if (result.isOk()) return { ok: true, duplicate: result.value.duplicate };
     if (result.error instanceof InvalidWebhookSignatureError) throw new HttpException(result.error.message, HttpStatus.UNAUTHORIZED);
     if (result.error instanceof TransientPaymentProviderError) throw new HttpException(result.error.message, HttpStatus.SERVICE_UNAVAILABLE);

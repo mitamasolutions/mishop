@@ -22,6 +22,14 @@ export class InMemoryPaymentRepository implements PaymentRepository {
     );
   }
 
+  async findByProviderReferenceAnyStore(providerCode: string, providerReference: string): Promise<Payment | null> {
+    return (
+      [...this.payments.values()].find(
+        (p) => p.providerCode === providerCode && p.providerReference === providerReference,
+      ) ?? null
+    );
+  }
+
   async save(payment: Payment): Promise<void> {
     this.payments.set(payment.id, payment);
   }

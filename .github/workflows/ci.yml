@@ -41,7 +41,7 @@ jobs:
       JWT_SECRET: ci-test-jwt-secret-do-not-use-in-prod
       JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-do-not-use-in-prod
       SEED_ADMIN_PASSWORD: CiTest1234!
-      PAYMENTS_ENCRYPTION_KEY: ci-only-aes-key-do-not-use-in-prod-32b
+      SETTINGS_ENCRYPTION_KEY: ci-only-aes-key-do-not-use-in-prod-32b
       NEXT_PUBLIC_API_URL: http://localhost:3000
 
     steps:

@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -9,6 +9,7 @@ import { AppModule } from './app.module';
 import { isTruthyEnv, parseCorsOrigins } from './config/env';
 
 async function bootstrap(): Promise<void> {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
 
   const docsEnabled = isTruthyEnv(process.env.API_DOCS_ENABLED);
@@ -50,7 +51,7 @@ async function bootstrap(): Promise<void> {
   const port = Number(process.env.API_PORT ?? 3000);
   await app.listen(port);
   const docsHint = docsEnabled ? ' — Swagger en /docs' : ' — Swagger deshabilitado (API_DOCS_ENABLED=true para activar)';
-  console.log(`API escuchando en http://localhost:${port}${docsHint}`);
+  logger.log(`API escuchando en http://localhost:${port}${docsHint}`);
 }
 
 void bootstrap();

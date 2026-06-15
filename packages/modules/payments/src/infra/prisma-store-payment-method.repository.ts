@@ -39,6 +39,11 @@ export class PrismaStorePaymentMethodRepository implements StorePaymentMethodRep
     return row?.enabled ? this.toDomain(row) : null;
   }
 
+  async findEnabledByProviderAcrossStores(providerCode: string): Promise<StorePaymentMethod[]> {
+    const rows = await this.prisma.storePaymentMethod.findMany({ where: { providerCode, enabled: true } });
+    return rows.map((row) => this.toDomain(row));
+  }
+
   async findByProvider(storeId: string, providerCode: string): Promise<StorePaymentMethod | null> {
     const row = await this.prisma.storePaymentMethod.findUnique({ where: { storeId_providerCode: { storeId, providerCode } } });
     return row ? this.toDomain(row) : null;

@@ -6,17 +6,19 @@ import type { CatalogSnapshotService, VariantSnapshot } from '../domain/catalog-
 export class PrismaCatalogSnapshotService implements CatalogSnapshotService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getVariant(input: { variantId: string; quantity: number }): Promise<VariantSnapshot | null> {
+  async getVariant(input: { storeId: string; channel: string; variantId: string; quantity: number }): Promise<VariantSnapshot | null> {
     const variant = await this.prisma.productVariant.findUnique({
       where: { id: input.variantId },
       include: {
-        product: true,
+        product: { include: { salesChannels: true } },
         priceSet: { include: { prices: true } },
         inventoryLink: { include: { inventoryItem: { include: { levels: true } } } },
       },
     });
 
     if (!variant || variant.deletedAt || variant.product.deletedAt) return null;
+    if (variant.product.status !== 'published') return null;
+    if (!productIsVisibleInChannel(variant.product.salesChannels, input.channel)) return null;
 
     const price = variant.priceSet?.prices.find((candidate) => candidate.minQuantity === null) ?? variant.priceSet?.prices[0];
     const level = variant.inventoryLink?.inventoryItem.levels[0] ?? null;
@@ -36,4 +38,16 @@ export class PrismaCatalogSnapshotService implements CatalogSnapshotService {
       locationId: level?.locationId ?? 'default',
     };
   }
+}
+
+function productIsVisibleInChannel(
+  channels: Array<{ id: string; name: string; isActive: boolean; deletedAt: Date | null }>,
+  cartChannel: string,
+): boolean {
+  return channels.some(
+    (channel) =>
+      channel.isActive &&
+      !channel.deletedAt &&
+      (channel.id === cartChannel || channel.name.toLowerCase() === cartChannel.toLowerCase()),
+  );
 }

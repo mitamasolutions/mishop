@@ -35,18 +35,13 @@ export function clearRefreshCookie(res: Response): void {
 }
 
 /**
- * Extrae el refresh token. Fuente de verdad: cookie HttpOnly. Como puerta
- * de transición se acepta `bodyFallback` para no romper integraciones no-web
- * existentes (clientes server-to-server o tests). El admin no envía body.
+ * Extrae el refresh token. Fuente de verdad: cookie HttpOnly; no se acepta
+ * fallback por body para que el token no sea accesible desde JavaScript.
  */
-export function readRefreshToken(req: { cookies?: Record<string, string | undefined> }, bodyFallback: string | undefined): string | null {
+export function readRefreshToken(req: { cookies?: Record<string, string | undefined> }): string | null {
   const fromCookie = req.cookies?.[REFRESH_COOKIE_NAME];
   if (typeof fromCookie === 'string' && fromCookie.length > 0) {
     return fromCookie;
   }
-  if (typeof bodyFallback === 'string' && bodyFallback.length > 0) {
-    return bodyFallback;
-  }
   return null;
 }
-

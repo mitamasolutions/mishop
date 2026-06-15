@@ -34,7 +34,6 @@ import {
 } from '../domain/errors';
 import { ValidationError } from '@mitama/core';
 import { LoginRequestDto } from './dto/login.request.dto';
-import { RefreshTokenRequestDto } from './dto/refresh-token.request.dto';
 import { ForgotPasswordRequestDto } from './dto/forgot-password.request.dto';
 import { ResetPasswordRequestDto } from './dto/reset-password.request.dto';
 import { AcceptInvitationRequestDto } from './dto/accept-invitation.request.dto';
@@ -93,11 +92,10 @@ export class AuthController {
   @ApiOkResponse({ description: 'Sesión renovada' })
   @ApiUnauthorizedResponse({ description: 'El refresh token es inválido o expiró' })
   async refresh(
-    @Body() body: RefreshTokenRequestDto,
     @Req() req: RequestWithIp,
     @Res({ passthrough: true }) res: Response,
   ): Promise<Omit<RefreshSessionOutput, 'refreshToken'>> {
-    const refreshToken = readRefreshToken(req, body.refreshToken);
+    const refreshToken = readRefreshToken(req);
     if (!refreshToken) {
       throw new UnauthorizedException('Sesión expirada');
     }
@@ -117,11 +115,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Cierra la sesión, revocando la familia del refresh token' })
   @ApiOkResponse({ description: 'Sesión cerrada' })
   async logoutHandler(
-    @Body() body: RefreshTokenRequestDto,
     @Req() req: RequestWithIp,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    const refreshToken = readRefreshToken(req, body.refreshToken);
+    const refreshToken = readRefreshToken(req);
     if (refreshToken) {
       await this.logout.execute({ refreshToken, ip: req.ip ?? null });
     }

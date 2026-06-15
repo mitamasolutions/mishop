@@ -1,7 +1,7 @@
 /**
  * Composición del módulo de pagos (r14 · sprint1_cierre).
  *
- * - Registra el cipher AES-GCM (fail-closed al arranque vía main.ts).
+ * - Registra el cipher opcional de settings (`SETTINGS_ENCRYPTION_KEY`).
  * - Registra los plugins activos del MVP: ManualPaymentProvider y
  *   MercadoPagoPaymentProvider (con HttpMercadoPagoClient real).
  * - Expone use cases que validan `configured ∩ enabled` y derivan
@@ -28,7 +28,7 @@ import { PaymentProviderRegistry, type PaymentProvider } from './domain/payment-
 import type { PaymentRepository } from './domain/payment.repository';
 import type { PaymentWebhookEventRepository } from './domain/payment-webhook-event.repository';
 import type { StorePaymentMethodRepository } from './domain/store-payment-method.repository';
-import { CredentialCipher, requireCredentialCipher } from './infra/credential-cipher';
+import { CredentialCipher, resolveCredentialCipher } from './infra/credential-cipher';
 import { HttpMercadoPagoClient } from './infra/http-mercado-pago.client';
 import { CashPaymentProvider, ManualPaymentProvider } from './infra/manual-payment.provider';
 import { MercadoPagoPaymentProvider, type MercadoPagoClient } from './infra/mercado-pago-payment.provider';
@@ -46,7 +46,7 @@ import { PaymentsController } from './http/payments.controller';
     { provide: PAYMENTS_TOKENS.storeMethodRepository, useClass: PrismaStorePaymentMethodRepository },
     {
       provide: PAYMENTS_TOKENS.credentialCipher,
-      useFactory: (): CredentialCipher => requireCredentialCipher(),
+      useFactory: (): CredentialCipher => resolveCredentialCipher(),
     },
     { provide: PAYMENTS_TOKENS.mercadoPagoClient, useClass: HttpMercadoPagoClient },
     {
@@ -135,7 +135,5 @@ import { PaymentsController } from './http/payments.controller';
   exports: [PAYMENTS_TOKENS.providerRegistry, ResolveAvailablePaymentMethodsUseCase],
 })
 export class PaymentsModule implements OnModuleInit {
-  // El cipher se materializa al construir el provider; si la env falta
-  // requireCredentialCipher lanza y el bootstrap aborta.
   onModuleInit(): void {}
 }

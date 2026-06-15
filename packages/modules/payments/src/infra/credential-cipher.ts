@@ -1,29 +1,24 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 
 /**
- * Cifrador simétrico para credenciales de plugins de pago por tienda
- * (r14 · sprint1_cierre).
+ * Cifrador general para settings sensibles (r14 · sprint1_cierre).
  *
- * - Algoritmo: **AES-256-GCM** (autenticado: detecta tampering).
- * - Clave: derivada por SHA-256 de la env `PAYMENTS_ENCRYPTION_KEY` (acepta
- *   secretos arbitrariamente largos sin imponer 32 bytes exactos).
- * - Formato persistido: `v1:<iv-base64>:<tag-base64>:<ciphertext-base64>`.
- *   El prefijo `v1` permite rotar el algoritmo en el futuro sin perder
- *   compatibilidad.
- * - Fail-closed: si la env falta o queda vacía, la API **no inicia**
- *   (`requireCredentialCipher`).
+ * `SETTINGS_ENCRYPTION_KEY` es opcional: sin clave persiste JSON plano; con
+ * clave usa AES-256-GCM. La API debe arrancar en ambos casos.
  */
 export class CredentialCipher {
-  private readonly key: Buffer;
+  private readonly key: Buffer | null;
 
-  constructor(secret: string) {
-    if (!secret || secret.length === 0) {
-      throw new Error('CredentialCipher requiere un secreto no vacío');
-    }
-    this.key = createHash('sha256').update(secret).digest();
+  constructor(secret?: string | null) {
+    this.key = secret && secret.length > 0 ? createHash('sha256').update(secret).digest() : null;
+  }
+
+  get enabled(): boolean {
+    return this.key !== null;
   }
 
   encrypt(plaintext: string): string {
+    if (!this.key) return plaintext;
     const iv = randomBytes(12);
     const cipher = createCipheriv('aes-256-gcm', this.key, iv);
     const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
@@ -32,6 +27,10 @@ export class CredentialCipher {
   }
 
   decrypt(payload: string): string {
+    if (!payload.startsWith('v1:')) return payload;
+    if (!this.key) {
+      throw new Error('CredentialCipher: payload cifrado requiere SETTINGS_ENCRYPTION_KEY');
+    }
     const parts = payload.split(':');
     if (parts.length !== 4 || parts[0] !== 'v1' || !parts[1] || !parts[2] || !parts[3]) {
       throw new Error('CredentialCipher: formato cifrado no soportado');
@@ -55,16 +54,9 @@ export class CredentialCipher {
 }
 
 /**
- * Resuelve `PAYMENTS_ENCRYPTION_KEY`. Lanza si falta: la API debe abortar
- * el bootstrap antes de aceptar tráfico (fail-closed).
+ * Resuelve `SETTINGS_ENCRYPTION_KEY`. Es opcional por spec: sin clave se
+ * guarda/lee en plano y la API arranca normalmente.
  */
-export function requireCredentialCipher(env: NodeJS.ProcessEnv = process.env): CredentialCipher {
-  const secret = env.PAYMENTS_ENCRYPTION_KEY;
-  if (!secret || secret.length < 16) {
-    throw new Error(
-      'PAYMENTS_ENCRYPTION_KEY ausente o demasiado corta (mínimo 16 caracteres). ' +
-        'La API no puede iniciar sin clave para cifrar credenciales de pago (r14 · sprint1_cierre).',
-    );
-  }
-  return new CredentialCipher(secret);
+export function resolveCredentialCipher(env: NodeJS.ProcessEnv = process.env): CredentialCipher {
+  return new CredentialCipher(env.SETTINGS_ENCRYPTION_KEY);
 }

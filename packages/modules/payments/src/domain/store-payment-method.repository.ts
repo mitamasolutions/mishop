@@ -36,6 +36,7 @@ export interface StorePaymentMethodRepository {
    */
   findEnabled(storeId: string): Promise<StorePaymentMethod[]>;
   findEnabledByProvider(storeId: string, providerCode: string): Promise<StorePaymentMethod | null>;
+  findEnabledByProviderAcrossStores(providerCode: string): Promise<StorePaymentMethod[]>;
   /** Devuelve el método sin filtro `enabled`, útil para admin/config. */
   findByProvider(storeId: string, providerCode: string): Promise<StorePaymentMethod | null>;
   save(method: StorePaymentMethod): Promise<void>;
