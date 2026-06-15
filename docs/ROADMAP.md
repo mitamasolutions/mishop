@@ -132,7 +132,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 |---|---|---|---|
 | **F0 · Congelar alcance** | ✅ | `promotions`/`giftcards`/`reviews` fuera del checkout; endpoints MVP documentados | — |
 | **F1 · Seguridad/RBAC/single-store** | ✅ | `PermissionsGuard` fail-closed, `@RequirePermission` consistente, store desde contexto | — |
-| **F2 · Baseline DB** | 🟡 | Baseline limpio, FKs críticas, CHECK constraints, índices parciales (settings/roles) | Índices parciales `handle`/`sku WHERE deleted_at IS NULL`; `storeId` en unicidad de webhooks; `TaxRule.rate >= 0` |
+| **F2 · Baseline DB** | ✅ | Baseline limpio, FKs críticas, CHECK constraints, índices parciales (settings/roles + `handle`/`sku` activos), `storeId` en unicidad de webhooks (transitorio nullable → F3 lo hará NOT NULL), `TaxRule.rate >= 0` | — |
 | **F3 · Checkout server-side** | 🟡 | Guest customer, validación carrito (expirado/deleted/precio) | Recalculo **total** server-side (subtotal/shipping/taxes), snapshot ampliado, validar canal/tienda |
 | **F4 · Inventario correcto** | ✅ | claim-then-apply en release/consume, reserva→consumo por `payment.paid`, `releaseExpired` | Métricas/logs de reservas (no bloqueante) |
 | **F5 · Pagos manual + Mercado Pago** | 🟡 | Validación contra orden real, manual paid, webhooks idempotentes | Adapter **Mercado Pago real** (firma + credenciales cifradas), `storeId` en unicidad de webhook |
@@ -148,7 +148,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 3. **F6 segundo corte** (Clientes/Pagos/Envíos) — bloquea operar 100% desde admin → `sprint1_r23`.
 4. **F8 segundo corte** (worker + observabilidad) — estabilidad operativa → `sprint1_r24`.
 5. **F9 segundo corte** (CI + deploy.sh) — calidad de cambios → `sprint1_r25`.
-6. **F2/F3** (handles soft-delete, recálculo total server-side) — cierres de integridad → `sprint1_r20`, `sprint1_r13`.
+6. **F3** (recálculo total server-side) — cierre de integridad → `sprint1_r13`. ~~F2 / r20~~ cerrado (sprint1_cierre · F0).
 
 ### Trazabilidad requisito ↔ spec
 
@@ -176,7 +176,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 | [sprint1_r18.1_giftcard_release](specs/sprint1_r18.1_giftcard_release.md) | ✅ | F0 | Release en cancel/refund |
 | [sprint1_r19_reviews](specs/sprint1_r19_reviews.md) | 🧊 | F0 | Reviews moderadas, compra verificada |
 | [sprint1_r19.1_reviews_verified_purchase](specs/sprint1_r19.1_reviews_verified_purchase.md) | ✅ | F0 | Proyección por eventos (boundary fix) |
-| [sprint1_r20_db_baseline_constraints](specs/sprint1_r20_db_baseline_constraints.md) | 🟡 | F2 | Baseline, FKs, CHECK, índices parciales |
+| [sprint1_r20_db_baseline_constraints](specs/sprint1_r20_db_baseline_constraints.md) | ✅ | F2 | Baseline, FKs, CHECK, índices parciales |
 | [sprint1_r21_api_hardening](specs/sprint1_r21_api_hardening.md) | ✅ | F7 | CORS, Helmet/CSP, ValidationPipe, rate limits |
 | [sprint1_r22_admin_hardening](specs/sprint1_r22_admin_hardening.md) | ⬜ | F7 | Cookies HttpOnly, CSP next.config |
 | [sprint1_r23_admin_operativo](specs/sprint1_r23_admin_operativo.md) | 🟡 | F6 | Pantallas admin: Órdenes/Clientes/Pagos/Envíos |

@@ -16,7 +16,9 @@ enum ProductStatus {
 model Product {
   id           String        @id @default(uuid())
   title        String
-  handle       String        @unique
+  // Unicidad parcial sobre filas activas (deleted_at IS NULL) en migración SQL
+  // para permitir reutilizar el handle tras un soft-delete (r20).
+  handle       String
   subtitle     String?
   description  String?
   status       ProductStatus @default(draft)
@@ -220,7 +222,9 @@ model ProductOptionValue {
 model ProductVariant {
   id                String  @id @default(uuid())
   title             String
-  sku               String  @unique
+  // Unicidad parcial sobre filas activas (deleted_at IS NULL) en migración SQL
+  // para permitir reutilizar el SKU tras un soft-delete (r20).
+  sku               String
   barcode           String?
   ean               String?
   upc               String?

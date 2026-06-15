@@ -79,8 +79,10 @@ export class PrismaProductRepository implements ProductRepository {
   }
 
   async findVariantBySku(sku: string): Promise<{ productId: string; variantId: string } | null> {
-    const row = await this.prisma.productVariant.findUnique({
-      where: { sku },
+    // SKU es único parcial sobre filas activas (deleted_at IS NULL); usamos
+    // findFirst para respetar esa semántica.
+    const row = await this.prisma.productVariant.findFirst({
+      where: { sku, deletedAt: null },
       select: { id: true, productId: true },
     });
     return row ? { productId: row.productId, variantId: row.id } : null;
