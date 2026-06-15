@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { InMemoryEventBus } from '@mitama/core';
+import type {
+  CheckoutShippingResolveInput,
+  CheckoutShippingResolveResult,
+  CheckoutShippingResolverPort,
+  CheckoutTaxCalculationInput,
+  CheckoutTaxCalculationResult,
+  CheckoutTaxResolverPort,
+} from '@mitama/contracts';
 import { InMemoryCheckoutCartReader } from '../infra/in-memory-checkout-cart.reader';
 import { InMemoryOrderRepository } from '../infra/in-memory-order.repository';
 import { InMemoryStockReservationService } from '../infra/in-memory-stock-reservation.service';
 import { PaymentEventsHandler } from '../infra/payment-events.handler';
 import type { EmailQueue } from '../domain/email-queue';
-import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
+import { IdempotencyConflictError, OrderAlreadyExistsForCartError, ShippingMethodNotEligibleError } from '../domain/errors';
 import { CancelOrderUseCase, ChangePaymentStateUseCase, CreateOrderUseCase, ReleaseExpiredReservationsUseCase } from './order-use-cases';
 
 class MemoryEmailQueue implements EmailQueue {
@@ -13,6 +21,51 @@ class MemoryEmailQueue implements EmailQueue {
   async enqueue(input: { templateCode: string }): Promise<void> {
     this.jobs.push(input.templateCode);
   }
+}
+
+/**
+ * Resolver de envío configurable: por defecto cubre la zona y devuelve un
+ * monto fijo (5). El test puede sustituir `eligible` o `amount` para forzar
+ * casos borde (zona no cubierta, método no encontrado).
+ */
+class FakeShippingResolver implements CheckoutShippingResolverPort {
+  eligible = true;
+  amount = 5;
+  methodId = 'flat';
+  providerCode = 'default';
+  name = 'Fijo';
+
+  async resolve(input: CheckoutShippingResolveInput): Promise<CheckoutShippingResolveResult> {
+    if (!this.eligible) {
+      return { ok: false, error: { code: 'method-not-eligible-for-zone', message: `Zona ${input.address?.zoneId ?? '(sin zona)'} no cubierta` } };
+    }
+    return { ok: true, value: { methodId: this.methodId, providerCode: this.providerCode, name: this.name, amount: this.amount } };
+  }
+}
+
+/**
+ * Resolver de impuestos configurable por categoría: por defecto aplica 16 %
+ * a líneas `standard` y 0 % al resto.
+ */
+class FakeTaxResolver implements CheckoutTaxResolverPort {
+  rates: Record<string, number> = { standard: 0.16, zero: 0, exempt: 0 };
+
+  async calculate(input: CheckoutTaxCalculationInput): Promise<CheckoutTaxCalculationResult> {
+    const lines = input.lines.map((line) => {
+      const category = (line.taxCategory as 'standard' | 'zero' | 'exempt' | null) ?? 'standard';
+      const rate = this.rates[category] ?? 0;
+      const taxableAmount = round(line.unitPrice * line.quantity);
+      const taxAmount = round(taxableAmount * rate);
+      return { lineId: line.lineId, taxCategory: category, taxRate: rate, taxableAmount, taxAmount, total: round(taxableAmount + taxAmount) };
+    });
+    const subtotal = round(lines.reduce((s, l) => s + l.taxableAmount, 0));
+    const taxTotal = round(lines.reduce((s, l) => s + l.taxAmount, 0));
+    return { subtotal, taxTotal, total: round(subtotal + taxTotal), lines, warnings: [] };
+  }
+}
+
+function round(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 describe('orders use cases', () => {
@@ -157,6 +210,87 @@ describe('orders use cases', () => {
     if (result.isOk()) expect(result.value).toContain(order.id);
     expect(ctx.stock.available.get('loc-1:v1')).toBe(1);
   });
+
+  // --- F2 · r13 — totales server-side (sprint1_cierre) ---------------------
+
+  it('ignora los totales del carrito y usa los del resolver server-side', async () => {
+    const ctx = context();
+    ctx.stock.available.set('loc-1:v1', 2);
+    // El cliente envía un cart con shippingMethod.amount=999 y unitPrice
+    // legítimo de 10. El resolver fija envío en 5 y el impuesto en 16 %.
+    ctx.carts.carts.set('cart-1', readyCart('cart-1'));
+
+    const result = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' });
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.subtotal).toBe(10);
+    expect(result.value.shippingTotal).toBe(5); // ← resolver, NO 999
+    expect(result.value.taxTotal).toBe(1.6); // 10 * 0.16
+    expect(result.value.total).toBe(16.6);
+    expect(result.value.lines[0].taxAmount).toBe(1.6);
+    expect(result.value.shippingMethod).toMatchObject({ id: 'flat', amount: 5, providerCode: 'default' });
+  });
+
+  it('calcula taxTotal correcto con líneas standard, zero y exempt', async () => {
+    const ctx = context();
+    ctx.stock.available.set('loc-1:vA', 5);
+    ctx.stock.available.set('loc-1:vB', 5);
+    ctx.stock.available.set('loc-1:vC', 5);
+
+    const cart = readyCart('cart-1');
+    cart.lines = [
+      { ...cart.lines[0], cartLineId: 'l-std', variantId: 'vA', taxCategory: 'standard' as const, unitPrice: 100, quantity: 1 },
+      { ...cart.lines[0], cartLineId: 'l-zero', variantId: 'vB', taxCategory: 'zero' as const, unitPrice: 50, quantity: 2 },
+      { ...cart.lines[0], cartLineId: 'l-exempt', variantId: 'vC', taxCategory: 'exempt' as const, unitPrice: 25, quantity: 4 },
+    ];
+    ctx.carts.carts.set('cart-1', cart);
+
+    const result = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' });
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    // Solo la línea standard tributa: 100 * 0.16 = 16
+    expect(result.value.taxTotal).toBe(16);
+    expect(result.value.subtotal).toBe(300); // 100 + 100 + 100
+    expect(result.value.shippingTotal).toBe(5);
+    expect(result.value.total).toBe(321); // 300 + 5 + 16
+
+    const byId = new Map(result.value.lines.map((line) => [line.sku, line]));
+    expect(result.value.lines).toHaveLength(3);
+    // Cada línea persiste su taxAmount real (snapshot inmutable).
+    const taxAmounts = result.value.lines.map((line) => line.taxAmount).sort((a, b) => a - b);
+    expect(taxAmounts).toEqual([0, 0, 16]);
+    expect(byId.size).toBe(1); // las 3 líneas comparten SKU del cart base
+  });
+
+  it('rechaza el checkout si el método de envío deja de ser elegible', async () => {
+    const ctx = context();
+    ctx.stock.available.set('loc-1:v1', 1);
+    ctx.carts.carts.set('cart-1', readyCart('cart-1'));
+    ctx.shippingResolver.eligible = false;
+
+    const result = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' });
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error).toBeInstanceOf(ShippingMethodNotEligibleError);
+    // Sin orden creada: el stock no se debe haber consumido.
+    expect(ctx.stock.available.get('loc-1:v1')).toBe(1);
+  });
+
+  it('el envío NO se grava: total = subtotal + shipping + tax (productos)', async () => {
+    const ctx = context();
+    ctx.stock.available.set('loc-1:v1', 1);
+    ctx.carts.carts.set('cart-1', readyCart('cart-1'));
+    ctx.shippingResolver.amount = 100;
+
+    const result = await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' });
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    // tax = 10 * 0.16 = 1.6 (NO sobre el envío); total = 10 + 100 + 1.6 = 111.6
+    expect(result.value.taxTotal).toBe(1.6);
+    expect(result.value.total).toBe(111.6);
+  });
 });
 
 function context() {
@@ -165,6 +299,8 @@ function context() {
   const stock = new InMemoryStockReservationService();
   const bus = new InMemoryEventBus();
   const email = new MemoryEmailQueue();
+  const taxResolver = new FakeTaxResolver();
+  const shippingResolver = new FakeShippingResolver();
   const events: string[] = [];
   bus.subscribe('order.created', (event) => events.push(event.name));
   bus.subscribe('payment.authorized', (event) => events.push(event.name));
@@ -184,8 +320,10 @@ function context() {
     email,
     orders,
     events,
+    taxResolver,
+    shippingResolver,
     drainOutbox,
-    create: new CreateOrderUseCase(orders, carts, stock, bus, email),
+    create: new CreateOrderUseCase(orders, carts, stock, bus, email, taxResolver, shippingResolver),
     payment: new ChangePaymentStateUseCase(orders, bus, email),
     cancel: new CancelOrderUseCase(orders, stock, bus, email),
   };
@@ -195,12 +333,16 @@ function readyCart(id: string) {
   return {
     id,
     storeId: 'store-1',
+    regionId: 'region-mx',
+    pricesIncludeTax: false,
     channel: 'web' as const,
     customerId: `customer-${id}`,
     email: `${id}@example.com`,
-    shippingAddress: { line1: 'Uno' },
+    shippingAddress: { line1: 'Uno', zoneId: 'zone-cdmx' },
     billingAddress: { line1: 'Uno' },
-    shippingMethod: { id: 'flat', name: 'Fijo', amount: 5 },
+    // El monto que pone el cliente NO se usa: el resolver server-side
+    // decide el costo real.
+    shippingMethod: { id: 'flat', name: 'Fijo', amount: 999 },
     paymentMethod: { provider: 'manual', method: 'offline' },
     lines: [
       {
@@ -214,6 +356,8 @@ function readyCart(id: string) {
         currencyCode: 'MXN',
         unitPrice: 10,
         stockLocationId: 'loc-1',
+        taxCategory: 'standard' as const,
+        weightKg: 0.5,
       },
     ],
   };

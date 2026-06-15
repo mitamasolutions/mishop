@@ -37,6 +37,30 @@ export interface OrderNoteProps {
   createdAt: Date;
 }
 
+/**
+ * Totales recalculados server-side por el `CreateOrderUseCase` antes de
+ * construir la orden. Son la **única fuente de verdad**: los valores que
+ * el cliente pone en el carrito (currentUnitPrice, shippingMethod.amount,
+ * taxTotal) NO se usan al crear la orden (r13 · sprint1_cierre).
+ */
+export interface OrderTotalsBreakdown {
+  /** Subtotal ex-tax sumando taxableAmount por línea. */
+  subtotal: number;
+  shippingTotal: number;
+  taxTotal: number;
+  total: number;
+  /**
+   * Impuesto resuelto por línea, indexado por `cartLineId` (clave estable
+   * del snapshot del carrito).
+   */
+  taxByCartLineId: Record<string, number>;
+  /**
+   * Método de envío resuelto server-side: id, nombre, monto real y código de
+   * proveedor. Reemplaza al `cart.shippingMethod` enviado por el cliente.
+   */
+  shippingMethod: { id: string; providerCode: string; name: string; amount: number };
+}
+
 interface OrderProps {
   storeId: string;
   orderNumber: string;
@@ -82,24 +106,31 @@ const PAYMENT_TRANSITIONS: Record<OrderPaymentStatus, OrderPaymentStatus[]> = {
 };
 
 export class Order extends Entity<OrderProps> {
-  static fromCart(cart: CheckoutCartSnapshot, orderNumber: string, reservationExpiresAt: Date): Order {
+  static fromCart(
+    cart: CheckoutCartSnapshot,
+    orderNumber: string,
+    reservationExpiresAt: Date,
+    totals: OrderTotalsBreakdown,
+  ): Order {
     const now = new Date();
-    const lines = cart.lines.map<OrderLineProps>((line) => ({
-      id: crypto.randomUUID(),
-      variantId: line.variantId,
-      productId: line.productId,
-      productTitle: line.productTitle,
-      variantTitle: line.variantTitle,
-      sku: line.sku,
-      quantity: line.quantity,
-      currencyCode: line.currencyCode,
-      unitPrice: line.unitPrice,
-      taxAmount: 0,
-      total: line.unitPrice * line.quantity,
-      stockLocationId: line.stockLocationId,
-    }));
-    const subtotal = lines.reduce((sum, line) => sum + line.total, 0);
-    const shippingTotal = cart.shippingMethod.amount;
+    const lines = cart.lines.map<OrderLineProps>((line) => {
+      const taxAmount = totals.taxByCartLineId[line.cartLineId] ?? 0;
+      const lineSubtotal = line.unitPrice * line.quantity;
+      return {
+        id: crypto.randomUUID(),
+        variantId: line.variantId,
+        productId: line.productId,
+        productTitle: line.productTitle,
+        variantTitle: line.variantTitle,
+        sku: line.sku,
+        quantity: line.quantity,
+        currencyCode: line.currencyCode,
+        unitPrice: line.unitPrice,
+        taxAmount,
+        total: lineSubtotal + taxAmount,
+        stockLocationId: line.stockLocationId,
+      };
+    });
     return new Order(crypto.randomUUID(), {
       storeId: cart.storeId,
       orderNumber,
@@ -110,13 +141,15 @@ export class Order extends Entity<OrderProps> {
       status: 'pending',
       paymentStatus: 'pending',
       currencyCode: lines[0]?.currencyCode ?? 'USD',
-      subtotal,
-      shippingTotal,
-      taxTotal: 0,
-      total: subtotal + shippingTotal,
+      subtotal: totals.subtotal,
+      shippingTotal: totals.shippingTotal,
+      taxTotal: totals.taxTotal,
+      total: totals.total,
       shippingAddress: cart.shippingAddress,
       billingAddress: cart.billingAddress,
-      shippingMethod: cart.shippingMethod,
+      // Snapshot inmutable del método resuelto server-side: id, nombre,
+      // monto real y código de proveedor (r13 · sprint1_cierre).
+      shippingMethod: { ...totals.shippingMethod },
       paymentMethod: cart.paymentMethod,
       reservationExpiresAt,
       lines,

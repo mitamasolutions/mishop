@@ -45,3 +45,15 @@ export class CompletedOrderCannotBeCancelledError extends Error {
     super('No se puede cancelar una orden completada');
   }
 }
+
+/**
+ * El método de envío elegido por el comprador dejó de ser elegible al
+ * recalcular server-side (zona no cubierta, método deshabilitado o
+ * inexistente). El checkout debe rechazarse para que se re-elija método;
+ * no se sustituye por un default (r13 · sprint1_cierre).
+ */
+export class ShippingMethodNotEligibleError extends Error {
+  constructor(reason: string) {
+    super(`El método de envío no es elegible: ${reason}`);
+  }
+}

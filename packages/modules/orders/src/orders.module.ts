@@ -2,7 +2,8 @@
  * Composición del módulo: el único lugar donde las capas se conectan.
  */
 import { Module } from '@nestjs/common';
-import { EVENT_BUS, ORDER_FOR_PAYMENTS_PORT } from '@mitama/contracts';
+import { CHECKOUT_SHIPPING_RESOLVER_PORT, CHECKOUT_TAX_RESOLVER_PORT, EVENT_BUS, ORDER_FOR_PAYMENTS_PORT } from '@mitama/contracts';
+import type { CheckoutShippingResolverPort, CheckoutTaxResolverPort } from '@mitama/contracts';
 import type { EventBus } from '@mitama/core';
 import { ORDERS_TOKENS } from './orders.tokens';
 import type { CheckoutCartReader } from './domain/checkout-cart';
@@ -53,9 +54,24 @@ import { OrdersController } from './http/orders.controller';
     },
     {
       provide: CreateOrderUseCase,
-      useFactory: (orders: OrderRepository, carts: CheckoutCartReader, stock: StockReservationService, eventBus: EventBus, email: EmailQueue) =>
-        new CreateOrderUseCase(orders, carts, stock, eventBus, email),
-      inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.checkoutCartReader, ORDERS_TOKENS.stockReservationService, EVENT_BUS, ORDERS_TOKENS.emailQueue],
+      useFactory: (
+        orders: OrderRepository,
+        carts: CheckoutCartReader,
+        stock: StockReservationService,
+        eventBus: EventBus,
+        email: EmailQueue,
+        taxResolver: CheckoutTaxResolverPort,
+        shippingResolver: CheckoutShippingResolverPort,
+      ) => new CreateOrderUseCase(orders, carts, stock, eventBus, email, taxResolver, shippingResolver),
+      inject: [
+        ORDERS_TOKENS.orderRepository,
+        ORDERS_TOKENS.checkoutCartReader,
+        ORDERS_TOKENS.stockReservationService,
+        EVENT_BUS,
+        ORDERS_TOKENS.emailQueue,
+        CHECKOUT_TAX_RESOLVER_PORT,
+        CHECKOUT_SHIPPING_RESOLVER_PORT,
+      ],
     },
     {
       provide: ListOrdersUseCase,

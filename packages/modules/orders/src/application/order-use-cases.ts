@@ -1,8 +1,14 @@
 import { createHash } from 'node:crypto';
-import { err, ok, Result, UseCase, type EventBus } from '@mitama/core';
-import type { OrderEventPayload, SalesDomainEvent } from '@mitama/contracts';
-import { Order, type OrderPaymentStatus, type OrderStatus } from '../domain/order.entity';
-import type { CheckoutCartReader } from '../domain/checkout-cart';
+import { err, ok, Result, UseCase, roundMoney, type EventBus } from '@mitama/core';
+import type {
+  CheckoutShippingAddress,
+  CheckoutShippingResolverPort,
+  CheckoutTaxResolverPort,
+  OrderEventPayload,
+  SalesDomainEvent,
+} from '@mitama/contracts';
+import { Order, type OrderPaymentStatus, type OrderStatus, type OrderTotalsBreakdown } from '../domain/order.entity';
+import type { CheckoutCartReader, CheckoutCartSnapshot } from '../domain/checkout-cart';
 import type { EmailQueue } from '../domain/email-queue';
 import type { OrderFilter, OrderRepository } from '../domain/order.repository';
 import type { OutboxDispatcher } from '../domain/outbox';
@@ -16,6 +22,7 @@ import {
   InvalidPaymentStateTransitionError,
   OrderAlreadyExistsForCartError,
   OrderNotFoundError,
+  ShippingMethodNotEligibleError,
 } from '../domain/errors';
 import { toOrderOutput, type OrderOutput } from './order.dto';
 
@@ -28,7 +35,13 @@ export interface CreateOrderInput {
   actorId?: string | null;
 }
 
-export type CreateOrderError = CheckoutCartNotReadyError | IdempotencyConflictError | InsufficientStockError | OrderAlreadyExistsForCartError | OrderNotFoundError;
+export type CreateOrderError =
+  | CheckoutCartNotReadyError
+  | IdempotencyConflictError
+  | InsufficientStockError
+  | OrderAlreadyExistsForCartError
+  | OrderNotFoundError
+  | ShippingMethodNotEligibleError;
 
 export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<OrderOutput, CreateOrderError>> {
   constructor(
@@ -37,6 +50,8 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<Orde
     private readonly stockReservations: StockReservationService,
     private readonly eventBus: EventBus,
     private readonly emailQueue: EmailQueue,
+    private readonly taxResolver: CheckoutTaxResolverPort,
+    private readonly shippingResolver: CheckoutShippingResolverPort,
   ) {}
 
   async execute(input: CreateOrderInput): Promise<Result<OrderOutput, CreateOrderError>> {
@@ -59,9 +74,15 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<Orde
     const cart = await this.carts.getReadyCart(input.cartId);
     if (!cart || cart.lines.length === 0) return err(new CheckoutCartNotReadyError());
 
+    // Recálculo server-side de totales: el cliente NO controla ni el costo
+    // de envío ni el impuesto (r13 · sprint1_cierre).
+    const totalsResult = await this.resolveTotals(cart);
+    if (totalsResult.isErr()) return err(totalsResult.error);
+    const totals = totalsResult.value;
+
     const orderNumber = await this.orders.nextOrderNumber(cart.storeId, cart.channel === 'web' ? 'WEB-' : 'POS-');
     const reservationExpiresAt = new Date(Date.now() + RESERVATION_TTL_MS);
-    const order = Order.fromCart(cart, orderNumber, reservationExpiresAt);
+    const order = Order.fromCart(cart, orderNumber, reservationExpiresAt, totals);
     try {
       await this.orders.save(order);
     } catch (error) {
@@ -89,6 +110,64 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<Orde
     await this.carts.markOrdered(cart.id);
     await this.emailQueue.enqueue({ orderId: order.id, templateCode: 'order.created', payload: { orderNumber: order.orderNumber } });
     return ok(toOrderOutput(order));
+  }
+
+  /**
+   * Resuelve, server-side, el costo de envío (validando elegibilidad por
+   * zona) y el impuesto por línea + total. El envío NO se grava en el MVP:
+   * `total = subtotal + shippingTotal + taxTotal`.
+   */
+  private async resolveTotals(
+    cart: CheckoutCartSnapshot,
+  ): Promise<Result<OrderTotalsBreakdown, ShippingMethodNotEligibleError>> {
+    const subtotalCart = roundMoney(cart.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0));
+    const weightKg = cart.lines.reduce((sum, line) => sum + line.quantity * (line.weightKg ?? 0), 0);
+    const address = cart.shippingAddress as unknown as CheckoutShippingAddress;
+
+    const shipping = await this.shippingResolver.resolve({
+      storeId: cart.storeId,
+      methodId: cart.shippingMethod.id,
+      address,
+      subtotal: subtotalCart,
+      weightKg,
+    });
+    if (!shipping.ok) return err(new ShippingMethodNotEligibleError(shipping.error.message));
+
+    const tax = await this.taxResolver.calculate({
+      storeId: cart.storeId,
+      regionId: cart.regionId,
+      pricesIncludeTax: cart.pricesIncludeTax,
+      lines: cart.lines.map((line) => ({
+        lineId: line.cartLineId,
+        productId: line.productId,
+        variantId: line.variantId,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        taxCategory: line.taxCategory,
+      })),
+    });
+
+    const taxByCartLineId: Record<string, number> = {};
+    for (const line of tax.lines) taxByCartLineId[line.lineId] = line.taxAmount;
+
+    const subtotal = roundMoney(tax.subtotal);
+    const taxTotal = roundMoney(tax.taxTotal);
+    const shippingTotal = roundMoney(shipping.value.amount);
+    const total = roundMoney(subtotal + shippingTotal + taxTotal);
+
+    return ok({
+      subtotal,
+      shippingTotal,
+      taxTotal,
+      total,
+      taxByCartLineId,
+      shippingMethod: {
+        id: shipping.value.methodId,
+        providerCode: shipping.value.providerCode,
+        name: shipping.value.name,
+        amount: shippingTotal,
+      },
+    });
   }
 }
 
