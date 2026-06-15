@@ -8,9 +8,11 @@ import {
   NotFoundException,
   Post,
   Req,
+  Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { AllowAuthenticated, CurrentUser, NoStoreScope, Public, type AuthenticatedUser } from '@mitama/contracts';
 import { LoginUseCase } from '../application/login/login.use-case';
@@ -37,9 +39,11 @@ import { ForgotPasswordRequestDto } from './dto/forgot-password.request.dto';
 import { ResetPasswordRequestDto } from './dto/reset-password.request.dto';
 import { AcceptInvitationRequestDto } from './dto/accept-invitation.request.dto';
 import { ChangePasswordRequestDto } from './dto/change-password.request.dto';
+import { clearRefreshCookie, readRefreshToken, setRefreshCookie } from './refresh-cookie';
 
 interface RequestWithIp {
   ip?: string;
+  cookies?: Record<string, string | undefined>;
 }
 
 @ApiTags('auth')
@@ -62,7 +66,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Inicia sesión con email y contraseña' })
   @ApiOkResponse({ description: 'Sesión iniciada' })
   @ApiUnauthorizedResponse({ description: 'Credenciales inválidas' })
-  async loginHandler(@Body() body: LoginRequestDto, @Req() req: RequestWithIp): Promise<LoginOutput> {
+  async loginHandler(
+    @Body() body: LoginRequestDto,
+    @Req() req: RequestWithIp,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Omit<LoginOutput, 'refreshToken'>> {
     const result = await this.login.execute({ email: body.email, password: body.password, ip: req.ip ?? null });
     if (result.isErr()) {
       const error = result.error;
@@ -71,7 +79,11 @@ export class AuthController {
       }
       throw new UnauthorizedException(error.message);
     }
-    return result.value;
+    // El refresh token se entrega solo en cookie HttpOnly (r22 · sprint1_cierre);
+    // nunca cruza el borde JSON-visible al cliente.
+    const { refreshToken, ...publicOutput } = result.value;
+    setRefreshCookie(res, refreshToken);
+    return publicOutput;
   }
 
   @Post('refresh')
@@ -80,12 +92,23 @@ export class AuthController {
   @ApiOperation({ summary: 'Rota el refresh token y emite un nuevo access token' })
   @ApiOkResponse({ description: 'Sesión renovada' })
   @ApiUnauthorizedResponse({ description: 'El refresh token es inválido o expiró' })
-  async refresh(@Body() body: RefreshTokenRequestDto, @Req() req: RequestWithIp): Promise<RefreshSessionOutput> {
-    const result = await this.refreshSession.execute({ refreshToken: body.refreshToken, ip: req.ip ?? null });
+  async refresh(
+    @Body() body: RefreshTokenRequestDto,
+    @Req() req: RequestWithIp,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Omit<RefreshSessionOutput, 'refreshToken'>> {
+    const refreshToken = readRefreshToken(req, body.refreshToken);
+    if (!refreshToken) {
+      throw new UnauthorizedException('Sesión expirada');
+    }
+    const result = await this.refreshSession.execute({ refreshToken, ip: req.ip ?? null });
     if (result.isErr()) {
+      // Limpiamos la cookie si el refresh estaba comprometido o vencido.
+      clearRefreshCookie(res);
       throw new UnauthorizedException(result.error.message);
     }
-    return result.value;
+    setRefreshCookie(res, result.value.refreshToken);
+    return { accessToken: result.value.accessToken };
   }
 
   @Post('logout')
@@ -93,8 +116,16 @@ export class AuthController {
   @HttpCode(204)
   @ApiOperation({ summary: 'Cierra la sesión, revocando la familia del refresh token' })
   @ApiOkResponse({ description: 'Sesión cerrada' })
-  async logoutHandler(@Body() body: RefreshTokenRequestDto, @Req() req: RequestWithIp): Promise<void> {
-    await this.logout.execute({ refreshToken: body.refreshToken, ip: req.ip ?? null });
+  async logoutHandler(
+    @Body() body: RefreshTokenRequestDto,
+    @Req() req: RequestWithIp,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const refreshToken = readRefreshToken(req, body.refreshToken);
+    if (refreshToken) {
+      await this.logout.execute({ refreshToken, ip: req.ip ?? null });
+    }
+    clearRefreshCookie(res);
   }
 
   @Post('forgot-password')

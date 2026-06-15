@@ -1,9 +1,17 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 
+/**
+ * El refresh token viaja por defecto en la cookie HttpOnly `mitama_refresh`
+ * (r22 · sprint1_cierre). El campo del body se mantiene **opcional** para
+ * clientes server-to-server o tests heredados.
+ */
 export class RefreshTokenRequestDto {
-  @ApiProperty({ description: 'Refresh token opaco emitido en el login anterior' })
+  @ApiPropertyOptional({
+    description: 'Refresh token opaco. Opcional: por defecto se lee de la cookie HttpOnly `mitama_refresh`.',
+  })
+  @IsOptional()
   @IsString()
-  @MinLength(1, { message: 'El refresh token es obligatorio' })
-  refreshToken!: string;
+  @MinLength(1, { message: 'El refresh token no puede ser vacío si se envía' })
+  refreshToken?: string;
 }

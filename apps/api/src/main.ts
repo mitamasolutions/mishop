@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { isTruthyEnv, parseCorsOrigins } from './config/env';
@@ -14,6 +15,9 @@ async function bootstrap(): Promise<void> {
   // CSP solo se desactiva cuando Swagger está habilitado (sus scripts/estilos
   // inline rompen una CSP estricta). Si DOCS están off, helmet aplica CSP por defecto.
   app.use(helmet({ contentSecurityPolicy: docsEnabled ? false : undefined }));
+  // cookie-parser habilita lectura de `req.cookies` en el módulo auth para el
+  // refresh token HttpOnly (r22 · sprint1_cierre).
+  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({

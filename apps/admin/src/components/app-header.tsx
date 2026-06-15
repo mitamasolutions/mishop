@@ -48,13 +48,12 @@ export function AppHeader() {
   const activeStore = visibleStores.find((store) => store.id === activeStoreId);
 
   async function handleLogout(): Promise<void> {
-    const refreshToken = useAuthStore.getState().refreshToken;
-    if (refreshToken) {
-      try {
-        await logoutRequest(refreshToken);
-      } catch {
-        // Si la API no responde, igual cerramos la sesión local.
-      }
+    try {
+      // La API lee el refresh de la cookie HttpOnly y la limpia. Si falla,
+      // igual cerramos la sesión local.
+      await logoutRequest();
+    } catch {
+      // ignorar errores de red
     }
     logout();
     router.replace('/login');

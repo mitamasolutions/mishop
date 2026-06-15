@@ -23,13 +23,18 @@ interface AccessTokenPayload {
   storeRoles: StoreRole[];
 }
 
+/**
+ * El refresh token vive **solo** en la cookie HttpOnly `mitama_refresh`
+ * (r22 · sprint1_cierre): el admin no lo conoce ni lo persiste en
+ * `localStorage`. Solo el `accessToken` (memoria del proceso JS) y los
+ * metadatos del usuario / tienda activa cruzan a este store.
+ */
 interface AuthState {
   accessToken: string | null;
-  refreshToken: string | null;
   user: SessionUser | null;
   activeStoreId: string | null;
-  setSession: (tokens: { accessToken: string; refreshToken: string }, name: string) => void;
-  setTokens: (accessToken: string, refreshToken: string) => void;
+  setSession: (input: { accessToken: string; name: string }) => void;
+  setTokens: (accessToken: string) => void;
   setActiveStore: (storeId: string | null) => void;
   logout: () => void;
 }
@@ -38,14 +43,12 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       accessToken: null,
-      refreshToken: null,
       user: null,
       activeStoreId: null,
-      setSession: ({ accessToken, refreshToken }, name) => {
+      setSession: ({ accessToken, name }) => {
         const payload = decodeJwt<AccessTokenPayload>(accessToken);
         set({
           accessToken,
-          refreshToken,
           user: {
             id: payload.sub,
             email: payload.email,
@@ -56,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
           activeStoreId: payload.storeRoles?.[0]?.storeId ?? null,
         });
       },
-      setTokens: (accessToken, refreshToken) => {
+      setTokens: (accessToken) => {
         const payload = decodeJwt<AccessTokenPayload>(accessToken);
         const current = get().user;
         if (!current) {
@@ -64,18 +67,18 @@ export const useAuthStore = create<AuthState>()(
         }
         set({
           accessToken,
-          refreshToken,
           user: { ...current, isSuperAdmin: payload.isSuperAdmin, storeRoles: payload.storeRoles ?? [] },
         });
       },
       setActiveStore: (storeId) => set({ activeStoreId: storeId }),
-      logout: () => set({ accessToken: null, refreshToken: null, user: null, activeStoreId: null }),
+      logout: () => set({ accessToken: null, user: null, activeStoreId: null }),
     }),
     {
       name: 'mitama-admin-session',
       skipHydration: true,
+      // Persistimos únicamente metadatos no sensibles. El refresh token
+      // vive en cookie HttpOnly; el access token en memoria.
       partialize: (state) => ({
-        refreshToken: state.refreshToken,
         user: state.user,
         activeStoreId: state.activeStoreId,
       }),

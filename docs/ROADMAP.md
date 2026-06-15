@@ -137,13 +137,13 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 | **F4 · Inventario correcto** | ✅ | claim-then-apply en release/consume, reserva→consumo por `payment.paid`, `releaseExpired` | Métricas/logs de reservas (no bloqueante) |
 | **F5 · Pagos manual + Mercado Pago** | 🟡 | Validación contra orden real, manual paid, webhooks idempotentes | Adapter **Mercado Pago real** (firma + credenciales cifradas), `storeId` en unicidad de webhook |
 | **F6 · Admin operativo** | 🟡 | Pantalla **Órdenes** (listado/detalle/acciones) | Pantallas **Clientes/Pagos/Envíos**, paginado real, debounce, permisos que deshabilitan, dashboard real |
-| **F7 · Hardening API + Admin** | 🟡 | API: CORS whitelist, Helmet/CSP, ValidationPipe, rate limits, env validation | Admin: cookie HttpOnly, `NEXT_PUBLIC_API_URL` obligatoria, CSP en `next.config.ts`, `skipStoreScope` acotado |
+| **F7 · Hardening API + Admin** | ✅ | API: CORS whitelist, Helmet/CSP, ValidationPipe, rate limits, env validation. Admin: refresh token en cookie HttpOnly/Secure/SameSite=Lax, `NEXT_PUBLIC_API_URL` obligatoria (build prod falla sin ella), CSP + headers de seguridad en `next.config.ts`, `skipStoreScope` solo definido en api-client (no abusado en llamadas) | — |
 | **F8 · Outbox/worker/observabilidad** | 🟡 | Outbox `order.created` transaccional + dispatcher manual | Outbox para `payment.*`/`order.*`; **worker dedicado** (`apps/worker`); `requestId`; `/health/worker`; métricas |
 | **F9 · CI/CD y Deploy** | 🟡 | Dockerfiles api/admin, `docker-compose.prod.yml`, `DEPLOY.md` | CI (`.github/workflows/ci.yml`), `scripts/deploy.sh`, `apps/worker/Dockerfile`, imágenes GHCR |
 
 ### Brechas bloqueantes (resumen priorizado)
 
-1. **F7 admin** (cookies HttpOnly + CSP) — bloquea producción real → `sprint1_r22`.
+1. ~~**F7 admin** (cookies HttpOnly + CSP)~~ → `sprint1_r22` cerrado (sprint1_cierre · F1).
 2. **F5 segundo corte** (Mercado Pago real) — bloquea cobrar online → `sprint1_r14`.
 3. **F6 segundo corte** (Clientes/Pagos/Envíos) — bloquea operar 100% desde admin → `sprint1_r23`.
 4. **F8 segundo corte** (worker + observabilidad) — estabilidad operativa → `sprint1_r24`.
@@ -178,7 +178,7 @@ salida. **No se pasa al Sprint 2 hasta cerrarlas.**
 | [sprint1_r19.1_reviews_verified_purchase](specs/sprint1_r19.1_reviews_verified_purchase.md) | ✅ | F0 | Proyección por eventos (boundary fix) |
 | [sprint1_r20_db_baseline_constraints](specs/sprint1_r20_db_baseline_constraints.md) | ✅ | F2 | Baseline, FKs, CHECK, índices parciales |
 | [sprint1_r21_api_hardening](specs/sprint1_r21_api_hardening.md) | ✅ | F7 | CORS, Helmet/CSP, ValidationPipe, rate limits |
-| [sprint1_r22_admin_hardening](specs/sprint1_r22_admin_hardening.md) | ⬜ | F7 | Cookies HttpOnly, CSP next.config |
+| [sprint1_r22_admin_hardening](specs/sprint1_r22_admin_hardening.md) | ✅ | F7 | Cookies HttpOnly, CSP next.config |
 | [sprint1_r23_admin_operativo](specs/sprint1_r23_admin_operativo.md) | 🟡 | F6 | Pantallas admin: Órdenes/Clientes/Pagos/Envíos |
 | [sprint1_r24_outbox_worker_observability](specs/sprint1_r24_outbox_worker_observability.md) | 🟡 | F8 | Outbox extendido, worker, observabilidad |
 | [sprint1_r25_cicd_deploy](specs/sprint1_r25_cicd_deploy.md) | 🟡 | F9 | Docker (hecho), CI + deploy.sh + GHCR |

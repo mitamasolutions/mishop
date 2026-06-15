@@ -15,10 +15,13 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 
     async function init(): Promise<void> {
       await useAuthStore.persist.rehydrate();
-      const { accessToken, refreshToken } = useAuthStore.getState();
+      const { accessToken, user } = useAuthStore.getState();
 
       if (!accessToken) {
-        const restored = refreshToken ? await restoreSession() : false;
+        // La cookie HttpOnly del refresh es la fuente de verdad de la sesión;
+        // intentar restaurar siempre que exista usuario hidratado (o ciegamente,
+        // por si la cookie sobrevivió a un wipe del store).
+        const restored = user ? await restoreSession() : await restoreSession();
         if (!restored) {
           if (!cancelled) {
             router.replace('/login');

@@ -20,8 +20,14 @@ export default function LoginPage() {
   useEffect(() => {
     async function checkSession(): Promise<void> {
       await useAuthStore.persist.rehydrate();
-      if (useAuthStore.getState().refreshToken) {
-        router.replace('/');
+      // Si hay usuario hidratado, intentar refrescar contra la cookie HttpOnly;
+      // si la cookie es válida obtenemos accessToken y redirigimos.
+      if (useAuthStore.getState().user) {
+        const { restoreSession } = await import('@/lib/api-client');
+        const ok = await restoreSession();
+        if (ok) {
+          router.replace('/');
+        }
       }
     }
     void checkSession();
@@ -32,7 +38,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const result = await login(email, password);
-      setSession({ accessToken: result.accessToken, refreshToken: result.refreshToken }, result.user.name);
+      setSession({ accessToken: result.accessToken, name: result.user.name });
       router.replace('/');
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'No se pudo iniciar sesión';
