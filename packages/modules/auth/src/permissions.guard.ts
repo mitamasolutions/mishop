@@ -5,6 +5,7 @@ import {
   IS_PUBLIC_KEY,
   NO_STORE_SCOPE_KEY,
   REQUIRE_PERMISSION_KEY,
+  REQUIRE_SUPER_ADMIN_KEY,
   type AuthenticatedUser,
   type Permission,
 } from '@mitama/contracts';
@@ -48,6 +49,15 @@ export class PermissionsGuard implements CanActivate {
 
     if (allowAuthenticated) {
       return true;
+    }
+
+    const requireSuperAdmin = this.reflector.getAllAndOverride<boolean>(REQUIRE_SUPER_ADMIN_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (requireSuperAdmin) {
+      if (user.isSuperAdmin) return true;
+      throw new ForbiddenException('Solo Super Admin puede acceder a esta ruta');
     }
 
     const permission = this.reflector.getAllAndOverride<Permission | undefined>(REQUIRE_PERMISSION_KEY, [

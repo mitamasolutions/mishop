@@ -23,8 +23,10 @@ import { TaxesModule } from '@mitama/taxes';
 import { PromotionsModule } from '@mitama/promotions';
 import { GiftCardsModule } from '@mitama/giftcards';
 import { ReviewsModule } from '@mitama/reviews';
+import { ScheduledTasksModule } from '@mitama/scheduled-tasks';
 import { EventBusModule } from './event-bus.module';
 import { HealthController } from './health.controller';
+import { ScheduledTaskHandlersWiring } from './scheduled-task-handlers.wiring';
 import { validateEnv } from './config/env';
 
 @Module({
@@ -54,8 +56,9 @@ import { validateEnv } from './config/env';
     PromotionsModule,
     GiftCardsModule,
     ReviewsModule,
+    ScheduledTasksModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }, ScheduledTaskHandlersWiring],
 })
 export class AppModule {}

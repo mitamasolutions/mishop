@@ -1,0 +1,28 @@
+// Módulo scheduled-tasks (r24 · sprint1_cierre).
+// Estilo nopCommerce: tareas programadas in-app gestionadas desde admin.
+// Reemplazan al cron externo y al worker dedicado.
+
+/// Una tarea programada que ejecuta un handler in-app cada N segundos.
+/// Cada tarea declara su tipo (handler registrado por código) y su
+/// intervalo; el runner busca due tasks, ejecuta y actualiza marcas.
+model ScheduledTask {
+  id              String    @id @default(uuid())
+  name            String    @unique
+  /// Identificador del handler registrado en el runner (`dispatch-outbox`,
+  /// `release-expired-reservations`, `drain-email-queue`, …).
+  type            String
+  /// Intervalo de ejecución en segundos.
+  seconds         Int
+  enabled         Boolean   @default(true)
+  /// Si `true`, una falla deshabilita la tarea automáticamente.
+  stopOnError     Boolean   @default(false) @map("stop_on_error")
+  lastStartUtc    DateTime? @map("last_start_utc")
+  lastEndUtc      DateTime? @map("last_end_utc")
+  lastSuccessUtc  DateTime? @map("last_success_utc")
+  lastError       String?   @map("last_error")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([enabled, lastStartUtc])
+  @@map("scheduled_tasks")
+}

@@ -28,6 +28,14 @@ export const REQUIRE_PERMISSION_KEY = 'mitama:require-permission';
 export const RequirePermission = (permission: Permission): MethodDecorator & ClassDecorator =>
   SetMetadata(REQUIRE_PERMISSION_KEY, permission);
 
+export const REQUIRE_SUPER_ADMIN_KEY = 'mitama:require-super-admin';
+/**
+ * La ruta exige `isSuperAdmin=true`. Pensada para tareas globales que
+ * cruzan tiendas (gestión de scheduler, plataforma, etc).
+ */
+export const RequireSuperAdmin = (): MethodDecorator & ClassDecorator =>
+  SetMetadata(REQUIRE_SUPER_ADMIN_KEY, true);
+
 /** Permisos efectivos de un usuario en una tienda (rol predefinido o personalizado). */
 export interface AuthenticatedStoreRole {
   storeId: string;

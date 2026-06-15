@@ -5,7 +5,6 @@ import type {
   CheckoutShippingResolverPort,
   CheckoutTaxResolverPort,
   OrderEventPayload,
-  SalesDomainEvent,
 } from '@mitama/contracts';
 import { Order, type OrderPaymentStatus, type OrderStatus, type OrderTotalsBreakdown } from '../domain/order.entity';
 import type { CheckoutCartReader, CheckoutCartSnapshot } from '../domain/checkout-cart';
@@ -195,8 +194,9 @@ export class ChangeOrderStateUseCase
     } catch (error) {
       return err(error as InvalidOrderStateTransitionError);
     }
-    await this.orders.save(order);
-    if (input.to === 'completed') await this.eventBus.publish(orderEvent('order.completed', eventPayload(order)));
+    await this.orders.save(order, {
+      outbox: input.to === 'completed' ? [{ name: 'order.completed', payload: eventPayload(order) as unknown as Record<string, unknown> }] : undefined,
+    });
     return ok(toOrderOutput(order));
   }
 }
@@ -218,13 +218,10 @@ export class ChangePaymentStateUseCase
     } catch (error) {
       return err(error as InvalidPaymentStateTransitionError);
     }
-    await this.orders.save(order);
-    if (input.to === 'authorized') await this.eventBus.publish(orderEvent('payment.authorized', eventPayload(order)));
+    await this.orders.save(order, { outbox: outboxForPayment(order, input.to) });
     if (input.to === 'paid') {
-      await this.eventBus.publish(orderEvent('payment.paid', eventPayload(order)));
       await this.emailQueue.enqueue({ orderId: order.id, templateCode: 'payment.paid', payload: { orderNumber: order.orderNumber } });
     }
-    if (input.to === 'refunded') await this.eventBus.publish(orderEvent('order.refunded', eventPayload(order)));
     return ok(toOrderOutput(order));
   }
 }
@@ -246,8 +243,7 @@ export class CancelOrderUseCase implements UseCase<{ orderId: string; actorId?: 
       return err(error as CompletedOrderCannotBeCancelledError);
     }
     await this.stockReservations.release(order.id);
-    await this.orders.save(order);
-    await this.eventBus.publish(orderEvent('order.cancelled', eventPayload(order)));
+    await this.orders.save(order, { outbox: [{ name: 'order.cancelled', payload: eventPayload(order) as unknown as Record<string, unknown> }] });
     await this.emailQueue.enqueue({ orderId: order.id, templateCode: 'order.cancelled', payload: { orderNumber: order.orderNumber } });
     return ok(toOrderOutput(order));
   }
@@ -317,6 +313,21 @@ function eventPayload(order: Order): OrderEventPayload {
   };
 }
 
-function orderEvent(name: SalesDomainEvent['name'], payload: OrderEventPayload): SalesDomainEvent {
-  return { name, payload, occurredAt: new Date() } as SalesDomainEvent;
+// `orderEvent` legacy helper removido: los eventos críticos viajan ahora
+// por el outbox transaccional vía `outboxForPayment` y los outbox inline
+// de Cancel/Complete (r24 · sprint1_cierre).
+
+/**
+ * Construye los eventos de outbox para una transición de pago crítica
+ * (r24 · sprint1_cierre). Sobreviven a caídas: el runner los despacha.
+ */
+function outboxForPayment(order: Order, to: OrderPaymentStatus): Array<{ name: string; payload: Record<string, unknown>; storeId?: string | null }> {
+  const payload = eventPayload(order) as unknown as Record<string, unknown>;
+  const events: Array<{ name: string; payload: Record<string, unknown>; storeId?: string | null }> = [];
+  if (to === 'authorized') events.push({ name: 'payment.authorized', payload });
+  if (to === 'paid') events.push({ name: 'payment.paid', payload });
+  if (to === 'failed') events.push({ name: 'payment.failed', payload });
+  if (to === 'refunded') events.push({ name: 'order.refunded', payload });
+  if (to === 'partially_refunded') events.push({ name: 'payment.partially_refunded', payload });
+  return events;
 }

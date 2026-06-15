@@ -26,6 +26,7 @@
     "@mitama/promotions": "workspace:*",
     "@mitama/reference-data": "workspace:*",
     "@mitama/reviews": "workspace:*",
+    "@mitama/scheduled-tasks": "workspace:*",
     "@mitama/settings": "workspace:*",
     "@mitama/shipping": "workspace:*",
     "@mitama/stores": "workspace:*",

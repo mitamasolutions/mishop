@@ -131,6 +131,9 @@ describe('orders use cases', () => {
     const order = (await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' })).value;
     await ctx.drainOutbox();
     const paid = await ctx.payment.execute({ orderId: order.id, to: 'paid' });
+    // payment.paid también viaja por outbox tras F4 (r24 · sprint1_cierre);
+    // drenamos para que el event bus lo entregue al spy de eventos.
+    await ctx.drainOutbox();
 
     expect(paid.isOk()).toBe(true);
     const staleAuthorization = await ctx.payment.execute({ orderId: order.id, to: 'authorized' });

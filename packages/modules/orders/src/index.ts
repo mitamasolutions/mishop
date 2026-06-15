@@ -9,3 +9,8 @@ export type { OrderLineProps, OrderPaymentStatus, OrderStatus } from './domain/o
 export type { OrderRepository } from './domain/order.repository';
 export type { OrderOutput } from './application/order.dto';
 export type { StockReservationService } from './domain/stock-reservation';
+export {
+  DispatchOutboxEventsUseCase,
+  ReleaseExpiredReservationsUseCase,
+} from './application/order-use-cases';
+export { DrainEmailQueueUseCase } from './application/drain-email-queue.use-case';
