@@ -51,3 +51,33 @@ export class TransientPaymentProviderError extends Error {
     super(message);
   }
 }
+
+export class OrderForPaymentNotFoundError extends Error {
+  constructor(orderId: string) {
+    super(`No se encontró la orden ${orderId} para autorizar pago`);
+  }
+}
+
+export class PaymentStoreMismatchError extends Error {
+  constructor() {
+    super('La tienda del pago no coincide con la de la orden');
+  }
+}
+
+export class PaymentCurrencyMismatchError extends Error {
+  constructor() {
+    super('La moneda del pago no coincide con la de la orden');
+  }
+}
+
+export class PaymentAmountExceedsOrderError extends Error {
+  constructor() {
+    super('El monto del pago excede el saldo pendiente de la orden');
+  }
+}
+
+export class OrderNotPayableError extends Error {
+  constructor(paymentStatus: string) {
+    super(`La orden en estado de pago ${paymentStatus} no admite nuevos pagos`);
+  }
+}

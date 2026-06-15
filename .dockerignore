@@ -1,0 +1,38 @@
+# Dependencias instaladas en el host (cada stage reinstala dentro del image).
+node_modules
+**/node_modules
+
+# Artefactos de build locales.
+**/dist
+**/.next
+.turbo
+**/.turbo
+
+# Locales/desarrollo
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+
+# Git/VCS
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+.opencode
+.claude
+.agents
+
+# Tests/coverage
+coverage
+**/coverage
+
+# Docs y guías (no entran al runtime).
+docs
+README.md
+*.md
+!apps/api/README.md
+!apps/admin/README.md

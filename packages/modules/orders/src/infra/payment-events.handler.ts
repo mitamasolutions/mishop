@@ -3,6 +3,7 @@ import type { DomainEvent, EventBus } from '@mitama/core';
 import type { EmailQueue } from '../domain/email-queue';
 import type { OrderPaymentStatus } from '../domain/order.entity';
 import type { OrderRepository } from '../domain/order.repository';
+import type { StockReservationService } from '../domain/stock-reservation';
 
 const PAYMENT_EVENT_STATUS: Record<string, OrderPaymentStatus> = {
   'payment.authorized': 'authorized',
@@ -19,6 +20,7 @@ export class PaymentEventsHandler implements OnModuleInit {
     private readonly eventBus: EventBus,
     private readonly orders: OrderRepository,
     private readonly emailQueue: EmailQueue,
+    private readonly stockReservations: StockReservationService,
   ) {}
 
   onModuleInit(): void {
@@ -41,7 +43,13 @@ export class PaymentEventsHandler implements OnModuleInit {
     }
     if (!changed) return;
     await this.orders.save(order);
-    if (status === 'paid') await this.emailQueue.enqueue({ orderId: order.id, templateCode: 'payment.paid', payload: { orderNumber: order.orderNumber } });
+    if (status === 'paid') {
+      await this.stockReservations.consume(order.id);
+      await this.emailQueue.enqueue({ orderId: order.id, templateCode: 'payment.paid', payload: { orderNumber: order.orderNumber } });
+    }
+    if (status === 'failed' || status === 'voided' || status === 'cancelled') {
+      await this.stockReservations.release(order.id);
+    }
     if (status === 'refunded') await this.emailQueue.enqueue({ orderId: order.id, templateCode: 'payment.refunded', payload: { orderNumber: order.orderNumber } });
   }
 }

@@ -373,3 +373,67 @@ export interface ListInventoryItemsOutput {
   page: number;
   pageSize: number;
 }
+
+// ----- Orders -----
+
+export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+export type OrderPaymentStatus = 'pending' | 'authorized' | 'paid' | 'partially_refunded' | 'refunded' | 'failed' | 'voided' | 'cancelled';
+
+export interface OrderLineOutput {
+  id: string;
+  variantId: string;
+  productId: string;
+  productTitle: string;
+  variantTitle: string;
+  sku: string;
+  quantity: number;
+  currencyCode: string;
+  unitPrice: number;
+  taxAmount: number;
+  total: number;
+  stockLocationId: string;
+}
+
+export interface OrderTransitionOutput {
+  id: string;
+  kind: 'order' | 'payment';
+  from: string;
+  to: string;
+  actorId: string | null;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface OrderNoteOutput {
+  id: string;
+  authorId: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface OrderOutput {
+  id: string;
+  storeId: string;
+  orderNumber: string;
+  cartId: string;
+  customerId: string;
+  customerEmail: string | null;
+  channel: string;
+  status: OrderStatus;
+  paymentStatus: OrderPaymentStatus;
+  currencyCode: string;
+  subtotal: number;
+  shippingTotal: number;
+  taxTotal: number;
+  total: number;
+  shippingAddress: Record<string, unknown>;
+  billingAddress: Record<string, unknown>;
+  shippingMethod: Record<string, unknown>;
+  paymentMethod: Record<string, unknown>;
+  reservationExpiresAt: string | null;
+  lines: OrderLineOutput[];
+  transitions: OrderTransitionOutput[];
+  notes: OrderNoteOutput[];
+  createdAt: string;
+  updatedAt: string;
+}

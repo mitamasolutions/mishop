@@ -2,8 +2,9 @@
  * Composición del módulo: el único lugar donde las capas se conectan.
  */
 import { Module } from '@nestjs/common';
-import { EVENT_BUS } from '@mitama/contracts';
+import { EVENT_BUS, ORDER_FOR_PAYMENTS_PORT, type OrderForPaymentsPort } from '@mitama/contracts';
 import type { EventBus } from '@mitama/core';
+import { OrdersModule } from '@mitama/orders';
 import { PAYMENTS_TOKENS } from './payments.tokens';
 import {
   AuthorizePaymentUseCase,
@@ -28,6 +29,7 @@ import { PaymentsController } from './http/payments.controller';
 
 @Module({
   controllers: [PaymentsController],
+  imports: [OrdersModule],
   providers: [
     { provide: PAYMENTS_TOKENS.paymentRepository, useClass: PrismaPaymentRepository },
     { provide: PAYMENTS_TOKENS.webhookRepository, useClass: PrismaPaymentWebhookEventRepository },
@@ -38,8 +40,9 @@ import { PaymentsController } from './http/payments.controller';
     { provide: ListPaymentMethodsUseCase, useFactory: (methods: StorePaymentMethodRepository) => new ListPaymentMethodsUseCase(methods), inject: [PAYMENTS_TOKENS.storeMethodRepository] },
     {
       provide: AuthorizePaymentUseCase,
-      useFactory: (payments: PaymentRepository, methods: StorePaymentMethodRepository, registry: PaymentProviderRegistry, eventBus: EventBus) => new AuthorizePaymentUseCase(payments, methods, registry, eventBus),
-      inject: [PAYMENTS_TOKENS.paymentRepository, PAYMENTS_TOKENS.storeMethodRepository, PAYMENTS_TOKENS.providerRegistry, EVENT_BUS],
+      useFactory: (payments: PaymentRepository, methods: StorePaymentMethodRepository, registry: PaymentProviderRegistry, orders: OrderForPaymentsPort, eventBus: EventBus) =>
+        new AuthorizePaymentUseCase(payments, methods, registry, orders, eventBus),
+      inject: [PAYMENTS_TOKENS.paymentRepository, PAYMENTS_TOKENS.storeMethodRepository, PAYMENTS_TOKENS.providerRegistry, ORDER_FOR_PAYMENTS_PORT, EVENT_BUS],
     },
     {
       provide: CapturePaymentUseCase,

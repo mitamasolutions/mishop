@@ -1,0 +1,19 @@
+// Módulo outbox: durabilidad de eventos críticos.
+// Cada evento que requiere supervivencia ante caídas se inserta en la misma
+// transacción que la mutación de negocio (orden, pago) y un worker los
+// despacha al EventBus / dispatcher de emails.
+
+model OutboxEvent {
+  id           String    @id @default(uuid())
+  storeId      String?   @map("store_id")
+  eventName    String    @map("event_name")
+  payload      Json
+  attempts     Int       @default(0)
+  maxAttempts  Int       @default(10) @map("max_attempts")
+  lastError    String?   @map("last_error")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  dispatchedAt DateTime? @map("dispatched_at")
+
+  @@index([dispatchedAt, createdAt])
+  @@map("outbox_events")
+}

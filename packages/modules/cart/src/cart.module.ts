@@ -5,17 +5,20 @@ import { Module } from '@nestjs/common';
 import { CART_TOKENS } from './cart.tokens';
 import type { CartRepository } from './domain/cart.repository';
 import type { CatalogSnapshotService } from './domain/catalog-snapshot';
+import type { CustomerDirectory } from './domain/customer-directory';
 import {
   AddCartLineUseCase,
   AdvanceCheckoutUseCase,
   ConfirmCartPriceChangesUseCase,
   GetOrCreateCartUseCase,
+  IdentifyCheckoutCustomerUseCase,
   MergeGuestCartUseCase,
   PurgeExpiredCartsUseCase,
   RefreshCartUseCase,
 } from './application/cart-use-cases';
 import { PrismaCartRepository } from './infra/prisma-cart.repository';
 import { PrismaCatalogSnapshotService } from './infra/prisma-catalog-snapshot.service';
+import { PrismaCustomerDirectory } from './infra/prisma-customer-directory';
 import { CartController } from './http/cart.controller';
 
 @Module({
@@ -23,6 +26,7 @@ import { CartController } from './http/cart.controller';
   providers: [
     { provide: CART_TOKENS.cartRepository, useClass: PrismaCartRepository },
     { provide: CART_TOKENS.catalogSnapshot, useClass: PrismaCatalogSnapshotService },
+    { provide: CART_TOKENS.customerDirectory, useClass: PrismaCustomerDirectory },
     {
       provide: GetOrCreateCartUseCase,
       useFactory: (carts: CartRepository) => new GetOrCreateCartUseCase(carts),
@@ -47,6 +51,11 @@ import { CartController } from './http/cart.controller';
       provide: AdvanceCheckoutUseCase,
       useFactory: (carts: CartRepository) => new AdvanceCheckoutUseCase(carts),
       inject: [CART_TOKENS.cartRepository],
+    },
+    {
+      provide: IdentifyCheckoutCustomerUseCase,
+      useFactory: (carts: CartRepository, directory: CustomerDirectory) => new IdentifyCheckoutCustomerUseCase(carts, directory),
+      inject: [CART_TOKENS.cartRepository, CART_TOKENS.customerDirectory],
     },
     {
       provide: MergeGuestCartUseCase,

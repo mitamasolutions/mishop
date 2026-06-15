@@ -1,11 +1,13 @@
 import { Order } from '../domain/order.entity';
 import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
-import type { OrderFilter, OrderRepository, StoredIdempotencyRecord } from '../domain/order.repository';
+import type { OrderFilter, OrderRepository, SaveOrderOptions, StoredIdempotencyRecord } from '../domain/order.repository';
+import type { OutboxEventInput } from '../domain/outbox';
 
 export class InMemoryOrderRepository implements OrderRepository {
   private readonly orders = new Map<string, Order>();
   private readonly idempotency = new Map<string, StoredIdempotencyRecord>();
   private readonly sequences = new Map<string, number>();
+  readonly outbox: Array<OutboxEventInput & { id: string; storeId: string }> = [];
 
   async findById(id: string): Promise<Order | null> {
     return this.orders.get(id) ?? null;
@@ -33,22 +35,27 @@ export class InMemoryOrderRepository implements OrderRepository {
     return `${prefix}${String(next).padStart(6, '0')}`;
   }
 
-  async save(order: Order, idempotency?: { key: string; requestHash: string; expiresAt: Date }): Promise<void> {
+  async save(order: Order, options: SaveOrderOptions = {}): Promise<void> {
     const existing = [...this.orders.values()].find((stored) => stored.id !== order.id && stored.storeId === order.storeId && stored.cartId === order.cartId);
     if (existing) throw new OrderAlreadyExistsForCartError();
 
     this.orders.set(order.id, order);
-    if (idempotency) {
-      const existingKey = this.idempotency.get(`${order.storeId}:${idempotency.key}`);
+    if (options.idempotency) {
+      const existingKey = this.idempotency.get(`${order.storeId}:${options.idempotency.key}`);
       if (existingKey && existingKey.orderId !== order.id) throw new IdempotencyConflictError();
 
-      this.idempotency.set(`${order.storeId}:${idempotency.key}`, {
-        key: idempotency.key,
+      this.idempotency.set(`${order.storeId}:${options.idempotency.key}`, {
+        key: options.idempotency.key,
         storeId: order.storeId,
-        requestHash: idempotency.requestHash,
+        requestHash: options.idempotency.requestHash,
         orderId: order.id,
-        expiresAt: idempotency.expiresAt,
+        expiresAt: options.idempotency.expiresAt,
       });
+    }
+    if (options.outbox && options.outbox.length > 0) {
+      for (const event of options.outbox) {
+        this.outbox.push({ id: crypto.randomUUID(), storeId: event.storeId ?? order.storeId, name: event.name, payload: event.payload });
+      }
     }
   }
 

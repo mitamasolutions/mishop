@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, PrismaService } from '@mitama/db';
 import { Order, type OrderLineProps, type OrderPaymentStatus, type OrderStatus, type OrderNoteProps, type StateTransitionProps } from '../domain/order.entity';
 import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
-import type { OrderFilter, OrderRepository, StoredIdempotencyRecord } from '../domain/order.repository';
+import type { OrderFilter, OrderRepository, SaveOrderOptions, StoredIdempotencyRecord } from '../domain/order.repository';
 
 const ORDER_INCLUDE = { lines: true, transitions: true, notes: true } satisfies Prisma.OrderInclude;
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
@@ -44,7 +44,8 @@ export class PrismaOrderRepository implements OrderRepository {
     return `${prefix}${String(sequence.next - 1).padStart(6, '0')}`;
   }
 
-  async save(order: Order, idempotency?: { key: string; requestHash: string; expiresAt: Date }): Promise<void> {
+  async save(order: Order, options: SaveOrderOptions = {}): Promise<void> {
+    const { idempotency, outbox } = options;
     try {
       await this.prisma.$transaction(async (tx) => {
         await tx.order.upsert({ where: { id: order.id }, create: this.toOrderRow(order), update: this.toOrderRow(order) });
@@ -57,6 +58,15 @@ export class PrismaOrderRepository implements OrderRepository {
         if (idempotency) {
           await tx.orderIdempotencyKey.create({
             data: { storeId: order.storeId, key: idempotency.key, requestHash: idempotency.requestHash, orderId: order.id, expiresAt: idempotency.expiresAt },
+          });
+        }
+        if (outbox && outbox.length > 0) {
+          await tx.outboxEvent.createMany({
+            data: outbox.map((event) => ({
+              storeId: event.storeId ?? order.storeId,
+              eventName: event.name,
+              payload: event.payload as Prisma.InputJsonValue,
+            })),
           });
         }
       });

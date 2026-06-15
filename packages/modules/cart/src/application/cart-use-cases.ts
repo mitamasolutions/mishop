@@ -2,6 +2,7 @@ import { err, ok, Result, UseCase } from '@mitama/core';
 import { Cart, type CartAddressSnapshot, type CartChannel, type CartPaymentMethodSnapshot, type CartShippingMethodSnapshot } from '../domain/cart.entity';
 import type { CartRepository } from '../domain/cart.repository';
 import type { CatalogSnapshotService } from '../domain/catalog-snapshot';
+import type { CustomerDirectory } from '../domain/customer-directory';
 import {
   CartHasInvalidStockError,
   CartHasUnconfirmedPriceChangesError,
@@ -183,6 +184,42 @@ export class PurgeExpiredCartsUseCase implements UseCase<Date | undefined, Resul
     const expired = await this.carts.findExpired(now);
     for (const cart of expired) await this.carts.delete(cart.id);
     return ok(expired.length);
+  }
+}
+
+export interface IdentifyCheckoutCustomerInput {
+  cartId: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+}
+
+/**
+ * Asocia un carrito a un comprador (guest o existente) durante el checkout.
+ * Si no existe `Customer` con ese email para la tienda, crea uno con
+ * `isGuest=true`. Idempotente: el mismo email reusa el mismo cliente.
+ */
+export class IdentifyCheckoutCustomerUseCase implements UseCase<IdentifyCheckoutCustomerInput, Result<CartOutput, CartNotFoundError>> {
+  constructor(
+    private readonly carts: CartRepository,
+    private readonly directory: CustomerDirectory,
+  ) {}
+
+  async execute(input: IdentifyCheckoutCustomerInput): Promise<Result<CartOutput, CartNotFoundError>> {
+    const cart = await this.carts.findById(input.cartId);
+    if (!cart) return err(new CartNotFoundError(input.cartId));
+
+    const customer = await this.directory.findOrCreateGuest({
+      storeId: cart.storeId,
+      email: input.email,
+      firstName: input.firstName ?? null,
+      lastName: input.lastName ?? null,
+      phone: input.phone ?? null,
+    });
+    cart.attachCustomer(customer.id);
+    await this.carts.save(cart);
+    return ok(toCartOutput(cart));
   }
 }
 

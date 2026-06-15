@@ -1,5 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Headers, HttpCode, HttpException, HttpStatus, NotFoundException, Param, Post, Query, RawBodyRequest, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentStore, CurrentUser, Public, RequirePermission, type ActiveStore, type AuthenticatedUser } from '@mitama/contracts';
 import {
   AuthorizePaymentUseCase,
@@ -88,6 +89,7 @@ export class PaymentsController {
 
   @Post('webhooks/:providerCode')
   @Public()
+  @Throttle({ webhook: { limit: 60, ttl: 60000 } })
   @HttpCode(200)
   @ApiOperation({ summary: 'Recibe webhooks de pago por provider' })
   async webhook(@Param('providerCode') providerCode: string, @Headers() headers: Record<string, string | string[] | undefined>, @Req() request: RawBodyRequest<{ rawBody?: Buffer }>): Promise<{ ok: true; duplicate: boolean }> {

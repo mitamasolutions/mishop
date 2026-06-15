@@ -1,5 +1,6 @@
 import { err, ok, type EventBus, type Result, type UseCase } from '@mitama/core';
 import type { DomainEvent } from '@mitama/core';
+import type { OrderForPaymentsPort } from '@mitama/contracts';
 import { Payment } from '../domain/payment.entity';
 import { PaymentWebhookEvent } from '../domain/payment-webhook-event.entity';
 import type { PaymentProviderRegistry } from '../domain/payment-provider';
@@ -12,10 +13,15 @@ import {
   DuplicateWebhookEventError,
   InvalidPaymentTransitionError,
   InvalidWebhookSignatureError,
+  OrderForPaymentNotFoundError,
+  OrderNotPayableError,
+  PaymentAmountExceedsOrderError,
+  PaymentCurrencyMismatchError,
   PaymentMethodUnavailableError,
   PaymentNotFoundError,
   PaymentNotRefundableError,
   PaymentProviderNotFoundError,
+  PaymentStoreMismatchError,
   RefundAmountExceededError,
   TransientPaymentProviderError,
 } from '../domain/errors';
@@ -37,17 +43,40 @@ export interface AuthorizePaymentInput {
   currency: string;
 }
 
-type PaymentUseCaseError = PaymentNotFoundError | PaymentProviderNotFoundError | PaymentMethodUnavailableError | InvalidPaymentTransitionError | RefundAmountExceededError | PaymentNotRefundableError | Error;
+type PaymentUseCaseError =
+  | PaymentNotFoundError
+  | PaymentProviderNotFoundError
+  | PaymentMethodUnavailableError
+  | InvalidPaymentTransitionError
+  | RefundAmountExceededError
+  | PaymentNotRefundableError
+  | OrderForPaymentNotFoundError
+  | OrderNotPayableError
+  | PaymentStoreMismatchError
+  | PaymentCurrencyMismatchError
+  | PaymentAmountExceedsOrderError
+  | Error;
+
+const NON_PAYABLE_STATUSES = new Set(['paid', 'refunded', 'partially_refunded', 'voided', 'cancelled']);
 
 export class AuthorizePaymentUseCase implements UseCase<AuthorizePaymentInput, Result<PaymentOutput, PaymentUseCaseError>> {
   constructor(
     private readonly payments: PaymentRepository,
     private readonly methods: StorePaymentMethodRepository,
     private readonly registry: PaymentProviderRegistry,
+    private readonly orders: OrderForPaymentsPort,
     private readonly eventBus: EventBus,
   ) {}
 
   async execute(input: AuthorizePaymentInput): Promise<Result<PaymentOutput, PaymentUseCaseError>> {
+    const order = await this.orders.findById(input.orderId);
+    if (!order) return err(new OrderForPaymentNotFoundError(input.orderId));
+    if (order.storeId !== input.storeId) return err(new PaymentStoreMismatchError());
+    if (order.currencyCode !== input.currency) return err(new PaymentCurrencyMismatchError());
+    if (NON_PAYABLE_STATUSES.has(order.paymentStatus)) return err(new OrderNotPayableError(order.paymentStatus));
+    const remaining = order.total - order.paidAmount;
+    if (input.amount <= 0 || input.amount > remaining + 0.001) return err(new PaymentAmountExceedsOrderError());
+
     const method = await this.methods.findEnabledByProvider(input.storeId, input.providerCode);
     if (!method) return err(new PaymentMethodUnavailableError(input.providerCode));
     const provider = this.registry.get(input.providerCode);

@@ -6,7 +6,7 @@ import { InMemoryStockReservationService } from '../infra/in-memory-stock-reserv
 import { PaymentEventsHandler } from '../infra/payment-events.handler';
 import type { EmailQueue } from '../domain/email-queue';
 import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
-import { CancelOrderUseCase, ChangePaymentStateUseCase, CreateOrderUseCase } from './order-use-cases';
+import { CancelOrderUseCase, ChangePaymentStateUseCase, CreateOrderUseCase, ReleaseExpiredReservationsUseCase } from './order-use-cases';
 
 class MemoryEmailQueue implements EmailQueue {
   readonly jobs: string[] = [];
@@ -76,6 +76,7 @@ describe('orders use cases', () => {
     ctx.stock.available.set('loc-1:v1', 2);
     ctx.carts.carts.set('cart-1', readyCart('cart-1'));
     const order = (await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' })).value;
+    await ctx.drainOutbox();
     const paid = await ctx.payment.execute({ orderId: order.id, to: 'paid' });
 
     expect(paid.isOk()).toBe(true);
@@ -108,7 +109,7 @@ describe('orders use cases', () => {
     ctx.stock.available.set('loc-1:v1', 2);
     ctx.carts.carts.set('cart-1', readyCart('cart-1'));
     const order = (await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' })).value;
-    new PaymentEventsHandler(ctx.bus, ctx.orders, ctx.email).onModuleInit();
+    new PaymentEventsHandler(ctx.bus, ctx.orders, ctx.email, ctx.stock).onModuleInit();
 
     await ctx.bus.publish({ name: 'payment.paid', occurredAt: new Date(), payload: { orderId: order.id } });
     await ctx.bus.publish({ name: 'payment.paid', occurredAt: new Date(), payload: { orderId: order.id } });
@@ -116,6 +117,45 @@ describe('orders use cases', () => {
 
     expect(stored?.transitionPayment('paid', null, 'sin cambio')).toBe(false);
     expect(ctx.email.jobs.filter((job) => job === 'payment.paid')).toHaveLength(1);
+  });
+
+  it('consume el stock al pagar y libera al fallar el pago (regresión)', async () => {
+    const ctx = context();
+    ctx.stock.available.set('loc-1:v1', 2);
+    ctx.carts.carts.set('cart-a', readyCart('cart-a'));
+    ctx.carts.carts.set('cart-b', readyCart('cart-b'));
+    new PaymentEventsHandler(ctx.bus, ctx.orders, ctx.email, ctx.stock).onModuleInit();
+
+    const paidOrder = (await ctx.create.execute({ cartId: 'cart-a', idempotencyKey: 'ka' })).value;
+    const failedOrder = (await ctx.create.execute({ cartId: 'cart-b', idempotencyKey: 'kb' })).value;
+    // Tras reservar quedan 0 disponibles y 0 consumidos.
+    expect(ctx.stock.available.get('loc-1:v1')).toBe(0);
+
+    await ctx.bus.publish({ name: 'payment.paid', occurredAt: new Date(), payload: { orderId: paidOrder.id } });
+    // Pago confirmado: una unidad consumida, disponible sigue en 0.
+    expect(ctx.stock.consumed.get('loc-1:v1')).toBe(1);
+    expect(ctx.stock.available.get('loc-1:v1')).toBe(0);
+
+    await ctx.bus.publish({ name: 'payment.failed', occurredAt: new Date(), payload: { orderId: failedOrder.id } });
+    // Pago fallido: stock liberado, vuelve a haber 1 disponible.
+    expect(ctx.stock.available.get('loc-1:v1')).toBe(1);
+  });
+
+  it('libera reservas expiradas vía ReleaseExpiredReservationsUseCase', async () => {
+    const ctx = context();
+    ctx.stock.available.set('loc-1:v1', 1);
+    ctx.carts.carts.set('cart-1', readyCart('cart-1'));
+
+    const order = (await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' })).value;
+    expect(ctx.stock.available.get('loc-1:v1')).toBe(0);
+
+    const release = new ReleaseExpiredReservationsUseCase(ctx.stock);
+    const future = new Date(Date.now() + 30 * 60 * 1000);
+    const result = await release.execute(future);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) expect(result.value).toContain(order.id);
+    expect(ctx.stock.available.get('loc-1:v1')).toBe(1);
   });
 });
 
@@ -130,6 +170,13 @@ function context() {
   bus.subscribe('payment.authorized', (event) => events.push(event.name));
   bus.subscribe('payment.paid', (event) => events.push(event.name));
   bus.subscribe('order.cancelled', (event) => events.push(event.name));
+  async function drainOutbox(): Promise<void> {
+    while (orders.outbox.length > 0) {
+      const event = orders.outbox.shift();
+      if (!event) break;
+      await bus.publish({ name: event.name, occurredAt: new Date(), payload: event.payload });
+    }
+  }
   return {
     carts,
     stock,
@@ -137,6 +184,7 @@ function context() {
     email,
     orders,
     events,
+    drainOutbox,
     create: new CreateOrderUseCase(orders, carts, stock, bus, email),
     payment: new ChangePaymentStateUseCase(orders, bus, email),
     cancel: new CancelOrderUseCase(orders, stock, bus, email),

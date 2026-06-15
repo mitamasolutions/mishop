@@ -1,12 +1,13 @@
 import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsEmail, IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { NoStoreScope, Public } from '@mitama/contracts';
 import {
   AddCartLineUseCase,
   AdvanceCheckoutUseCase,
   ConfirmCartPriceChangesUseCase,
   GetOrCreateCartUseCase,
+  IdentifyCheckoutCustomerUseCase,
   MergeGuestCartUseCase,
   RefreshCartUseCase,
 } from '../application/cart-use-cases';
@@ -52,6 +53,23 @@ class MergeCartDto {
   customerId!: string;
 }
 
+class IdentifyCustomerDto {
+  @IsEmail()
+  email!: string;
+
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}
+
 @ApiTags('cart')
 @Controller('cart')
 @Public()
@@ -63,6 +81,7 @@ export class CartController {
     private readonly refresh: RefreshCartUseCase,
     private readonly confirmPrices: ConfirmCartPriceChangesUseCase,
     private readonly checkout: AdvanceCheckoutUseCase,
+    private readonly identifyCustomer: IdentifyCheckoutCustomerUseCase,
     private readonly mergeGuest: MergeGuestCartUseCase,
   ) {}
 
@@ -116,5 +135,19 @@ export class CartController {
     const result = await this.mergeGuest.execute(body);
     if (result.isOk()) return result.value;
     throw new BadRequestException('No se pudo fusionar el carrito');
+  }
+
+  @Post(':cartId/customer')
+  @ApiOperation({ summary: 'Identifica al comprador (guest o existente) por email' })
+  async identifyCheckoutCustomer(@Param('cartId') cartId: string, @Body() body: IdentifyCustomerDto): Promise<CartOutput> {
+    const result = await this.identifyCustomer.execute({
+      cartId,
+      email: body.email,
+      firstName: body.firstName ?? null,
+      lastName: body.lastName ?? null,
+      phone: body.phone ?? null,
+    });
+    if (result.isOk()) return result.value;
+    throw new NotFoundException(result.error.message);
   }
 }

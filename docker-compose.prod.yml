@@ -1,0 +1,68 @@
+# docker-compose.prod.yml
+# Despliegue de producción mínimo: API + Admin. La base de datos se asume
+# externa (Neon, RDS u otro Postgres administrado). Si quieres correr Postgres
+# en el mismo host, descomenta el servicio `postgres` y apunta `DATABASE_URL`
+# a `postgres://mitama:${POSTGRES_PASSWORD}@postgres:5432/mitama`.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: mitama-commerce/api:latest
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      API_PORT: "3000"
+      # Override puntual (opcional): CORS_ORIGINS, API_DOCS_ENABLED, etc.
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    image: mitama-commerce/admin:latest
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      # Importante: en build time Next.js inlinea NEXT_PUBLIC_API_URL.
+      # Si cambias el dominio público de la API, hay que rebuildear el admin.
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # postgres:
+  #   image: postgres:16-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: mitama
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD en .env.production}
+  #     POSTGRES_DB: mitama
+  #   volumes:
+  #     - mitama_pgdata_prod:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U mitama -d mitama"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+
+# volumes:
+#   mitama_pgdata_prod:

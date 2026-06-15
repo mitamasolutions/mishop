@@ -5,6 +5,7 @@ import { Order, type OrderPaymentStatus, type OrderStatus } from '../domain/orde
 import type { CheckoutCartReader } from '../domain/checkout-cart';
 import type { EmailQueue } from '../domain/email-queue';
 import type { OrderFilter, OrderRepository } from '../domain/order.repository';
+import type { OutboxDispatcher } from '../domain/outbox';
 import type { StockReservationService } from '../domain/stock-reservation';
 import {
   CheckoutCartNotReadyError,
@@ -75,7 +76,10 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<Orde
     }
 
     try {
-      await this.orders.save(order, { key: input.idempotencyKey, requestHash, expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS) });
+      await this.orders.save(order, {
+        idempotency: { key: input.idempotencyKey, requestHash, expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS) },
+        outbox: [{ name: 'order.created', payload: eventPayload(order) as unknown as Record<string, unknown> }],
+      });
     } catch (error) {
       await this.stockReservations.release(order.id);
       await this.orders.delete(order.id);
@@ -83,7 +87,6 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Result<Orde
       throw error;
     }
     await this.carts.markOrdered(cart.id);
-    await this.eventBus.publish(orderEvent('order.created', eventPayload(order)));
     await this.emailQueue.enqueue({ orderId: order.id, templateCode: 'order.created', payload: { orderNumber: order.orderNumber } });
     return ok(toOrderOutput(order));
   }
@@ -194,6 +197,30 @@ export class ResendOrderConfirmationUseCase implements UseCase<string, Result<vo
     if (!order) return err(new OrderNotFoundError(orderId));
     await this.emailQueue.enqueue({ orderId, templateCode: 'order.created', payload: { orderNumber: order.orderNumber } });
     return ok(undefined);
+  }
+}
+
+/**
+ * Libera reservas con `expiresAt <= now`. Pensada para ejecutarse como
+ * job periódico (cron/worker). Devuelve los ids de orden liberados.
+ */
+export class ReleaseExpiredReservationsUseCase implements UseCase<Date | undefined, Result<string[], never>> {
+  constructor(private readonly stockReservations: StockReservationService) {}
+
+  async execute(now = new Date()): Promise<Result<string[], never>> {
+    return ok(await this.stockReservations.releaseExpired(now));
+  }
+}
+
+/**
+ * Despacha eventos pendientes del outbox al `EventBus`. Pensada para
+ * ejecutarse como job periódico (cron/worker).
+ */
+export class DispatchOutboxEventsUseCase implements UseCase<number | undefined, Result<{ dispatched: string[]; failed: string[] }, never>> {
+  constructor(private readonly dispatcher: OutboxDispatcher) {}
+
+  async execute(limit?: number): Promise<Result<{ dispatched: string[]; failed: string[] }, never>> {
+    return ok(await this.dispatcher.dispatchPending(limit));
   }
 }
 

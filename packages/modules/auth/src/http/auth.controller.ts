@@ -11,6 +11,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AllowAuthenticated, CurrentUser, NoStoreScope, Public, type AuthenticatedUser } from '@mitama/contracts';
 import { LoginUseCase } from '../application/login/login.use-case';
 import { RefreshSessionUseCase } from '../application/refresh-session/refresh-session.use-case';
@@ -57,6 +58,7 @@ export class AuthController {
 
   @Post('login')
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Inicia sesión con email y contraseña' })
   @ApiOkResponse({ description: 'Sesión iniciada' })
   @ApiUnauthorizedResponse({ description: 'Credenciales inválidas' })
@@ -74,6 +76,7 @@ export class AuthController {
 
   @Post('refresh')
   @Public()
+  @Throttle({ auth: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Rota el refresh token y emite un nuevo access token' })
   @ApiOkResponse({ description: 'Sesión renovada' })
   @ApiUnauthorizedResponse({ description: 'El refresh token es inválido o expiró' })
@@ -96,6 +99,7 @@ export class AuthController {
 
   @Post('forgot-password')
   @Public()
+  @Throttle({ auth: { limit: 5, ttl: 60000 } })
   @HttpCode(204)
   @ApiOperation({ summary: 'Solicita un enlace de recuperación de contraseña' })
   @ApiOkResponse({ description: 'Solicitud procesada (siempre, exista o no la cuenta)' })
@@ -105,6 +109,7 @@ export class AuthController {
 
   @Post('reset-password')
   @Public()
+  @Throttle({ auth: { limit: 5, ttl: 60000 } })
   @HttpCode(204)
   @ApiOperation({ summary: 'Restablece la contraseña con un token de recuperación' })
   @ApiOkResponse({ description: 'Contraseña actualizada' })

@@ -4,4 +4,5 @@ export const ORDERS_TOKENS = {
   checkoutCartReader: 'orders.checkout-cart-reader',
   stockReservationService: 'orders.stock-reservation-service',
   emailQueue: 'orders.email-queue',
+  outboxDispatcher: 'orders.outbox-dispatcher',
 } as const;

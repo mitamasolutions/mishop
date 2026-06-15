@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "admin",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": ["yarn", "workspace", "@mitama/admin", "dev"],
+      "port": 3001,
+      "autoPort": false
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": ["yarn", "workspace", "@mitama/api", "dev"],
+      "port": 3000,
+      "autoPort": false
+    }
+  ]
+}

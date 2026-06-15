@@ -2,25 +2,30 @@
  * Composición del módulo: el único lugar donde las capas se conectan.
  */
 import { Module } from '@nestjs/common';
-import { EVENT_BUS } from '@mitama/contracts';
+import { EVENT_BUS, ORDER_FOR_PAYMENTS_PORT } from '@mitama/contracts';
 import type { EventBus } from '@mitama/core';
 import { ORDERS_TOKENS } from './orders.tokens';
 import type { CheckoutCartReader } from './domain/checkout-cart';
 import type { EmailQueue } from './domain/email-queue';
 import type { OrderRepository } from './domain/order.repository';
 import type { StockReservationService } from './domain/stock-reservation';
+import type { OutboxDispatcher } from './domain/outbox';
 import {
   AddOrderNoteUseCase,
   CancelOrderUseCase,
   ChangeOrderStateUseCase,
   ChangePaymentStateUseCase,
   CreateOrderUseCase,
+  DispatchOutboxEventsUseCase,
   ListOrdersUseCase,
+  ReleaseExpiredReservationsUseCase,
   ResendOrderConfirmationUseCase,
 } from './application/order-use-cases';
 import { PrismaCheckoutCartReader } from './infra/prisma-checkout-cart.reader';
 import { PrismaEmailQueue } from './infra/prisma-email-queue';
 import { PrismaOrderRepository } from './infra/prisma-order.repository';
+import { PrismaOrderForPayments } from './infra/prisma-order-for-payments';
+import { PrismaOutboxDispatcher } from './infra/prisma-outbox-dispatcher';
 import { PrismaStockReservationService } from './infra/prisma-stock-reservation.service';
 import { PaymentEventsHandler } from './infra/payment-events.handler';
 import { ShipmentEventsHandler } from './infra/shipment-events.handler';
@@ -33,10 +38,13 @@ import { OrdersController } from './http/orders.controller';
     { provide: ORDERS_TOKENS.checkoutCartReader, useClass: PrismaCheckoutCartReader },
     { provide: ORDERS_TOKENS.stockReservationService, useClass: PrismaStockReservationService },
     { provide: ORDERS_TOKENS.emailQueue, useClass: PrismaEmailQueue },
+    { provide: ORDERS_TOKENS.outboxDispatcher, useClass: PrismaOutboxDispatcher },
+    { provide: ORDER_FOR_PAYMENTS_PORT, useClass: PrismaOrderForPayments },
     {
       provide: PaymentEventsHandler,
-      useFactory: (eventBus: EventBus, orders: OrderRepository, email: EmailQueue) => new PaymentEventsHandler(eventBus, orders, email),
-      inject: [EVENT_BUS, ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue],
+      useFactory: (eventBus: EventBus, orders: OrderRepository, email: EmailQueue, stock: StockReservationService) =>
+        new PaymentEventsHandler(eventBus, orders, email, stock),
+      inject: [EVENT_BUS, ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue, ORDERS_TOKENS.stockReservationService],
     },
     {
       provide: ShipmentEventsHandler,
@@ -80,7 +88,17 @@ import { OrdersController } from './http/orders.controller';
       useFactory: (orders: OrderRepository, email: EmailQueue) => new ResendOrderConfirmationUseCase(orders, email),
       inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue],
     },
+    {
+      provide: ReleaseExpiredReservationsUseCase,
+      useFactory: (stock: StockReservationService) => new ReleaseExpiredReservationsUseCase(stock),
+      inject: [ORDERS_TOKENS.stockReservationService],
+    },
+    {
+      provide: DispatchOutboxEventsUseCase,
+      useFactory: (dispatcher: OutboxDispatcher) => new DispatchOutboxEventsUseCase(dispatcher),
+      inject: [ORDERS_TOKENS.outboxDispatcher],
+    },
   ],
-  exports: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.stockReservationService],
+  exports: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.stockReservationService, ORDER_FOR_PAYMENTS_PORT],
 })
 export class OrdersModule {}

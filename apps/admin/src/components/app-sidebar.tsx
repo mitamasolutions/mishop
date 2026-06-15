@@ -16,6 +16,7 @@ import {
   MapPin,
   Settings,
   Package,
+  Receipt,
   ShieldCheck,
   Store,
   Tag,
@@ -29,6 +30,7 @@ import { hasPermission, useAuthStore } from '@/lib/auth-store';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, permission: null },
+  { href: '/ordenes', label: 'Órdenes', icon: Receipt, permission: 'orders.read' },
   { href: '/usuarios', label: 'Usuarios', icon: Users, permission: 'users.read' },
   { href: '/roles', label: 'Roles', icon: ShieldCheck, permission: 'roles.read' },
   { href: '/tiendas', label: 'Tiendas', icon: Store, permission: 'stores.read' },

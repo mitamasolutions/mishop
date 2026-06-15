@@ -1,27 +1,48 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { InMemoryEventBus } from '@mitama/core';
+import type { OrderForPaymentsPort, OrderForPaymentsView } from '@mitama/contracts';
 import { PaymentProviderRegistry } from '../domain/payment-provider';
 import type { PaymentProviderConfigResolver } from '../domain/payment-provider-config-resolver';
-import { RefundAmountExceededError, InvalidWebhookSignatureError, PaymentNotRefundableError, TransientPaymentProviderError } from '../domain/errors';
+import {
+  InvalidWebhookSignatureError,
+  OrderForPaymentNotFoundError,
+  OrderNotPayableError,
+  PaymentAmountExceedsOrderError,
+  PaymentCurrencyMismatchError,
+  PaymentNotRefundableError,
+  PaymentStoreMismatchError,
+  RefundAmountExceededError,
+  TransientPaymentProviderError,
+} from '../domain/errors';
 import { InMemoryPaymentRepository } from '../infra/in-memory-payment.repository';
 import { InMemoryPaymentWebhookEventRepository } from '../infra/in-memory-payment-webhook-event.repository';
 import { InMemoryStorePaymentMethodRepository } from '../infra/in-memory-store-payment-method.repository';
 import { ManualPaymentProvider, StripePaymentProvider } from '../infra/simulated-payment-providers';
 import { AuthorizePaymentUseCase, HandlePaymentWebhookUseCase, RefundPaymentUseCase } from './payment-use-cases';
 
+class InMemoryOrderForPayments implements OrderForPaymentsPort {
+  readonly orders = new Map<string, OrderForPaymentsView>();
+  async findById(orderId: string): Promise<OrderForPaymentsView | null> {
+    return this.orders.get(orderId) ?? null;
+  }
+}
+
 describe('payment webhooks', () => {
   function setup() {
     const payments = new InMemoryPaymentRepository();
     const methods = new InMemoryStorePaymentMethodRepository();
     const webhooks = new InMemoryPaymentWebhookEventRepository();
+    const orders = new InMemoryOrderForPayments();
+    orders.orders.set('order-1', { id: 'order-1', storeId: 'default', currencyCode: 'MXN', total: 100, paidAmount: 0, paymentStatus: 'pending', status: 'pending' });
     const registry = new PaymentProviderRegistry([new StripePaymentProvider(), new ManualPaymentProvider()]);
     const eventBus = new InMemoryEventBus();
     const configResolver: PaymentProviderConfigResolver = { getWebhookSecret: () => 'platform-secret' };
     return {
       payments,
       webhooks,
-      authorize: new AuthorizePaymentUseCase(payments, methods, registry, eventBus),
+      orders,
+      authorize: new AuthorizePaymentUseCase(payments, methods, registry, orders, eventBus),
       webhook: new HandlePaymentWebhookUseCase(payments, webhooks, registry, configResolver, eventBus),
       refund: new RefundPaymentUseCase(payments, methods, registry, eventBus),
     };
@@ -155,6 +176,37 @@ describe('payment webhooks', () => {
 
     expect(results.filter((result) => result.isOk() && result.value.duplicate)).toHaveLength(1);
     expect(stored?.transitions.filter((transition) => transition.to === 'failed')).toHaveLength(1);
+  });
+
+  it('rechaza autorización para una orden inexistente, distinta tienda o moneda', async () => {
+    const { authorize } = setup();
+
+    const notFound = await authorize.execute({ storeId: 'default', orderId: 'missing', providerCode: 'stripe', amount: 100, currency: 'MXN' });
+    const wrongStore = await authorize.execute({ storeId: 'other', orderId: 'order-1', providerCode: 'stripe', amount: 100, currency: 'MXN' });
+    const wrongCurrency = await authorize.execute({ storeId: 'default', orderId: 'order-1', providerCode: 'stripe', amount: 100, currency: 'USD' });
+
+    expect(notFound.isErr() && notFound.error).toBeInstanceOf(OrderForPaymentNotFoundError);
+    expect(wrongStore.isErr() && wrongStore.error).toBeInstanceOf(PaymentStoreMismatchError);
+    expect(wrongCurrency.isErr() && wrongCurrency.error).toBeInstanceOf(PaymentCurrencyMismatchError);
+  });
+
+  it('rechaza autorización por monto inválido o que excede el saldo pendiente', async () => {
+    const { authorize } = setup();
+
+    const negative = await authorize.execute({ storeId: 'default', orderId: 'order-1', providerCode: 'stripe', amount: 0, currency: 'MXN' });
+    const tooLarge = await authorize.execute({ storeId: 'default', orderId: 'order-1', providerCode: 'stripe', amount: 150, currency: 'MXN' });
+
+    expect(negative.isErr() && negative.error).toBeInstanceOf(PaymentAmountExceedsOrderError);
+    expect(tooLarge.isErr() && tooLarge.error).toBeInstanceOf(PaymentAmountExceedsOrderError);
+  });
+
+  it('rechaza autorización si la orden ya está pagada o cancelada', async () => {
+    const { authorize, orders } = setup();
+    orders.orders.set('order-paid', { id: 'order-paid', storeId: 'default', currencyCode: 'MXN', total: 100, paidAmount: 100, paymentStatus: 'paid', status: 'confirmed' });
+
+    const result = await authorize.execute({ storeId: 'default', orderId: 'order-paid', providerCode: 'stripe', amount: 100, currency: 'MXN' });
+
+    expect(result.isErr() && result.error).toBeInstanceOf(OrderNotPayableError);
   });
 });
 

@@ -25,11 +25,17 @@ import { GiftCardsModule } from '@mitama/giftcards';
 import { ReviewsModule } from '@mitama/reviews';
 import { EventBusModule } from './event-bus.module';
 import { HealthController } from './health.controller';
+import { validateEnv } from './config/env';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../../.env'] }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../../.env'], validate: validateEnv }),
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60000, limit: 100 },
+      { name: 'auth', ttl: 60000, limit: 10 },
+      { name: 'checkout', ttl: 60000, limit: 20 },
+      { name: 'webhook', ttl: 60000, limit: 60 },
+    ]),
     DbModule,
     EventBusModule,
     AuthModule,
