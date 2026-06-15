@@ -31,10 +31,10 @@ cada entrega. Plataforma open source (MIT) de ecommerce + POS para LATAM.
   hitos.
 - Leyenda de estado: ✅ entregado · 🟡 parcial · ⬜ pendiente · 🧊 congelado
   (construido pero fuera del checkout MVP).
-- Secuencia de sprints: **Sprint 1** (MVP API+Admin, en curso) → **Sprint 2**
-  (storefront público) → **Sprint 3** (extensión POS) → **Sprint 4** (paridad
-  nopCommerce extendida). La **Fase L · Loyalty** está diferida y se programa
-  cuando convenga, sin bloquear ningún sprint.
+- Secuencia de sprints: **Sprint 1** (MVP API+Admin, cerrado) → **Sprint 2**
+  (storefront público y APIs públicas de consumo) → **Sprint 3** (extensión POS)
+  → **Sprint 4** (paridad nopCommerce extendida). La **Fase L · Loyalty** está
+  diferida y se programa cuando convenga, sin bloquear ningún sprint.
 
 ---
 
