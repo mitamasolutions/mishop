@@ -5,10 +5,45 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}/mitama-commerce
+
 jobs:
-  ci:
-    name: lint + build + test
+  # ─── 1) Lint + build + tests con Postgres real ───────────────────────────
+  # r25 · sprint1_cierre: el CI corre lint, build, migraciones, seed y los
+  # tests e2e con un Postgres del job (no SQLite ni mocks). Un fallo aquí
+  # bloquea el merge.
+  test:
+    name: lint + build + test (postgres real)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mitama
+          POSTGRES_PASSWORD: mitama
+          POSTGRES_DB: mitama
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mitama -d mitama"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://mitama:mitama@localhost:5432/mitama
+      JWT_SECRET: ci-test-jwt-secret-do-not-use-in-prod
+      JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-do-not-use-in-prod
+      SEED_ADMIN_PASSWORD: CiTest1234!
+      PAYMENTS_ENCRYPTION_KEY: ci-only-aes-key-do-not-use-in-prod-32b
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,14 +55,82 @@ jobs:
           node-version: 22
           cache: yarn
 
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
       - name: Instalar dependencias
         run: yarn install --immutable
 
       - name: Lint (incluye reglas de boundaries entre módulos)
         run: yarn lint
 
-      - name: Build
+      - name: Build (workspaces)
         run: yarn build
 
-      - name: Test
+      - name: Migraciones Prisma
+        run: yarn workspace @mitama/db db:deploy
+
+      - name: Seed DB
+        run: yarn workspace @mitama/db db:seed
+
+      - name: Tests (unit + e2e con Postgres real)
         run: yarn test
+
+  # ─── 2) Publicación de imágenes a GHCR ───────────────────────────────────
+  # r25 · sprint1_cierre: en push a main publica imágenes api y admin a
+  # GHCR etiquetadas por SHA corto y `latest`. PR no publica (defensa).
+  publish-images:
+    name: publish images (api + admin → ghcr)
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: api
+            dockerfile: apps/api/Dockerfile
+          - name: admin
+            dockerfile: apps/admin/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Metadata (tags por SHA + latest)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-${{ matrix.name }}
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest
+
+      - name: Build + push (${{ matrix.name }})
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # NEXT_PUBLIC_API_URL es build-time en Next.js; usar un placeholder
+          # neutro y reemplazar en deploy (recomendado: cargar config en
+          # runtime vía /api/config si se necesita por entorno).
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://api.example.com
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
