@@ -6,7 +6,7 @@ export { OrdersModule } from './orders.module';
 export { ORDERS_TOKENS } from './orders.tokens';
 export { Order } from './domain/order.entity';
 export type { OrderLineProps, OrderPaymentStatus, OrderStatus } from './domain/order.entity';
-export type { OrderRepository } from './domain/order.repository';
+export type { OrderIdempotencyReader, OrderNumberGenerator, OrderReader, OrderWriter } from './domain/order.repository';
 export type { OrderOutput } from './application/order.dto';
 export type { StockReservationService } from './domain/stock-reservation';
 export {

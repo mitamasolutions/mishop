@@ -13,6 +13,7 @@
  */
 import { Global, Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { createModuleProviders } from '@mitama/contracts';
 import { SCHEDULED_TASKS_TOKENS } from './scheduled-tasks.tokens';
 import {
   ListScheduledTasksUseCase,
@@ -20,7 +21,6 @@ import {
   UpdateScheduledTaskUseCase,
 } from './application/scheduled-task.use-cases';
 import { ScheduledTaskRegistry } from './domain/scheduled-task-registry';
-import type { ScheduledTaskRepository } from './domain/scheduled-task';
 import { PrismaScheduledTaskRepository } from './infra/prisma-scheduled-task.repository';
 import { ScheduledTaskRunner } from './infra/scheduled-task.runner';
 import { ScheduledTasksController } from './http/scheduled-tasks.controller';
@@ -30,24 +30,13 @@ import { ScheduledTasksController } from './http/scheduled-tasks.controller';
   imports: [ScheduleModule.forRoot()],
   controllers: [ScheduledTasksController],
   providers: [
-    { provide: SCHEDULED_TASKS_TOKENS.repository, useClass: PrismaScheduledTaskRepository },
-    { provide: SCHEDULED_TASKS_TOKENS.registry, useValue: new ScheduledTaskRegistry() },
-    {
-      provide: ListScheduledTasksUseCase,
-      useFactory: (repo: ScheduledTaskRepository) => new ListScheduledTasksUseCase(repo),
-      inject: [SCHEDULED_TASKS_TOKENS.repository],
-    },
-    {
-      provide: UpdateScheduledTaskUseCase,
-      useFactory: (repo: ScheduledTaskRepository) => new UpdateScheduledTaskUseCase(repo),
-      inject: [SCHEDULED_TASKS_TOKENS.repository],
-    },
-    {
-      provide: RunDueScheduledTasksUseCase,
-      useFactory: (repo: ScheduledTaskRepository, registry: ScheduledTaskRegistry) =>
-        new RunDueScheduledTasksUseCase(repo, registry),
-      inject: [SCHEDULED_TASKS_TOKENS.repository, SCHEDULED_TASKS_TOKENS.registry],
-    },
+    ...createModuleProviders([
+      { provide: SCHEDULED_TASKS_TOKENS.repository, useClass: PrismaScheduledTaskRepository },
+      { provide: SCHEDULED_TASKS_TOKENS.registry, useValue: new ScheduledTaskRegistry() },
+      { useCase: ListScheduledTasksUseCase, inject: [SCHEDULED_TASKS_TOKENS.repository] },
+      { useCase: UpdateScheduledTaskUseCase, inject: [SCHEDULED_TASKS_TOKENS.repository] },
+      { useCase: RunDueScheduledTasksUseCase, inject: [SCHEDULED_TASKS_TOKENS.repository, SCHEDULED_TASKS_TOKENS.registry] },
+    ]),
     ScheduledTaskRunner,
   ],
   exports: [SCHEDULED_TASKS_TOKENS.registry, RunDueScheduledTasksUseCase],

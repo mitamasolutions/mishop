@@ -73,8 +73,8 @@ docs/         # ROADMAP.md (planeación) + specs/ + DEPLOY.md + providers/
   confía en los totales del carrito (`orders/CreateOrderUseCase`).
 - **Plugins de pago (Strategy + registry):** cada método (manual, Mercado Pago,
   futuros) implementa `PaymentProvider` y se registra en
-  `PaymentProviderRegistry`; config por tienda en DB con cifrado **opcional**
-  (`SETTINGS_ENCRYPTION_KEY`). Un método solo aparece en selectores si está
+  `PaymentProviderRegistry`; config por tienda en DB con cifrado obligatorio en
+  producción y opcional en dev/test (`SETTINGS_ENCRYPTION_KEY`). Un método solo aparece en selectores si está
   habilitado **y** bien configurado.
 - **Tareas programadas in-app** (`scheduled-tasks`, estilo nopCommerce): runner +
   tabla `ScheduledTask` con lock por fila; reemplaza el cron externo
@@ -153,9 +153,9 @@ yarn new:module <nombre>    # genera un módulo nuevo con capas + test
 - `README.md` es la portada pública del proyecto: no lo modifiques por cambios
   internos de scaffolding.
 - El `.env` real nunca se versiona; `.env.example` documenta las variables.
-- `SETTINGS_ENCRYPTION_KEY` es **opcional**: vacía → los settings de plugin se
-  guardan/leen en plano; con valor → cifrado/descifrado transparente. La API
-  arranca en ambos casos (no es fail-closed).
+- `SETTINGS_ENCRYPTION_KEY` es **obligatoria en producción** y opcional en
+  dev/test: vacía fuera de producción → los settings de plugin se guardan/leen
+  en plano; con valor → cifrado/descifrado transparente.
 - La planeación viva está en `docs/ROADMAP.md`; las specs por requisito en
   `docs/specs/`. `AGENTS.md` y este archivo se mantienen idénticos.
 </content>

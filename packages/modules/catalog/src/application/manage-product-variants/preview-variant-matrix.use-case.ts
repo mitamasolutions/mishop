@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase } from '@mitama/core';
 import { ProductNotFoundError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader } from '../../domain/product.repository';
 
 export interface VariantCombinationPreview {
   optionValueIds: string[];
@@ -15,7 +15,7 @@ export interface VariantCombinationPreview {
  * SKU/precio/costo de cada una.
  */
 export class PreviewVariantMatrixUseCase implements UseCase<string, Result<VariantCombinationPreview[], ProductNotFoundError>> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader) {}
 
   async execute(productId: string): Promise<Result<VariantCombinationPreview[], ProductNotFoundError>> {
     const product = await this.products.findById(productId);

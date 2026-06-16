@@ -25,7 +25,7 @@ export interface ProductPage {
  * en la misma transacción. Persiste también opciones, variantes y
  * especificaciones como parte del aggregate.
  */
-export interface ProductRepository {
+export interface ProductReader {
   findById(id: string): Promise<Product | null>;
   findByHandle(handle: string): Promise<Product | null>;
   findAll(filter: ProductFilter): Promise<ProductPage>;
@@ -33,6 +33,9 @@ export interface ProductRepository {
   findVariantBySku(sku: string): Promise<{ productId: string; variantId: string } | null>;
   /** Busca una variante por id en cualquier producto. */
   findVariantById(variantId: string): Promise<{ productId: string; variantId: string } | null>;
+}
+
+export interface ProductWriter {
   create(product: Product, activity: RecordActivityInput): Promise<void>;
   update(product: Product, activity: RecordActivityInput, redirect: SlugRedirect | null): Promise<void>;
   /** Baja lógica (`deletedAt`). */

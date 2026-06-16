@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import type { DomainEvent, EventBus } from '@mitama/core';
 import type { EmailQueue } from '../domain/email-queue';
 import type { OrderPaymentStatus } from '../domain/order.entity';
-import type { OrderRepository } from '../domain/order.repository';
+import type { OrderReader, OrderWriter } from '../domain/order.repository';
 import type { StockReservationService } from '../domain/stock-reservation';
 
 const PAYMENT_EVENT_STATUS: Record<string, OrderPaymentStatus> = {
@@ -18,7 +18,8 @@ const PAYMENT_EVENT_STATUS: Record<string, OrderPaymentStatus> = {
 export class PaymentEventsHandler implements OnModuleInit {
   constructor(
     private readonly eventBus: EventBus,
-    private readonly orders: OrderRepository,
+    private readonly orderReader: OrderReader,
+    private readonly orderWriter: OrderWriter,
     private readonly emailQueue: EmailQueue,
     private readonly stockReservations: StockReservationService,
   ) {}
@@ -33,7 +34,7 @@ export class PaymentEventsHandler implements OnModuleInit {
     const status = PAYMENT_EVENT_STATUS[event.name];
     const payload = event.payload as { orderId?: string };
     if (!status || !payload.orderId) return;
-    const order = await this.orders.findById(payload.orderId);
+    const order = await this.orderReader.findById(payload.orderId);
     if (!order) return;
     let changed = false;
     try {
@@ -42,7 +43,7 @@ export class PaymentEventsHandler implements OnModuleInit {
       return;
     }
     if (!changed) return;
-    await this.orders.save(order);
+    await this.orderWriter.save(order);
     if (status === 'paid') {
       await this.stockReservations.consume(order.id);
       await this.emailQueue.enqueue({ orderId: order.id, templateCode: 'payment.paid', payload: { orderNumber: order.orderNumber } });

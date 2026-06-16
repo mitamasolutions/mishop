@@ -2,9 +2,8 @@
  * Composición del módulo: el único lugar donde las capas se conectan.
  */
 import { Module } from '@nestjs/common';
+import { createModuleProviders } from '@mitama/contracts';
 import { CUSTOMERS_TOKENS } from './customers.tokens';
-import type { CustomerRepository } from './domain/customer.repository';
-import type { PasswordHasher } from './domain/password-hasher';
 import { RegisterCustomerUseCase } from './application/register-customer/register-customer.use-case';
 import { CreateGuestCustomerUseCase } from './application/create-guest-customer/create-guest-customer.use-case';
 import { GetCustomerUseCase } from './application/get-customer/get-customer.use-case';
@@ -16,36 +15,15 @@ import { CustomersController } from './http/customers.controller';
 
 @Module({
   controllers: [CustomersController],
-  providers: [
+  providers: createModuleProviders([
     { provide: CUSTOMERS_TOKENS.customerRepository, useClass: PrismaCustomerRepository },
     { provide: CUSTOMERS_TOKENS.passwordHasher, useClass: Argon2PasswordHasher },
-    {
-      provide: RegisterCustomerUseCase,
-      useFactory: (customers: CustomerRepository, passwordHasher: PasswordHasher) =>
-        new RegisterCustomerUseCase(customers, passwordHasher),
-      inject: [CUSTOMERS_TOKENS.customerRepository, CUSTOMERS_TOKENS.passwordHasher],
-    },
-    {
-      provide: CreateGuestCustomerUseCase,
-      useFactory: (customers: CustomerRepository) => new CreateGuestCustomerUseCase(customers),
-      inject: [CUSTOMERS_TOKENS.customerRepository],
-    },
-    {
-      provide: GetCustomerUseCase,
-      useFactory: (customers: CustomerRepository) => new GetCustomerUseCase(customers),
-      inject: [CUSTOMERS_TOKENS.customerRepository],
-    },
-    {
-      provide: ListCustomersUseCase,
-      useFactory: (customers: CustomerRepository) => new ListCustomersUseCase(customers),
-      inject: [CUSTOMERS_TOKENS.customerRepository],
-    },
-    {
-      provide: ManageCustomerAddressUseCase,
-      useFactory: (customers: CustomerRepository) => new ManageCustomerAddressUseCase(customers),
-      inject: [CUSTOMERS_TOKENS.customerRepository],
-    },
-  ],
+    { useCase: RegisterCustomerUseCase, inject: [CUSTOMERS_TOKENS.customerRepository, CUSTOMERS_TOKENS.passwordHasher] },
+    { useCase: CreateGuestCustomerUseCase, inject: [CUSTOMERS_TOKENS.customerRepository] },
+    { useCase: GetCustomerUseCase, inject: [CUSTOMERS_TOKENS.customerRepository] },
+    { useCase: ListCustomersUseCase, inject: [CUSTOMERS_TOKENS.customerRepository] },
+    { useCase: ManageCustomerAddressUseCase, inject: [CUSTOMERS_TOKENS.customerRepository] },
+  ]),
   exports: [CUSTOMERS_TOKENS.customerRepository],
 })
 export class CustomersModule {}

@@ -2,6 +2,7 @@
  * Composición del módulo: el único lugar donde las capas se conectan.
  */
 import { Module } from '@nestjs/common';
+import { createModuleProviders } from '@mitama/contracts';
 import { REFERENCE_DATA_TOKENS } from './reference-data.tokens';
 
 // Repositorios
@@ -11,14 +12,6 @@ import { PrismaCountryRepository } from './infra/prisma-country.repository';
 import { PrismaPaymentProviderRepository } from './infra/prisma-payment-provider.repository';
 import { PrismaTerritoryRepository } from './infra/prisma-territory.repository';
 import { PrismaZoneRepository } from './infra/prisma-zone.repository';
-
-// Tipos de puertos
-import type { CurrencyRepository } from './domain/currency.repository';
-import type { RegionRepository } from './domain/region.repository';
-import type { CountryRepository } from './domain/country.repository';
-import type { PaymentProviderRepository } from './domain/payment-provider.repository';
-import type { TerritoryRepository } from './domain/territory.repository';
-import type { ZoneRepository } from './domain/zone.repository';
 
 // Use cases — lectura existentes
 import { ListCurrenciesUseCase } from './application/list-currencies/list-currencies.use-case';
@@ -67,7 +60,7 @@ const T = REFERENCE_DATA_TOKENS;
     TerritoriesController,
     ZonesController,
   ],
-  providers: [
+  providers: createModuleProviders([
     // ── Adapters ──────────────────────────────────────────────────────────
     { provide: T.currencyRepository, useClass: PrismaCurrencyRepository },
     { provide: T.regionRepository, useClass: PrismaRegionRepository },
@@ -77,124 +70,39 @@ const T = REFERENCE_DATA_TOKENS;
     { provide: T.zoneRepository, useClass: PrismaZoneRepository },
 
     // ── Use cases: monedas ────────────────────────────────────────────────
-    {
-      provide: ListCurrenciesUseCase,
-      useFactory: (r: CurrencyRepository) => new ListCurrenciesUseCase(r),
-      inject: [T.currencyRepository],
-    },
-    {
-      provide: GetCurrencyUseCase,
-      useFactory: (r: CurrencyRepository) => new GetCurrencyUseCase(r),
-      inject: [T.currencyRepository],
-    },
+    { useCase: ListCurrenciesUseCase, inject: [T.currencyRepository] },
+    { useCase: GetCurrencyUseCase, inject: [T.currencyRepository] },
 
     // ── Use cases: regiones (lectura) ─────────────────────────────────────
-    {
-      provide: ListRegionsUseCase,
-      useFactory: (r: RegionRepository) => new ListRegionsUseCase(r),
-      inject: [T.regionRepository],
-    },
-    {
-      provide: GetRegionUseCase,
-      useFactory: (r: RegionRepository) => new GetRegionUseCase(r),
-      inject: [T.regionRepository],
-    },
+    { useCase: ListRegionsUseCase, inject: [T.regionRepository] },
+    { useCase: GetRegionUseCase, inject: [T.regionRepository] },
 
     // ── Use cases: regiones (escritura) ───────────────────────────────────
-    {
-      provide: CreateRegionUseCase,
-      useFactory: (r: RegionRepository, c: CurrencyRepository) => new CreateRegionUseCase(r, c),
-      inject: [T.regionRepository, T.currencyRepository],
-    },
-    {
-      provide: UpdateRegionUseCase,
-      useFactory: (
-        r: RegionRepository,
-        c: CurrencyRepository,
-        co: CountryRepository,
-        pp: PaymentProviderRepository,
-      ) => new UpdateRegionUseCase(r, c, co, pp),
-      inject: [T.regionRepository, T.currencyRepository, T.countryRepository, T.paymentProviderRepository],
-    },
-    {
-      provide: DeactivateRegionUseCase,
-      useFactory: (r: RegionRepository) => new DeactivateRegionUseCase(r),
-      inject: [T.regionRepository],
-    },
+    { useCase: CreateRegionUseCase, inject: [T.regionRepository, T.currencyRepository] },
+    { useCase: UpdateRegionUseCase, inject: [T.regionRepository, T.currencyRepository, T.countryRepository, T.paymentProviderRepository] },
+    { useCase: DeactivateRegionUseCase, inject: [T.regionRepository] },
 
     // ── Use cases: países ─────────────────────────────────────────────────
-    {
-      provide: ListCountriesUseCase,
-      useFactory: (r: CountryRepository) => new ListCountriesUseCase(r),
-      inject: [T.countryRepository],
-    },
-    {
-      provide: GetCountryUseCase,
-      useFactory: (r: CountryRepository) => new GetCountryUseCase(r),
-      inject: [T.countryRepository],
-    },
+    { useCase: ListCountriesUseCase, inject: [T.countryRepository] },
+    { useCase: GetCountryUseCase, inject: [T.countryRepository] },
 
     // ── Use cases: proveedores de pago ────────────────────────────────────
-    {
-      provide: ListPaymentProvidersUseCase,
-      useFactory: (r: PaymentProviderRepository) => new ListPaymentProvidersUseCase(r),
-      inject: [T.paymentProviderRepository],
-    },
+    { useCase: ListPaymentProvidersUseCase, inject: [T.paymentProviderRepository] },
 
     // ── Use cases: territorios ────────────────────────────────────────────
-    {
-      provide: CreateTerritoryUseCase,
-      useFactory: (r: RegionRepository, t: TerritoryRepository) => new CreateTerritoryUseCase(r, t),
-      inject: [T.regionRepository, T.territoryRepository],
-    },
-    {
-      provide: UpdateTerritoryUseCase,
-      useFactory: (t: TerritoryRepository) => new UpdateTerritoryUseCase(t),
-      inject: [T.territoryRepository],
-    },
-    {
-      provide: DeactivateTerritoryUseCase,
-      useFactory: (t: TerritoryRepository) => new DeactivateTerritoryUseCase(t),
-      inject: [T.territoryRepository],
-    },
-    {
-      provide: GetTerritoryUseCase,
-      useFactory: (t: TerritoryRepository) => new GetTerritoryUseCase(t),
-      inject: [T.territoryRepository],
-    },
-    {
-      provide: ListTerritoriesByRegionUseCase,
-      useFactory: (t: TerritoryRepository) => new ListTerritoriesByRegionUseCase(t),
-      inject: [T.territoryRepository],
-    },
+    { useCase: CreateTerritoryUseCase, inject: [T.regionRepository, T.territoryRepository] },
+    { useCase: UpdateTerritoryUseCase, inject: [T.territoryRepository] },
+    { useCase: DeactivateTerritoryUseCase, inject: [T.territoryRepository] },
+    { useCase: GetTerritoryUseCase, inject: [T.territoryRepository] },
+    { useCase: ListTerritoriesByRegionUseCase, inject: [T.territoryRepository] },
 
     // ── Use cases: zonas ──────────────────────────────────────────────────
-    {
-      provide: CreateZoneUseCase,
-      useFactory: (t: TerritoryRepository, z: ZoneRepository) => new CreateZoneUseCase(t, z),
-      inject: [T.territoryRepository, T.zoneRepository],
-    },
-    {
-      provide: UpdateZoneUseCase,
-      useFactory: (z: ZoneRepository) => new UpdateZoneUseCase(z),
-      inject: [T.zoneRepository],
-    },
-    {
-      provide: DeactivateZoneUseCase,
-      useFactory: (z: ZoneRepository) => new DeactivateZoneUseCase(z),
-      inject: [T.zoneRepository],
-    },
-    {
-      provide: GetZoneUseCase,
-      useFactory: (z: ZoneRepository) => new GetZoneUseCase(z),
-      inject: [T.zoneRepository],
-    },
-    {
-      provide: ListZonesByTerritoryUseCase,
-      useFactory: (z: ZoneRepository) => new ListZonesByTerritoryUseCase(z),
-      inject: [T.zoneRepository],
-    },
-  ],
+    { useCase: CreateZoneUseCase, inject: [T.territoryRepository, T.zoneRepository] },
+    { useCase: UpdateZoneUseCase, inject: [T.zoneRepository] },
+    { useCase: DeactivateZoneUseCase, inject: [T.zoneRepository] },
+    { useCase: GetZoneUseCase, inject: [T.zoneRepository] },
+    { useCase: ListZonesByTerritoryUseCase, inject: [T.zoneRepository] },
+  ]),
   exports: [
     T.currencyRepository,
     T.regionRepository,

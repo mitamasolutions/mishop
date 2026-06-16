@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase, ValidationError } from '@mitama/core';
 import { InvalidVariantCombinationError, ProductNotFoundError, VariantSkuAlreadyInUseError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 import { toProductOutput, type ProductOutput } from '../product.dto';
 import type { VariantFieldsInput } from './variant-input.dto';
 
@@ -15,7 +15,7 @@ export interface AddVariantInput extends VariantFieldsInput {
 export type AddVariantError = ValidationError | ProductNotFoundError | VariantSkuAlreadyInUseError | InvalidVariantCombinationError;
 
 export class AddVariantUseCase implements UseCase<AddVariantInput, Result<ProductOutput, AddVariantError>> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: AddVariantInput): Promise<Result<ProductOutput, AddVariantError>> {
     const sku = input.sku.trim();

@@ -90,7 +90,7 @@ Modular monolith hexagonal en TypeScript (NestJS + Prisma + Next.js admin).
 | `customers` | ✅ Completo MVP | CRUD + guest checkout; pantalla admin de clientes con detalle, direcciones e historial. Segmentación queda fuera del MVP. |
 | `cart` | ✅ Completo MVP | Server-side + checkout; adapter Prisma valida publicación y canal del producto antes de agregar/confirmar. |
 | `orders` | ✅ Completo MVP | Idempotencia, outbox, estados, recálculo server-side de subtotal/envío/impuestos y validación de canal del producto en checkout. |
-| `payments` | ✅ Completo MVP | Manual + Mercado Pago Checkout Pro + plugins; `SETTINGS_ENCRYPTION_KEY` opcional; webhook deriva `storeId` del pago antes de registrar idempotencia. |
+| `payments` | ✅ Completo MVP | Manual + Mercado Pago Checkout Pro + plugins; `SETTINGS_ENCRYPTION_KEY` obligatorio en producción y opcional en dev/test; webhook deriva `storeId` del pago antes de registrar idempotencia. |
 | `shipping` | ✅ Completo MVP | Métodos/zonas, cálculo server-side, tracking manual y UI admin de envíos. |
 | `taxes` | ✅ Completo MVP | Reglas por región/categoría y cálculo de checkout server-side; envío no gravado en MVP. |
 | `scheduled-tasks` | ✅ Completo MVP | Scheduler in-app, tareas por defecto, lock por fila y administración Super Admin. |
@@ -126,7 +126,7 @@ single-store por defecto y deploy reproducible en VPS/Docker.
 
 Las brechas bloqueantes detectadas en la validación del cierre quedaron
 resueltas: refresh cookie-only, checkout con validación de canal del producto,
-cifrado opcional vía `SETTINGS_ENCRYPTION_KEY`, webhooks que derivan `storeId`
+cifrado vía `SETTINGS_ENCRYPTION_KEY` obligatorio en producción, webhooks que derivan `storeId`
 del pago antes de registrar idempotencia, y eliminación de `console.log` runtime.
 
 **Listo para pasar al Sprint 2 (tienda pública)**, sujeto a mantener verde el
@@ -147,19 +147,19 @@ pagos de comprador. Hoy `catalog/*` es API de administración y
 | **F2 · Baseline DB** | ✅ | Baseline limpio, FKs críticas, CHECK constraints, índices parciales (settings/roles + `handle`/`sku` activos), `storeId` en unicidad de webhooks (transitorio nullable → F3 lo hará NOT NULL), `TaxRule.rate >= 0` | — |
 | **F3 · Checkout server-side** | ✅ | Guest customer, validación carrito (expirado/deleted/precio/canal), **recálculo server-side de subtotal/envío/impuestos** vía `CheckoutTaxResolverPort` y `CheckoutShippingResolverPort` (envío no se grava), snapshot inmutable con `taxAmount` por línea y método resuelto server-side, rechazo si la zona deja de cubrir | — |
 | **F4 · Inventario correcto** | ✅ | claim-then-apply en release/consume, reserva→consumo por `payment.paid`, `releaseExpired` | Métricas/logs de reservas (no bloqueante) |
-| **F5 · Pagos manual + Mercado Pago** | ✅ | Plugin Strategy (descriptor + validateConfig + estado configured/misconfigured), manual pending→paid, MP Checkout Pro real, webhooks con firma antes de parsear, idempotencia por `(storeId, providerCode, eventId)` usando `storeId` derivado del pago, métodos mal configurados excluidos del checkout y visibles como alerta admin, settings sensibles con `SETTINGS_ENCRYPTION_KEY` opcional | — |
+| **F5 · Pagos manual + Mercado Pago** | ✅ | Plugin Strategy (descriptor + validateConfig + estado configured/misconfigured), manual pending→paid, MP Checkout Pro real, webhooks con firma antes de parsear, idempotencia por `(storeId, providerCode, eventId)` usando `storeId` derivado del pago, métodos mal configurados excluidos del checkout y visibles como alerta admin, settings sensibles con `SETTINGS_ENCRYPTION_KEY` obligatorio en producción y opcional en dev/test | — |
 | **F6 · Admin operativo** | ✅ | Pantalla **Órdenes** paginada (server-side, page=20) con búsqueda debounce; pantallas **Clientes** (lista + detalle con direcciones e historial), **Pagos** y **Envíos** como secciones del detalle de orden, **Configuración de métodos de pago** por tienda (descriptor + alerta misconfigured), **Tareas programadas** (Super Admin). Dashboard con 4 KPIs reales (órdenes hoy, pendientes pago, alertas stock, ingresos día). Hook `useDebounce` reutilizable. Acciones ocultas/deshabilitadas por permiso via `hasPermission`. Sidebar con entradas filtradas | — |
 | **F7 · Hardening API + Admin** | ✅ | API: CORS whitelist, Helmet/CSP, ValidationPipe, rate limits, env validation. Admin: refresh token en cookie HttpOnly/Secure/SameSite=Lax, `/auth/refresh` y `/auth/logout` leen solo cookie, `NEXT_PUBLIC_API_URL` obligatoria (build prod falla sin ella), CSP + headers de seguridad en `next.config.ts`, uso limitado de `skipStoreScope` | — |
 | **F8 · Outbox/worker/observabilidad** | ✅ | Outbox `order.created` transaccional + dispatcher manual. **F4 sprint1_cierre**: scheduler in-app estilo nopCommerce (`ScheduledTask` + runner @nestjs/schedule, lock por fila, admin Super Admin), tareas por defecto `dispatch-outbox`/`drain-email-queue`/`release-expired-reservations`, `DrainEmailQueueUseCase` con backoff + `EmailSender` port + Log adapter, outbox para `payment.*` y `order.cancelled/completed/refunded`, `requestId` propagado vía `RequestContextService` y `X-Request-Id` header, sin `console.log` runtime. Worker dedicado ELIMINADO del alcance | Logger estructurado (pino) queda como mejora transversal no bloqueante |
-| **F9 · CI/CD y Deploy** | ✅ | Dockerfiles api/admin, `docker-compose.prod.yml`, `DEPLOY.md`. **F6 sprint1_cierre**: CI con Postgres 16 real (lint+build+migrate+seed+tests), publica imágenes a GHCR (api+admin) por SHA y `latest` en push a `main`; `scripts/deploy.sh` reproducible (git pull → install → migrate → up → healthcheck con backoff + rollback automático); `.env.example`, CI y deploy usan/documentan `SETTINGS_ENCRYPTION_KEY` opcional; `DEPLOY.md` sin cron externo (tareas in-app) | — |
+| **F9 · CI/CD y Deploy** | ✅ | Dockerfiles api/admin, `docker-compose.prod.yml`, `DEPLOY.md`. **F6 sprint1_cierre**: CI con Postgres 16 real (lint+build+migrate+seed+tests), publica imágenes a GHCR (api+admin) por SHA y `latest` en push a `main`; `scripts/deploy.sh` reproducible (git pull → install → migrate → up → healthcheck con backoff + rollback automático); `.env.example`, CI y deploy documentan `SETTINGS_ENCRYPTION_KEY` obligatorio en producción; `DEPLOY.md` sin cron externo (tareas in-app) | — |
 
 ### Brechas bloqueantes (resumen priorizado)
 
-1. ~~F5/r14 pagos + settings~~ → `SETTINGS_ENCRYPTION_KEY` opcional y webhooks con `storeId` derivado del pago.
+1. ~~F5/r14 pagos + settings~~ → `SETTINGS_ENCRYPTION_KEY` obligatorio en producción y webhooks con `storeId` derivado del pago.
 2. ~~F7/r22 hardening auth~~ → refresh/logout cookie-only, sin fallback por body.
 3. ~~F3/r13 checkout~~ → validación de canal del producto en Prisma antes de carrito/confirmación.
 4. ~~F8/r24 observabilidad~~ → eliminado `console.log` runtime restante.
-5. ~~F9/r25 CI/deploy docs/env~~ → `.env.example`, CI y deploy alineados a `SETTINGS_ENCRYPTION_KEY` opcional.
+5. ~~F9/r25 CI/deploy docs/env~~ → `.env.example`, CI y deploy alineados a `SETTINGS_ENCRYPTION_KEY` obligatorio en producción.
 6. ~~F0/r20 constraints DB~~, ~~F5/r23 admin operativo~~ y ~~F4/r24 scheduler/outbox~~ entregados.
 
 ### Trazabilidad requisito ↔ spec
@@ -180,7 +180,7 @@ pagos de comprador. Hoy `catalog/*` es API de administración y
 | [sprint1_r12_cart](specs/sprint1_r12_cart.md) | 🟡 | F3 | Carrito server-side, checkout |
 | [sprint1_r13_orders](specs/sprint1_r13_orders.md) | ✅ | F3, F8 | Órdenes, snapshot, estados, outbox, validación de canal de producto en checkout |
 | [sprint1_r13.1_order_idempotency](specs/sprint1_r13.1_order_idempotency.md) | ✅ | F3 | Idempotencia robusta en CreateOrder |
-| [sprint1_r14_payments](specs/sprint1_r14_payments.md) | ✅ | F5 | Providers, webhooks, refunds, MP real, `SETTINGS_ENCRYPTION_KEY` opcional, derivación de `storeId` del pago |
+| [sprint1_r14_payments](specs/sprint1_r14_payments.md) | ✅ | F5 | Providers, webhooks, refunds, MP real, `SETTINGS_ENCRYPTION_KEY` obligatorio en producción, derivación de `storeId` del pago |
 | [sprint1_r15_shipping](specs/sprint1_r15_shipping.md) | 🟡 | F5, F6 | Métodos, zonas, pickup, tracking |
 | [sprint1_r16_taxes](specs/sprint1_r16_taxes.md) | 🟡 | F5 | Categorías de impuesto, IVA México |
 | [sprint1_r17_promotions](specs/sprint1_r17_promotions.md) | 🧊 | F0 | Descuentos, cupones, newsletter, rewards |

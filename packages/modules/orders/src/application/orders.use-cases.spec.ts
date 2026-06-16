@@ -165,7 +165,7 @@ describe('orders use cases', () => {
     ctx.stock.available.set('loc-1:v1', 2);
     ctx.carts.carts.set('cart-1', readyCart('cart-1'));
     const order = (await ctx.create.execute({ cartId: 'cart-1', idempotencyKey: 'k1' })).value;
-    new PaymentEventsHandler(ctx.bus, ctx.orders, ctx.email, ctx.stock).onModuleInit();
+    new PaymentEventsHandler(ctx.bus, ctx.orders, ctx.orders, ctx.email, ctx.stock).onModuleInit();
 
     await ctx.bus.publish({ name: 'payment.paid', occurredAt: new Date(), payload: { orderId: order.id } });
     await ctx.bus.publish({ name: 'payment.paid', occurredAt: new Date(), payload: { orderId: order.id } });
@@ -180,7 +180,7 @@ describe('orders use cases', () => {
     ctx.stock.available.set('loc-1:v1', 2);
     ctx.carts.carts.set('cart-a', readyCart('cart-a'));
     ctx.carts.carts.set('cart-b', readyCart('cart-b'));
-    new PaymentEventsHandler(ctx.bus, ctx.orders, ctx.email, ctx.stock).onModuleInit();
+    new PaymentEventsHandler(ctx.bus, ctx.orders, ctx.orders, ctx.email, ctx.stock).onModuleInit();
 
     const paidOrder = (await ctx.create.execute({ cartId: 'cart-a', idempotencyKey: 'ka' })).value;
     const failedOrder = (await ctx.create.execute({ cartId: 'cart-b', idempotencyKey: 'kb' })).value;
@@ -326,9 +326,9 @@ function context() {
     taxResolver,
     shippingResolver,
     drainOutbox,
-    create: new CreateOrderUseCase(orders, carts, stock, bus, email, taxResolver, shippingResolver),
-    payment: new ChangePaymentStateUseCase(orders, bus, email),
-    cancel: new CancelOrderUseCase(orders, stock, bus, email),
+    create: new CreateOrderUseCase(orders, orders, orders, orders, carts, stock, bus, email, taxResolver, shippingResolver),
+    payment: new ChangePaymentStateUseCase(orders, orders, bus, email),
+    cancel: new CancelOrderUseCase(orders, orders, stock, bus, email),
   };
 }
 

@@ -24,7 +24,7 @@ export type {
   VariantCombination,
   VariantPriceProps,
 } from './domain/product.entity';
-export type { ProductRepository, ProductFilter, ProductPage } from './domain/product.repository';
+export type { ProductFilter, ProductPage, ProductReader, ProductWriter } from './domain/product.repository';
 export type {
   ProductOutput,
   ProductOptionOutput,

@@ -1,9 +1,9 @@
 import { ok, Result, UseCase } from '@mitama/core';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader } from '../../domain/product.repository';
 import type { ListProductsInput, ListProductsOutput } from './list-products.dto';
 
 export class ListProductsUseCase implements UseCase<ListProductsInput, Result<ListProductsOutput, never>> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader) {}
 
   async execute(input: ListProductsInput): Promise<Result<ListProductsOutput, never>> {
     const page = await this.products.findAll(input);

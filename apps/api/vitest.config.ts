@@ -7,7 +7,7 @@ loadEnv({ path: resolve(__dirname, '../../.env') });
 
 export default defineConfig({
   test: {
-    include: ['test/**/*.e2e-spec.ts'],
+    include: ['src/**/*.spec.ts', 'test/**/*.e2e-spec.ts'],
     testTimeout: 30000,
     hookTimeout: 30000,
   },

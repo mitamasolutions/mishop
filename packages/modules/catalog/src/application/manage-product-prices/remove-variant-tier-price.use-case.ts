@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase } from '@mitama/core';
 import { ProductNotFoundError, ProductVariantNotFoundError, VariantPriceNotFoundError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 import { toProductOutput, type ProductOutput } from '../product.dto';
 
 export interface RemoveVariantTierPriceInput {
@@ -15,7 +15,7 @@ export type RemoveVariantTierPriceError = ProductNotFoundError | ProductVariantN
 export class RemoveVariantTierPriceUseCase
   implements UseCase<RemoveVariantTierPriceInput, Result<ProductOutput, RemoveVariantTierPriceError>>
 {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: RemoveVariantTierPriceInput): Promise<Result<ProductOutput, RemoveVariantTierPriceError>> {
     const product = await this.products.findById(input.productId);

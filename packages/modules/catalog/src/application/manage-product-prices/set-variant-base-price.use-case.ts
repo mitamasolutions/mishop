@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase, ValidationError } from '@mitama/core';
 import { ProductNotFoundError, ProductVariantNotFoundError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 import { toProductOutput, type ProductOutput } from '../product.dto';
 
 export interface SetVariantBasePriceInput {
@@ -14,7 +14,7 @@ export interface SetVariantBasePriceInput {
 export type SetVariantBasePriceError = ValidationError | ProductNotFoundError | ProductVariantNotFoundError;
 
 export class SetVariantBasePriceUseCase implements UseCase<SetVariantBasePriceInput, Result<ProductOutput, SetVariantBasePriceError>> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: SetVariantBasePriceInput): Promise<Result<ProductOutput, SetVariantBasePriceError>> {
     const currencyCode = input.currencyCode.trim().toUpperCase();

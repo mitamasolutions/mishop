@@ -6,18 +6,9 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { createModuleProviders } from '@mitama/contracts';
 import { AUTH_TOKENS } from './auth.tokens';
 import { ACCESS_TOKEN_TTL } from './application/shared/constants';
-
-import type { UserRepository } from './domain/user.repository';
-import type { PasswordCredentialRepository } from './domain/password-credential.repository';
-import type { RefreshTokenRepository } from './domain/refresh-token.repository';
-import type { RoleRepository } from './domain/role.repository';
-import type { UserStoreRoleRepository } from './domain/user-store-role.repository';
-import type { InvitationTokenRepository } from './domain/invitation-token.repository';
-import type { PasswordResetTokenRepository } from './domain/password-reset-token.repository';
-import type { PasswordHasher } from './domain/password-hasher';
-import type { AccessTokenIssuer } from './domain/access-token-issuer';
 
 import { PrismaUserRepository } from './infra/prisma-user.repository';
 import { PrismaPasswordCredentialRepository } from './infra/prisma-password-credential.repository';
@@ -69,147 +60,45 @@ const T = AUTH_TOKENS;
   ],
   controllers: [AuthController, UsersController, RolesController],
   providers: [
-    { provide: T.userRepository, useClass: PrismaUserRepository },
-    { provide: T.passwordCredentialRepository, useClass: PrismaPasswordCredentialRepository },
-    { provide: T.refreshTokenRepository, useClass: PrismaRefreshTokenRepository },
-    { provide: T.roleRepository, useClass: PrismaRoleRepository },
-    { provide: T.userStoreRoleRepository, useClass: PrismaUserStoreRoleRepository },
-    { provide: T.invitationTokenRepository, useClass: PrismaInvitationTokenRepository },
-    { provide: T.passwordResetTokenRepository, useClass: PrismaPasswordResetTokenRepository },
-    { provide: T.passwordHasher, useClass: Argon2PasswordHasher },
-    { provide: T.accessTokenIssuer, useClass: JwtAccessTokenIssuer },
-
-    {
-      provide: LoginUseCase,
-      useFactory: (
-        users: UserRepository,
-        passwordCredentials: PasswordCredentialRepository,
-        refreshTokens: RefreshTokenRepository,
-        userStoreRoles: UserStoreRoleRepository,
-        passwordHasher: PasswordHasher,
-        accessTokenIssuer: AccessTokenIssuer,
-      ) => new LoginUseCase(users, passwordCredentials, refreshTokens, userStoreRoles, passwordHasher, accessTokenIssuer),
-      inject: [
-        T.userRepository,
-        T.passwordCredentialRepository,
-        T.refreshTokenRepository,
-        T.userStoreRoleRepository,
-        T.passwordHasher,
-        T.accessTokenIssuer,
-      ],
-    },
-    {
-      provide: RefreshSessionUseCase,
-      useFactory: (
-        users: UserRepository,
-        refreshTokens: RefreshTokenRepository,
-        userStoreRoles: UserStoreRoleRepository,
-        accessTokenIssuer: AccessTokenIssuer,
-      ) => new RefreshSessionUseCase(users, refreshTokens, userStoreRoles, accessTokenIssuer),
-      inject: [T.userRepository, T.refreshTokenRepository, T.userStoreRoleRepository, T.accessTokenIssuer],
-    },
-    {
-      provide: LogoutUseCase,
-      useFactory: (refreshTokens: RefreshTokenRepository) => new LogoutUseCase(refreshTokens),
-      inject: [T.refreshTokenRepository],
-    },
-    {
-      provide: RequestPasswordResetUseCase,
-      useFactory: (users: UserRepository, passwordResetTokens: PasswordResetTokenRepository) =>
-        new RequestPasswordResetUseCase(users, passwordResetTokens),
-      inject: [T.userRepository, T.passwordResetTokenRepository],
-    },
-    {
-      provide: ResetPasswordUseCase,
-      useFactory: (
-        users: UserRepository,
-        passwordCredentials: PasswordCredentialRepository,
-        passwordResetTokens: PasswordResetTokenRepository,
-        passwordHasher: PasswordHasher,
-      ) => new ResetPasswordUseCase(users, passwordCredentials, passwordResetTokens, passwordHasher),
-      inject: [T.userRepository, T.passwordCredentialRepository, T.passwordResetTokenRepository, T.passwordHasher],
-    },
-    {
-      provide: AcceptInvitationUseCase,
-      useFactory: (
-        users: UserRepository,
-        invitationTokens: InvitationTokenRepository,
-        passwordHasher: PasswordHasher,
-      ) => new AcceptInvitationUseCase(users, invitationTokens, passwordHasher),
-      inject: [T.userRepository, T.invitationTokenRepository, T.passwordHasher],
-    },
-    {
-      provide: ChangePasswordUseCase,
-      useFactory: (
-        users: UserRepository,
-        passwordCredentials: PasswordCredentialRepository,
-        passwordHasher: PasswordHasher,
-      ) => new ChangePasswordUseCase(users, passwordCredentials, passwordHasher),
-      inject: [T.userRepository, T.passwordCredentialRepository, T.passwordHasher],
-    },
-    {
-      provide: InviteUserUseCase,
-      useFactory: (users: UserRepository, roles: RoleRepository, invitationTokens: InvitationTokenRepository) =>
-        new InviteUserUseCase(users, roles, invitationTokens),
-      inject: [T.userRepository, T.roleRepository, T.invitationTokenRepository],
-    },
-    {
-      provide: ListUsersUseCase,
-      useFactory: (users: UserRepository, userStoreRoles: UserStoreRoleRepository) =>
-        new ListUsersUseCase(users, userStoreRoles),
-      inject: [T.userRepository, T.userStoreRoleRepository],
-    },
-    {
-      provide: GetUserUseCase,
-      useFactory: (users: UserRepository, userStoreRoles: UserStoreRoleRepository) =>
-        new GetUserUseCase(users, userStoreRoles),
-      inject: [T.userRepository, T.userStoreRoleRepository],
-    },
-    {
-      provide: UpdateUserStatusUseCase,
-      useFactory: (users: UserRepository, roles: RoleRepository, userStoreRoles: UserStoreRoleRepository) =>
-        new UpdateUserStatusUseCase(users, roles, userStoreRoles),
-      inject: [T.userRepository, T.roleRepository, T.userStoreRoleRepository],
-    },
-    {
-      provide: AssignUserStoreRoleUseCase,
-      useFactory: (users: UserRepository, roles: RoleRepository, userStoreRoles: UserStoreRoleRepository) =>
-        new AssignUserStoreRoleUseCase(users, roles, userStoreRoles),
-      inject: [T.userRepository, T.roleRepository, T.userStoreRoleRepository],
-    },
-    {
-      provide: RemoveUserStoreRoleUseCase,
-      useFactory: (roles: RoleRepository, userStoreRoles: UserStoreRoleRepository) =>
-        new RemoveUserStoreRoleUseCase(roles, userStoreRoles),
-      inject: [T.roleRepository, T.userStoreRoleRepository],
-    },
-    {
-      provide: CreateRoleUseCase,
-      useFactory: (roles: RoleRepository) => new CreateRoleUseCase(roles),
-      inject: [T.roleRepository],
-    },
-    {
-      provide: UpdateRoleUseCase,
-      useFactory: (roles: RoleRepository) => new UpdateRoleUseCase(roles),
-      inject: [T.roleRepository],
-    },
-    {
-      provide: DeleteRoleUseCase,
-      useFactory: (roles: RoleRepository, userStoreRoles: UserStoreRoleRepository) =>
-        new DeleteRoleUseCase(roles, userStoreRoles),
-      inject: [T.roleRepository, T.userStoreRoleRepository],
-    },
-    {
-      provide: ListRolesUseCase,
-      useFactory: (roles: RoleRepository) => new ListRolesUseCase(roles),
-      inject: [T.roleRepository],
-    },
-    {
-      provide: GetRoleUseCase,
-      useFactory: (roles: RoleRepository) => new GetRoleUseCase(roles),
-      inject: [T.roleRepository],
-    },
-
+    ...createModuleProviders([
+      { provide: T.userRepository, useClass: PrismaUserRepository },
+      { provide: T.passwordCredentialRepository, useClass: PrismaPasswordCredentialRepository },
+      { provide: T.refreshTokenRepository, useClass: PrismaRefreshTokenRepository },
+      { provide: T.roleRepository, useClass: PrismaRoleRepository },
+      { provide: T.userStoreRoleRepository, useClass: PrismaUserStoreRoleRepository },
+      { provide: T.invitationTokenRepository, useClass: PrismaInvitationTokenRepository },
+      { provide: T.passwordResetTokenRepository, useClass: PrismaPasswordResetTokenRepository },
+      { provide: T.passwordHasher, useClass: Argon2PasswordHasher },
+      { provide: T.accessTokenIssuer, useClass: JwtAccessTokenIssuer },
+      {
+        useCase: LoginUseCase,
+        inject: [
+          T.userRepository,
+          T.passwordCredentialRepository,
+          T.refreshTokenRepository,
+          T.userStoreRoleRepository,
+          T.passwordHasher,
+          T.accessTokenIssuer,
+        ],
+      },
+      { useCase: RefreshSessionUseCase, inject: [T.userRepository, T.refreshTokenRepository, T.userStoreRoleRepository, T.accessTokenIssuer] },
+      { useCase: LogoutUseCase, inject: [T.refreshTokenRepository] },
+      { useCase: RequestPasswordResetUseCase, inject: [T.userRepository, T.passwordResetTokenRepository] },
+      { useCase: ResetPasswordUseCase, inject: [T.userRepository, T.passwordCredentialRepository, T.passwordResetTokenRepository, T.passwordHasher] },
+      { useCase: AcceptInvitationUseCase, inject: [T.userRepository, T.invitationTokenRepository, T.passwordHasher] },
+      { useCase: ChangePasswordUseCase, inject: [T.userRepository, T.passwordCredentialRepository, T.passwordHasher] },
+      { useCase: InviteUserUseCase, inject: [T.userRepository, T.roleRepository, T.invitationTokenRepository] },
+      { useCase: ListUsersUseCase, inject: [T.userRepository, T.userStoreRoleRepository] },
+      { useCase: GetUserUseCase, inject: [T.userRepository, T.userStoreRoleRepository] },
+      { useCase: UpdateUserStatusUseCase, inject: [T.userRepository, T.roleRepository, T.userStoreRoleRepository] },
+      { useCase: AssignUserStoreRoleUseCase, inject: [T.userRepository, T.roleRepository, T.userStoreRoleRepository] },
+      { useCase: RemoveUserStoreRoleUseCase, inject: [T.roleRepository, T.userStoreRoleRepository] },
+      { useCase: CreateRoleUseCase, inject: [T.roleRepository] },
+      { useCase: UpdateRoleUseCase, inject: [T.roleRepository] },
+      { useCase: DeleteRoleUseCase, inject: [T.roleRepository, T.userStoreRoleRepository] },
+      { useCase: ListRolesUseCase, inject: [T.roleRepository] },
+      { useCase: GetRoleUseCase, inject: [T.roleRepository] },
+    ]),
     JwtAuthGuard,
     { provide: APP_GUARD, useExisting: JwtAuthGuard },
     PermissionsGuard,

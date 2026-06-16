@@ -4,7 +4,7 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DbModule } from '@mitama/db';
 import { AuthModule } from '@mitama/auth';
@@ -28,6 +28,7 @@ import { EventBusModule } from './event-bus.module';
 import { HealthController } from './health.controller';
 import { ScheduledTaskHandlersWiring } from './scheduled-task-handlers.wiring';
 import { validateEnv } from './config/env';
+import { InfraExceptionFilter } from './infra-exception.filter';
 
 @Module({
   imports: [
@@ -59,6 +60,10 @@ import { validateEnv } from './config/env';
     ScheduledTasksModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }, ScheduledTaskHandlersWiring],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: InfraExceptionFilter },
+    ScheduledTaskHandlersWiring,
+  ],
 })
 export class AppModule {}

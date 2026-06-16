@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { RecordActivityInput } from '@mitama/activity-log';
 import { ValidationError } from '@mitama/core';
 import { Product } from '../domain/product.entity';
-import type { ProductFilter, ProductPage, ProductRepository } from '../domain/product.repository';
+import type { ProductFilter, ProductPage, ProductReader, ProductWriter } from '../domain/product.repository';
 import type { SlugRedirect } from '../domain/brand.repository';
 import {
   InvalidVariantCombinationError,
@@ -33,7 +33,7 @@ import { AddSpecificationUseCase } from './manage-product-specifications/add-spe
 import { UpdateSpecificationUseCase } from './manage-product-specifications/update-specification.use-case';
 import { RemoveSpecificationUseCase } from './manage-product-specifications/remove-specification.use-case';
 
-class InMemoryProductRepository implements ProductRepository {
+class InMemoryProductRepository implements ProductReader, ProductWriter {
   readonly products = new Map<string, Product>();
   readonly activities: RecordActivityInput[] = [];
   readonly redirects: SlugRedirect[] = [];

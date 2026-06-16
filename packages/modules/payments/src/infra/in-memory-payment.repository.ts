@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { Payment } from '../domain/payment.entity';
-import type { PaymentRepository } from '../domain/payment.repository';
+import type { PaymentReader, PaymentReferenceReader, PaymentWriter } from '../domain/payment.repository';
 
 @Injectable()
-export class InMemoryPaymentRepository implements PaymentRepository {
+export class InMemoryPaymentRepository implements PaymentReader, PaymentReferenceReader, PaymentWriter {
   private readonly payments = new Map<string, Payment>();
 
   async findById(id: string): Promise<Payment | null> {

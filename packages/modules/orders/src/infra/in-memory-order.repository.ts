@@ -1,9 +1,9 @@
 import { Order } from '../domain/order.entity';
 import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
-import type { OrderFilter, OrderRepository, SaveOrderOptions, StoredIdempotencyRecord } from '../domain/order.repository';
+import type { OrderFilter, OrderIdempotencyReader, OrderNumberGenerator, OrderReader, OrderWriter, SaveOrderOptions, StoredIdempotencyRecord } from '../domain/order.repository';
 import type { OutboxEventInput } from '../domain/outbox';
 
-export class InMemoryOrderRepository implements OrderRepository {
+export class InMemoryOrderRepository implements OrderReader, OrderIdempotencyReader, OrderNumberGenerator, OrderWriter {
   private readonly orders = new Map<string, Order>();
   private readonly idempotency = new Map<string, StoredIdempotencyRecord>();
   private readonly sequences = new Map<string, number>();

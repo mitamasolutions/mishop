@@ -37,11 +37,20 @@ export interface SaveOrderOptions {
   outbox?: OutboxEventInput[];
 }
 
-export interface OrderRepository {
+export interface OrderReader {
   findById(id: string): Promise<Order | null>;
   findAll(filter: OrderFilter): Promise<PaginatedOrders>;
+}
+
+export interface OrderIdempotencyReader {
   findIdempotency(storeId: string, key: string): Promise<StoredIdempotencyRecord | null>;
+}
+
+export interface OrderNumberGenerator {
   nextOrderNumber(storeId: string, prefix: string): Promise<string>;
+}
+
+export interface OrderWriter {
   save(order: Order, options?: SaveOrderOptions): Promise<void>;
   delete(orderId: string): Promise<void>;
 }

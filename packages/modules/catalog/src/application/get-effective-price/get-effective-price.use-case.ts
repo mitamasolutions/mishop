@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase } from '@mitama/core';
 import { NoPriceConfiguredError, ProductNotFoundError, ProductVariantNotFoundError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader } from '../../domain/product.repository';
 import type { PriceListRepository } from '../../domain/price-list.repository';
 import type { EffectivePriceOutput, GetEffectivePriceInput } from './get-effective-price.dto';
 
@@ -12,7 +12,7 @@ export type GetEffectivePriceError = ProductNotFoundError | ProductVariantNotFou
  */
 export class GetEffectivePriceUseCase implements UseCase<GetEffectivePriceInput, Result<EffectivePriceOutput, GetEffectivePriceError>> {
   constructor(
-    private readonly products: ProductRepository,
+    private readonly products: ProductReader,
     private readonly priceLists: PriceListRepository,
   ) {}
 

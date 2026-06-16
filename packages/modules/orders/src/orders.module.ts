@@ -2,15 +2,8 @@
  * Composición del módulo: el único lugar donde las capas se conectan.
  */
 import { Module } from '@nestjs/common';
-import { CHECKOUT_SHIPPING_RESOLVER_PORT, CHECKOUT_TAX_RESOLVER_PORT, EVENT_BUS, ORDER_FOR_PAYMENTS_PORT } from '@mitama/contracts';
-import type { CheckoutShippingResolverPort, CheckoutTaxResolverPort } from '@mitama/contracts';
-import type { EventBus } from '@mitama/core';
+import { CHECKOUT_SHIPPING_RESOLVER_PORT, CHECKOUT_TAX_RESOLVER_PORT, createModuleProviders, EVENT_BUS, ORDER_FOR_PAYMENTS_PORT } from '@mitama/contracts';
 import { ORDERS_TOKENS } from './orders.tokens';
-import type { CheckoutCartReader } from './domain/checkout-cart';
-import type { EmailQueue } from './domain/email-queue';
-import type { OrderRepository } from './domain/order.repository';
-import type { StockReservationService } from './domain/stock-reservation';
-import type { OutboxDispatcher } from './domain/outbox';
 import {
   AddOrderNoteUseCase,
   CancelOrderUseCase,
@@ -34,12 +27,10 @@ import { PaymentEventsHandler } from './infra/payment-events.handler';
 import { ShipmentEventsHandler } from './infra/shipment-events.handler';
 import { OrdersController } from './http/orders.controller';
 import { DrainEmailQueueUseCase } from './application/drain-email-queue.use-case';
-import type { EmailJobsRepository } from './domain/email-jobs.repository';
-import type { EmailSender } from './domain/email-sender';
 
 @Module({
   controllers: [OrdersController],
-  providers: [
+  providers: createModuleProviders([
     { provide: ORDERS_TOKENS.orderRepository, useClass: PrismaOrderRepository },
     { provide: ORDERS_TOKENS.checkoutCartReader, useClass: PrismaCheckoutCartReader },
     { provide: ORDERS_TOKENS.stockReservationService, useClass: PrismaStockReservationService },
@@ -48,29 +39,14 @@ import type { EmailSender } from './domain/email-sender';
     { provide: ORDERS_TOKENS.emailSender, useClass: LogEmailSender },
     { provide: ORDERS_TOKENS.outboxDispatcher, useClass: PrismaOutboxDispatcher },
     { provide: ORDER_FOR_PAYMENTS_PORT, useClass: PrismaOrderForPayments },
+    { provider: PaymentEventsHandler, inject: [EVENT_BUS, ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue, ORDERS_TOKENS.stockReservationService] },
+    { provider: ShipmentEventsHandler, inject: [EVENT_BUS, ORDERS_TOKENS.emailQueue] },
     {
-      provide: PaymentEventsHandler,
-      useFactory: (eventBus: EventBus, orders: OrderRepository, email: EmailQueue, stock: StockReservationService) =>
-        new PaymentEventsHandler(eventBus, orders, email, stock),
-      inject: [EVENT_BUS, ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue, ORDERS_TOKENS.stockReservationService],
-    },
-    {
-      provide: ShipmentEventsHandler,
-      useFactory: (eventBus: EventBus, email: EmailQueue) => new ShipmentEventsHandler(eventBus, email),
-      inject: [EVENT_BUS, ORDERS_TOKENS.emailQueue],
-    },
-    {
-      provide: CreateOrderUseCase,
-      useFactory: (
-        orders: OrderRepository,
-        carts: CheckoutCartReader,
-        stock: StockReservationService,
-        eventBus: EventBus,
-        email: EmailQueue,
-        taxResolver: CheckoutTaxResolverPort,
-        shippingResolver: CheckoutShippingResolverPort,
-      ) => new CreateOrderUseCase(orders, carts, stock, eventBus, email, taxResolver, shippingResolver),
+      useCase: CreateOrderUseCase,
       inject: [
+        ORDERS_TOKENS.orderRepository,
+        ORDERS_TOKENS.orderRepository,
+        ORDERS_TOKENS.orderRepository,
         ORDERS_TOKENS.orderRepository,
         ORDERS_TOKENS.checkoutCartReader,
         ORDERS_TOKENS.stockReservationService,
@@ -80,53 +56,16 @@ import type { EmailSender } from './domain/email-sender';
         CHECKOUT_SHIPPING_RESOLVER_PORT,
       ],
     },
-    {
-      provide: ListOrdersUseCase,
-      useFactory: (orders: OrderRepository) => new ListOrdersUseCase(orders),
-      inject: [ORDERS_TOKENS.orderRepository],
-    },
-    {
-      provide: ChangeOrderStateUseCase,
-      useFactory: (orders: OrderRepository, eventBus: EventBus) => new ChangeOrderStateUseCase(orders, eventBus),
-      inject: [ORDERS_TOKENS.orderRepository, EVENT_BUS],
-    },
-    {
-      provide: ChangePaymentStateUseCase,
-      useFactory: (orders: OrderRepository, eventBus: EventBus, email: EmailQueue) => new ChangePaymentStateUseCase(orders, eventBus, email),
-      inject: [ORDERS_TOKENS.orderRepository, EVENT_BUS, ORDERS_TOKENS.emailQueue],
-    },
-    {
-      provide: CancelOrderUseCase,
-      useFactory: (orders: OrderRepository, stock: StockReservationService, eventBus: EventBus, email: EmailQueue) =>
-        new CancelOrderUseCase(orders, stock, eventBus, email),
-      inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.stockReservationService, EVENT_BUS, ORDERS_TOKENS.emailQueue],
-    },
-    {
-      provide: AddOrderNoteUseCase,
-      useFactory: (orders: OrderRepository) => new AddOrderNoteUseCase(orders),
-      inject: [ORDERS_TOKENS.orderRepository],
-    },
-    {
-      provide: ResendOrderConfirmationUseCase,
-      useFactory: (orders: OrderRepository, email: EmailQueue) => new ResendOrderConfirmationUseCase(orders, email),
-      inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue],
-    },
-    {
-      provide: ReleaseExpiredReservationsUseCase,
-      useFactory: (stock: StockReservationService) => new ReleaseExpiredReservationsUseCase(stock),
-      inject: [ORDERS_TOKENS.stockReservationService],
-    },
-    {
-      provide: DispatchOutboxEventsUseCase,
-      useFactory: (dispatcher: OutboxDispatcher) => new DispatchOutboxEventsUseCase(dispatcher),
-      inject: [ORDERS_TOKENS.outboxDispatcher],
-    },
-    {
-      provide: DrainEmailQueueUseCase,
-      useFactory: (jobs: EmailJobsRepository, sender: EmailSender) => new DrainEmailQueueUseCase(jobs, sender),
-      inject: [ORDERS_TOKENS.emailJobsRepository, ORDERS_TOKENS.emailSender],
-    },
-  ],
+    { useCase: ListOrdersUseCase, inject: [ORDERS_TOKENS.orderRepository] },
+    { useCase: ChangeOrderStateUseCase, inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.orderRepository, EVENT_BUS] },
+    { useCase: ChangePaymentStateUseCase, inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.orderRepository, EVENT_BUS, ORDERS_TOKENS.emailQueue] },
+    { useCase: CancelOrderUseCase, inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.stockReservationService, EVENT_BUS, ORDERS_TOKENS.emailQueue] },
+    { useCase: AddOrderNoteUseCase, inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.orderRepository] },
+    { useCase: ResendOrderConfirmationUseCase, inject: [ORDERS_TOKENS.orderRepository, ORDERS_TOKENS.emailQueue] },
+    { useCase: ReleaseExpiredReservationsUseCase, inject: [ORDERS_TOKENS.stockReservationService] },
+    { useCase: DispatchOutboxEventsUseCase, inject: [ORDERS_TOKENS.outboxDispatcher] },
+    { useCase: DrainEmailQueueUseCase, inject: [ORDERS_TOKENS.emailJobsRepository, ORDERS_TOKENS.emailSender] },
+  ]),
   exports: [
     ORDERS_TOKENS.orderRepository,
     ORDERS_TOKENS.stockReservationService,

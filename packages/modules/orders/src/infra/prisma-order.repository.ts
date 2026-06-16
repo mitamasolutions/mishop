@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, PrismaService } from '@mitama/db';
 import { Order, type OrderLineProps, type OrderPaymentStatus, type OrderStatus, type OrderNoteProps, type StateTransitionProps } from '../domain/order.entity';
 import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
-import type { OrderFilter, OrderRepository, SaveOrderOptions, StoredIdempotencyRecord } from '../domain/order.repository';
+import type { OrderFilter, OrderIdempotencyReader, OrderNumberGenerator, OrderReader, OrderWriter, SaveOrderOptions, StoredIdempotencyRecord } from '../domain/order.repository';
 
 const ORDER_INCLUDE = { lines: true, transitions: true, notes: true } satisfies Prisma.OrderInclude;
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
 
 @Injectable()
-export class PrismaOrderRepository implements OrderRepository {
+export class PrismaOrderRepository implements OrderReader, OrderIdempotencyReader, OrderNumberGenerator, OrderWriter {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<Order | null> {

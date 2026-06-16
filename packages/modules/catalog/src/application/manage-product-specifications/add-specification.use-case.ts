@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase, ValidationError } from '@mitama/core';
 import { ProductNotFoundError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 import { toProductOutput, type ProductOutput } from '../product.dto';
 
 export interface AddSpecificationInput {
@@ -15,7 +15,7 @@ export type AddSpecificationError = ValidationError | ProductNotFoundError;
 
 /** Agrega un atributo de especificación (descriptivo, no genera variantes). */
 export class AddSpecificationUseCase implements UseCase<AddSpecificationInput, Result<ProductOutput, AddSpecificationError>> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: AddSpecificationInput): Promise<Result<ProductOutput, AddSpecificationError>> {
     const name = input.name.trim();

@@ -3,8 +3,8 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:
 /**
  * Cifrador general para settings sensibles (r14 · sprint1_cierre).
  *
- * `SETTINGS_ENCRYPTION_KEY` es opcional: sin clave persiste JSON plano; con
- * clave usa AES-256-GCM. La API debe arrancar en ambos casos.
+ * `SETTINGS_ENCRYPTION_KEY` es opcional fuera de producción: sin clave persiste
+ * JSON plano; con clave usa AES-256-GCM. La validación global la exige en prod.
  */
 export class CredentialCipher {
   private readonly key: Buffer | null;
@@ -54,8 +54,8 @@ export class CredentialCipher {
 }
 
 /**
- * Resuelve `SETTINGS_ENCRYPTION_KEY`. Es opcional por spec: sin clave se
- * guarda/lee en plano y la API arranca normalmente.
+ * Resuelve `SETTINGS_ENCRYPTION_KEY`. Fuera de producción, sin clave guarda/lee
+ * en plano; en producción la validación global falla antes de componer el módulo.
  */
 export function resolveCredentialCipher(env: NodeJS.ProcessEnv = process.env): CredentialCipher {
   return new CredentialCipher(env.SETTINGS_ENCRYPTION_KEY);

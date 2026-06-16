@@ -5,7 +5,7 @@ import {
   ProductVariantNotFoundError,
   VariantPriceNotFoundError,
 } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 import { toProductOutput, type ProductOutput } from '../product.dto';
 
 export interface UpdateVariantTierPriceInput {
@@ -29,7 +29,7 @@ export type UpdateVariantTierPriceError =
 export class UpdateVariantTierPriceUseCase
   implements UseCase<UpdateVariantTierPriceInput, Result<ProductOutput, UpdateVariantTierPriceError>>
 {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: UpdateVariantTierPriceInput): Promise<Result<ProductOutput, UpdateVariantTierPriceError>> {
     const currencyCode = input.currencyCode !== undefined ? input.currencyCode.trim().toUpperCase() : undefined;

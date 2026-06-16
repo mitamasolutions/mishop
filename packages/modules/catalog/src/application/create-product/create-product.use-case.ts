@@ -1,14 +1,14 @@
 import { err, ok, Result, UseCase, ValidationError } from '@mitama/core';
 import { Product } from '../../domain/product.entity';
 import { ProductHandleAlreadyInUseError, VariantSkuAlreadyInUseError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 import { toProductOutput, type ProductOutput } from '../product.dto';
 import type { CreateProductInput } from './create-product.dto';
 
 export type CreateProductError = ValidationError | ProductHandleAlreadyInUseError | VariantSkuAlreadyInUseError;
 
 export class CreateProductUseCase implements UseCase<CreateProductInput, Result<ProductOutput, CreateProductError>> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: CreateProductInput): Promise<Result<ProductOutput, CreateProductError>> {
     const title = input.title.trim();

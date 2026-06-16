@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase, ValidationError } from '@mitama/core';
 import { ProductNotFoundError, ProductOptionNotFoundError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 import { toProductOutput, type ProductOutput } from '../product.dto';
 
 export interface AddProductOptionValueInput {
@@ -15,7 +15,7 @@ export type AddProductOptionValueError = ValidationError | ProductNotFoundError 
 export class AddProductOptionValueUseCase
   implements UseCase<AddProductOptionValueInput, Result<ProductOutput, AddProductOptionValueError>>
 {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: AddProductOptionValueInput): Promise<Result<ProductOutput, AddProductOptionValueError>> {
     const value = input.value.trim();

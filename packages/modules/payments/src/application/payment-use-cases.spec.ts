@@ -141,8 +141,8 @@ describe('payment use cases (r14 · sprint1_cierre)', () => {
       methods,
       registry,
       authorize: new AuthorizePaymentUseCase(payments, methods, registry, orders, eventBus),
-      webhook: new HandlePaymentWebhookUseCase(payments, webhooks, methods, registry, eventBus),
-      refund: new RefundPaymentUseCase(payments, methods, registry, eventBus),
+      webhook: new HandlePaymentWebhookUseCase(payments, payments, payments, webhooks, methods, registry, eventBus),
+      refund: new RefundPaymentUseCase(payments, payments, methods, registry, eventBus),
       resolveAvailable: new ResolveAvailablePaymentMethodsUseCase(methods, registry),
     };
   }

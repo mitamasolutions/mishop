@@ -2,10 +2,8 @@
  * Composición del módulo: el único lugar donde las capas se conectan.
  */
 import { Module } from '@nestjs/common';
+import { createModuleProviders } from '@mitama/contracts';
 import { CART_TOKENS } from './cart.tokens';
-import type { CartRepository } from './domain/cart.repository';
-import type { CatalogSnapshotService } from './domain/catalog-snapshot';
-import type { CustomerDirectory } from './domain/customer-directory';
 import {
   AddCartLineUseCase,
   AdvanceCheckoutUseCase,
@@ -23,51 +21,19 @@ import { CartController } from './http/cart.controller';
 
 @Module({
   controllers: [CartController],
-  providers: [
+  providers: createModuleProviders([
     { provide: CART_TOKENS.cartRepository, useClass: PrismaCartRepository },
     { provide: CART_TOKENS.catalogSnapshot, useClass: PrismaCatalogSnapshotService },
     { provide: CART_TOKENS.customerDirectory, useClass: PrismaCustomerDirectory },
-    {
-      provide: GetOrCreateCartUseCase,
-      useFactory: (carts: CartRepository) => new GetOrCreateCartUseCase(carts),
-      inject: [CART_TOKENS.cartRepository],
-    },
-    {
-      provide: AddCartLineUseCase,
-      useFactory: (carts: CartRepository, catalog: CatalogSnapshotService) => new AddCartLineUseCase(carts, catalog),
-      inject: [CART_TOKENS.cartRepository, CART_TOKENS.catalogSnapshot],
-    },
-    {
-      provide: RefreshCartUseCase,
-      useFactory: (carts: CartRepository, catalog: CatalogSnapshotService) => new RefreshCartUseCase(carts, catalog),
-      inject: [CART_TOKENS.cartRepository, CART_TOKENS.catalogSnapshot],
-    },
-    {
-      provide: ConfirmCartPriceChangesUseCase,
-      useFactory: (carts: CartRepository) => new ConfirmCartPriceChangesUseCase(carts),
-      inject: [CART_TOKENS.cartRepository],
-    },
-    {
-      provide: AdvanceCheckoutUseCase,
-      useFactory: (carts: CartRepository) => new AdvanceCheckoutUseCase(carts),
-      inject: [CART_TOKENS.cartRepository],
-    },
-    {
-      provide: IdentifyCheckoutCustomerUseCase,
-      useFactory: (carts: CartRepository, directory: CustomerDirectory) => new IdentifyCheckoutCustomerUseCase(carts, directory),
-      inject: [CART_TOKENS.cartRepository, CART_TOKENS.customerDirectory],
-    },
-    {
-      provide: MergeGuestCartUseCase,
-      useFactory: (carts: CartRepository, catalog: CatalogSnapshotService) => new MergeGuestCartUseCase(carts, catalog),
-      inject: [CART_TOKENS.cartRepository, CART_TOKENS.catalogSnapshot],
-    },
-    {
-      provide: PurgeExpiredCartsUseCase,
-      useFactory: (carts: CartRepository) => new PurgeExpiredCartsUseCase(carts),
-      inject: [CART_TOKENS.cartRepository],
-    },
-  ],
+    { useCase: GetOrCreateCartUseCase, inject: [CART_TOKENS.cartRepository] },
+    { useCase: AddCartLineUseCase, inject: [CART_TOKENS.cartRepository, CART_TOKENS.catalogSnapshot] },
+    { useCase: RefreshCartUseCase, inject: [CART_TOKENS.cartRepository, CART_TOKENS.catalogSnapshot] },
+    { useCase: ConfirmCartPriceChangesUseCase, inject: [CART_TOKENS.cartRepository] },
+    { useCase: AdvanceCheckoutUseCase, inject: [CART_TOKENS.cartRepository] },
+    { useCase: IdentifyCheckoutCustomerUseCase, inject: [CART_TOKENS.cartRepository, CART_TOKENS.customerDirectory] },
+    { useCase: MergeGuestCartUseCase, inject: [CART_TOKENS.cartRepository, CART_TOKENS.catalogSnapshot] },
+    { useCase: PurgeExpiredCartsUseCase, inject: [CART_TOKENS.cartRepository] },
+  ]),
   exports: [CART_TOKENS.cartRepository],
 })
 export class CartModule {}

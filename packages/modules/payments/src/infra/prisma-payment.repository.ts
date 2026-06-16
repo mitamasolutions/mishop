@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, PrismaService } from '@mitama/db';
 import { Payment, type PaymentRefundProps, type PaymentStatus, type PaymentTransitionProps } from '../domain/payment.entity';
-import type { PaymentRepository } from '../domain/payment.repository';
+import type { PaymentReader, PaymentReferenceReader, PaymentWriter } from '../domain/payment.repository';
 
 const PAYMENT_INCLUDE = { transitions: true, refunds: true } satisfies Prisma.PaymentInclude;
 type PaymentRow = Prisma.PaymentGetPayload<{ include: typeof PAYMENT_INCLUDE }>;
 
 @Injectable()
-export class PrismaPaymentRepository implements PaymentRepository {
+export class PrismaPaymentRepository implements PaymentReader, PaymentReferenceReader, PaymentWriter {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<Payment | null> {

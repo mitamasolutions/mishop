@@ -9,7 +9,7 @@ import {
   type ProductVariantProps,
   type VariantPriceProps,
 } from '../domain/product.entity';
-import type { ProductFilter, ProductPage, ProductRepository } from '../domain/product.repository';
+import type { ProductFilter, ProductPage, ProductReader, ProductWriter } from '../domain/product.repository';
 import type { SlugRedirect } from '../domain/brand.repository';
 
 const PRODUCT_INCLUDE = {
@@ -25,7 +25,7 @@ const PRODUCT_INCLUDE = {
 type ProductRow = Prisma.ProductGetPayload<{ include: typeof PRODUCT_INCLUDE }>;
 
 @Injectable()
-export class PrismaProductRepository implements ProductRepository {
+export class PrismaProductRepository implements ProductReader, ProductWriter {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<Product | null> {

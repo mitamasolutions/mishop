@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase } from '@mitama/core';
 import { ProductNotFoundError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 
 export interface DeleteProductInput {
   id: string;
@@ -9,7 +9,7 @@ export interface DeleteProductInput {
 
 /** Baja lógica de un producto (`deletedAt`). */
 export class DeleteProductUseCase implements UseCase<DeleteProductInput, Result<void, ProductNotFoundError>> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: DeleteProductInput): Promise<Result<void, ProductNotFoundError>> {
     const product = await this.products.findById(input.id);

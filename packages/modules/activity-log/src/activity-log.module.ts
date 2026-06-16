@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
+import { createModuleProviders } from '@mitama/contracts';
 import { ACTIVITY_LOG_TOKENS } from './activity-log.tokens';
 import { ListActivityLogUseCase } from './application/list-activity-log/list-activity-log.use-case';
-import type { ActivityLogEntryRepository } from './domain/activity-log-entry.repository';
 import { PrismaActivityLogEntryRepository } from './infra/prisma-activity-log-entry.repository';
 import { ActivityLogController } from './http/activity-log.controller';
 
@@ -12,13 +12,9 @@ import { ActivityLogController } from './http/activity-log.controller';
  */
 @Module({
   controllers: [ActivityLogController],
-  providers: [
+  providers: createModuleProviders([
     { provide: ACTIVITY_LOG_TOKENS.entryRepository, useClass: PrismaActivityLogEntryRepository },
-    {
-      provide: ListActivityLogUseCase,
-      useFactory: (entries: ActivityLogEntryRepository) => new ListActivityLogUseCase(entries),
-      inject: [ACTIVITY_LOG_TOKENS.entryRepository],
-    },
-  ],
+    { useCase: ListActivityLogUseCase, inject: [ACTIVITY_LOG_TOKENS.entryRepository] },
+  ]),
 })
 export class ActivityLogModule {}

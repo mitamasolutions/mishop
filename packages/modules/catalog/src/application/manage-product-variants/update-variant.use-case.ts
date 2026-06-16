@@ -5,7 +5,7 @@ import {
   ProductVariantNotFoundError,
   VariantSkuAlreadyInUseError,
 } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 import { toProductOutput, type ProductOutput } from '../product.dto';
 import type { VariantFieldsInput } from './variant-input.dto';
 
@@ -24,7 +24,7 @@ export type UpdateVariantError =
   | InvalidVariantCombinationError;
 
 export class UpdateVariantUseCase implements UseCase<UpdateVariantInput, Result<ProductOutput, UpdateVariantError>> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: UpdateVariantInput): Promise<Result<ProductOutput, UpdateVariantError>> {
     if (input.sku !== undefined && !input.sku.trim()) {

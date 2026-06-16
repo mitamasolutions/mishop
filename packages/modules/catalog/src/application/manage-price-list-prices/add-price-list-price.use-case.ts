@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase, ValidationError } from '@mitama/core';
 import { InvalidTierPriceRangeError, PriceListNotFoundError, ProductVariantNotFoundError } from '../../domain/errors';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader } from '../../domain/product.repository';
 import type { PriceListRepository } from '../../domain/price-list.repository';
 import { toPriceListOutput, type PriceListOutput } from '../price-list.dto';
 
@@ -23,7 +23,7 @@ export type AddPriceListPriceError =
 export class AddPriceListPriceUseCase implements UseCase<AddPriceListPriceInput, Result<PriceListOutput, AddPriceListPriceError>> {
   constructor(
     private readonly priceLists: PriceListRepository,
-    private readonly products: ProductRepository,
+    private readonly products: ProductReader,
   ) {}
 
   async execute(input: AddPriceListPriceInput): Promise<Result<PriceListOutput, AddPriceListPriceError>> {

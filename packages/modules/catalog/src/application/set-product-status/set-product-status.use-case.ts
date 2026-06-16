@@ -1,7 +1,7 @@
 import { err, ok, Result, UseCase } from '@mitama/core';
 import { ProductNotFoundError } from '../../domain/errors';
 import type { ProductStatus } from '../../domain/product.entity';
-import type { ProductRepository } from '../../domain/product.repository';
+import type { ProductReader, ProductWriter } from '../../domain/product.repository';
 import { toProductOutput, type ProductOutput } from '../product.dto';
 
 export interface SetProductStatusInput {
@@ -11,7 +11,7 @@ export interface SetProductStatusInput {
 }
 
 export class SetProductStatusUseCase implements UseCase<SetProductStatusInput, Result<ProductOutput, ProductNotFoundError>> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(private readonly products: ProductReader & ProductWriter) {}
 
   async execute(input: SetProductStatusInput): Promise<Result<ProductOutput, ProductNotFoundError>> {
     const product = await this.products.findById(input.id);

@@ -1,11 +1,11 @@
 import type { RecordActivityInput } from '@mitama/activity-log';
 import { Product } from '../../domain/product.entity';
-import type { ProductFilter, ProductPage, ProductRepository } from '../../domain/product.repository';
+import type { ProductFilter, ProductPage, ProductReader, ProductWriter } from '../../domain/product.repository';
 import type { SlugRedirect } from '../../domain/brand.repository';
 import { PriceList } from '../../domain/price-list.entity';
 import type { PriceListFilter, PriceListPage, PriceListRepository } from '../../domain/price-list.repository';
 
-export class InMemoryProductRepository implements ProductRepository {
+export class InMemoryProductRepository implements ProductReader, ProductWriter {
   readonly products = new Map<string, Product>();
   readonly activities: RecordActivityInput[] = [];
   readonly redirects: SlugRedirect[] = [];

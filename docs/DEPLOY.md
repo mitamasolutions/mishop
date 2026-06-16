@@ -41,17 +41,16 @@ CORS_ORIGINS=https://admin.tudominio.com
 NEXT_PUBLIC_API_URL=https://api.tudominio.com
 ```
 
-Variable **opcional** recomendada en producción:
+Variable **obligatoria** en producción:
 
 ```dotenv
 # Cifrado de settings sensibles, incluidas credenciales de plugins de pago.
-# Si se omite, la API arranca y persiste esos settings en plano.
 SETTINGS_ENCRYPTION_KEY=...
 ```
 
 Las credenciales de Mercado Pago **NO van en `.env`**: se configuran por
 tienda desde el admin (`/configuracion/pagos`) y se persisten cifradas en
-DB si `SETTINGS_ENCRYPTION_KEY` está definida (`store_payment_methods.encrypted_credentials`).
+DB con `SETTINGS_ENCRYPTION_KEY` (`store_payment_methods.encrypted_credentials`).
 
 ## 3. Primer despliegue
 
