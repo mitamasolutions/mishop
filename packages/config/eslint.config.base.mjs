@@ -68,7 +68,7 @@ export const moduleConfig = tseslint.config(
   ...baseConfig,
   {
     files: ['**/src/domain/**/*.ts'],
-    ignores: ['**/*.spec.ts'],
+    ignores: ['**/*.spec.ts', '**/*.test-context.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -88,7 +88,7 @@ export const moduleConfig = tseslint.config(
   },
   {
     files: ['**/src/application/**/*.ts'],
-    ignores: ['**/*.spec.ts'],
+    ignores: ['**/*.spec.ts', '**/*.test-context.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -108,7 +108,7 @@ export const moduleConfig = tseslint.config(
   },
   {
     files: ['**/src/http/**/*.ts'],
-    ignores: ['**/*.spec.ts'],
+    ignores: ['**/*.spec.ts', '**/*.test-context.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

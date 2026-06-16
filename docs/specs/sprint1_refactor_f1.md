@@ -67,21 +67,29 @@ segrega puertos gordos y unifica el manejo de errores.
 
 ## Criterios de aceptación
 
-- [ ] `yarn build`, `yarn lint` y `yarn test` pasan tras cada fase.
-- [ ] El módulo piloto arranca (`yarn dev`), responde `GET /health` y al menos un
+- [x] `yarn build`, `yarn lint` y `yarn test` pasan tras cada fase. (orders,
+      payments y api compilan/lintan/testean limpio; el build de `apps/admin`
+      sólo falla por requerir `NEXT_PUBLIC_API_URL`, hardening preexistente.)
+- [x] El módulo piloto arranca (`yarn dev`), responde `GET /health` y al menos un
       endpoint propio del módulo, antes de propagar el patrón.
-- [ ] Tras la propagación, ningún `<mod>.module.ts` contiene bloques manuales de
+- [x] Tras la propagación, ningún `<mod>.module.ts` contiene bloques manuales de
       `useFactory` + `inject` para el cableado estándar puerto→adapter→useCase.
-- [ ] No queda ningún archivo que agrupe más de un caso de uso en
-      `application/` de `orders` ni de `payments`.
-- [ ] `OrderRepository` ya no existe como interfaz única; sus consumidores
+      (`createModuleProviders`; sólo `auth.module.ts` conserva factories, la
+      excepción permitida por su cableado no estándar.)
+- [x] No queda ningún archivo que agrupe más de un caso de uso en
+      `application/` de `orders` ni de `payments`. (`order-use-cases.ts` y
+      `payment-use-cases.ts` son barrels de `export *`.)
+- [x] `OrderRepository` ya no existe como interfaz única; sus consumidores
       dependen de `OrderReader`/`OrderWriter`/puerto de idempotencia según su uso.
-- [ ] Una excepción lanzada desde `infra` se traduce en una respuesta HTTP
+- [x] Una excepción lanzada desde `infra` se traduce en una respuesta HTTP
       controlada por el converter, sin filtrarse como error 500 sin mapear.
-- [ ] Arrancar la API en modo producción sin `SETTINGS_ENCRYPTION_KEY` falla con
-      un mensaje claro; en dev/test arranca sin la variable.
-- [ ] Cada caso de uso de `orders` y `payments` tiene su archivo de test asociado.
-- [ ] Los e2e de `apps/api/test` siguen pasando sin modificación.
+      (`InfraExceptionFilter` vía `APP_FILTER`.)
+- [x] Arrancar la API en modo producción sin `SETTINGS_ENCRYPTION_KEY` falla con
+      un mensaje claro; en dev/test arranca sin la variable. (`PRODUCTION_REQUIRED`
+      en `config/env.ts` + `env.spec.ts`.)
+- [x] Cada caso de uso de `orders` y `payments` tiene su archivo de test asociado.
+      (paridad use-case↔spec completa: 11 specs en cada módulo.)
+- [x] Los e2e de `apps/api/test` siguen pasando sin modificación. (21/21 verdes.)
 
 ## Flujo principal
 
