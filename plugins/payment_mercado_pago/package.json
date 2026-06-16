@@ -17,9 +17,7 @@
   },
   "dependencies": {
     "@mitama/contracts": "workspace:*",
-    "@mitama/core": "workspace:*",
-    "@nestjs/common": "^11.0.0",
-    "reflect-metadata": "^0.2.2"
+    "@mitama/core": "workspace:*"
   },
   "devDependencies": {
     "@mitama/config": "workspace:*",

@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import type { PaymentStatus } from '@mitama/contracts';
 import type { MercadoPagoClient } from './mercado-pago-payment.provider';
 
@@ -13,7 +12,6 @@ const MP_API = 'https://api.mercadopago.com';
  * Tolerante a fallos: propaga el error al provider para que decida si es
  * transitorio (HTTP 5xx, timeouts) o permanente.
  */
-@Injectable()
 export class HttpMercadoPagoClient implements MercadoPagoClient {
   async createPreference(input: { accessToken: string; paymentId: string; orderId: string; amount: number; currency: string }): Promise<{ preferenceId: string; initPoint: string }> {
     const body = {
