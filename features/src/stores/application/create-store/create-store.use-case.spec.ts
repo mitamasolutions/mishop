@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import type { RecordActivityInput } from '@mitama/activity-log';
-import { Currency, Region, type CurrencyRepository, type RegionRepository } from '@mitama/reference-data';
+import type { RecordActivityInput } from '../../../activity-log';
+import { Currency, Region, type CurrencyRepository, type RegionRepository } from '../../../reference-data';
 import { ValidationError } from '@mitama/core';
 import { CreateStoreUseCase } from './create-store.use-case';
 import { Store } from '../../domain/store.entity';

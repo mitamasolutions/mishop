@@ -1,4 +1,4 @@
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../activity-log';
 import type { Setting } from './setting.entity';
 
 export interface SettingRepository {

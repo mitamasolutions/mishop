@@ -1,4 +1,4 @@
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../activity-log';
 import type { Permission } from '@mitama/contracts';
 import { UserStoreRole } from './user-store-role.entity';
 

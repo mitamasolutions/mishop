@@ -1,4 +1,4 @@
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../activity-log';
 import { Brand } from './brand.entity';
 
 /** Redirect 301 a registrar cuando cambia un slug (requisito SEO). */

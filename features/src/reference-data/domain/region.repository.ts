@@ -1,4 +1,4 @@
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../activity-log';
 import { Region } from './region.entity';
 
 export interface RegionRepository {

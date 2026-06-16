@@ -1,5 +1,5 @@
 import { err, ok, Result, UseCase, ValidationError } from '@mitama/core';
-import type { CurrencyRepository, RegionRepository } from '@mitama/reference-data';
+import type { CurrencyRepository, RegionRepository } from '../../../reference-data';
 import { Store } from '../../domain/store.entity';
 import { StoreCodeAlreadyInUseError, InvalidCurrencyError, InvalidRegionError } from '../../domain/errors';
 import type { StoreRepository } from '../../domain/store.repository';

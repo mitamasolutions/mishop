@@ -1,5 +1,5 @@
 import { PrismaService } from '@mitama/db';
-import { recordActivity, type RecordActivityInput } from '@mitama/activity-log';
+import { recordActivity, type RecordActivityInput } from '../../activity-log';
 import { ValueTaxonomy } from '../domain/value-taxonomy.entity';
 import type { ValueTaxonomyRepository } from '../domain/value-taxonomy.repository';
 

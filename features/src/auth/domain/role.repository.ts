@@ -1,4 +1,4 @@
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../activity-log';
 import { Role } from './role.entity';
 
 /** Puerto de persistencia del catálogo de roles. */

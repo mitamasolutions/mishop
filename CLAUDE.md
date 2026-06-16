@@ -16,20 +16,27 @@ apps/
   api/        # SOLO composición: bootstrap NestJS, config global, prefijo /v1, Swagger en /docs (flag)
   admin/      # Next.js (App Router) + Tailwind v4 + shadcn/ui (puerto 3001)
   # web/      # tienda pública — Sprint 2, aún no existe
-packages/
+lib/
   core/       # Shared kernel TS puro (CERO deps): Result, errores, EventBus, Entity/VO/UseCase
-  contracts/  # Eventos, puertos e interfaces compartidas ENTRE módulos (+ token EVENT_BUS)
-  db/         # Prisma multi-archivo (prisma/schema/<modulo>.prisma) + migraciones + PrismaService/DbModule
+  contracts/  # Eventos, puertos e interfaces compartidas (+ contrato de pagos + token EVENT_BUS)
+  db/         # Prisma multi-archivo (prisma/schema/<feature>.prisma) + migraciones + PrismaService/DbModule
   config/     # tsconfig base + ESLint compartido (incluye reglas de boundaries)
-  modules/    # 17 módulos de negocio (ver abajo)
-tools/        # new-module.mjs + plantillas del generador
+features/     # UN paquete @mitama/features con las 17 features de negocio
+  src/
+    <feature>/    # auth/, orders/, payments/, ...  (cada una: domain/application/infra/http + <f>.module.ts + <f>.tokens.ts + index.ts)
+    index.ts      # barrel: re-exporta los *Module y símbolos públicos que usa apps/api
+plugins/
+  payment_manual/        # @mitama/payment_manual       (Manual + Cash)
+  payment_mercado_pago/  # @mitama/payment_mercado_pago (provider MP + HttpMercadoPagoClient + puerto)
+tools/        # new-feature.mjs + plantillas del generador
 docs/         # ROADMAP.md (planeación) + specs/ + DEPLOY.md + providers/
 ```
 
-**Módulos** (`packages/modules/`), todos registrados en `apps/api/src/app.module.ts`:
+**Features** (`features/src/`), todas registradas en `apps/api/src/app.module.ts`
+vía el barrel `@mitama/features`:
 
 - **Núcleo ecommerce (operativo):** `auth`, `stores`, `settings`, `activity-log`,
-  `reference-data`, `catalog`, `inventory`, `media`, `customers`, `cart`,
+  `reference-data`, `catalog`, `inventory`, `customers`, `cart`,
   `orders`, `payments`, `shipping`, `taxes`, `scheduled-tasks`.
 - **Congelados** (construidos, **fuera del checkout MVP**; no cablearlos al
   carrito/órdenes sin decisión explícita): `promotions`, `giftcards`, `reviews`.
@@ -38,44 +45,49 @@ docs/         # ROADMAP.md (planeación) + specs/ + DEPLOY.md + providers/
 
 1. **Dependencias hacia adentro:** `http → application → domain`. `infra`
    implementa los puertos (interfaces) de `domain`. `domain` no importa nada
-   externo (solo `@mitama/core`).
-2. **Prisma SOLO en `infra/`** de cada módulo (y en `packages/db`, su dueño).
+   externo (solo `@mitama/core` / `@mitama/contracts`).
+2. **Prisma SOLO en `infra/`** de cada feature (y en `lib/db`, su dueño).
    Los casos de uso dependen de puertos, nunca del cliente Prisma.
-3. **Un módulo NUNCA importa internals de otro:** solo su API pública
-   (`@mitama/<modulo>`) o `@mitama/contracts`. ESLint
-   (`no-restricted-imports` en `packages/config/eslint.config.base.mjs`) lo
+3. **Una feature NUNCA importa internals de otra:** solo el barrel hermano
+   (`../<feature>` que resuelve al `index.ts`) o `@mitama/contracts`. ESLint
+   (`no-restricted-imports` regex en `lib/config/eslint.config.base.mjs`) lo
    hace fallar en CI.
-4. **Comunicación entre módulos = eventos** del bus de `@mitama/core`
+4. **Comunicación entre features = eventos** del bus de `@mitama/core`
    (`EventBus`, token `EVENT_BUS` de `@mitama/contracts`) **o puertos** en
    `@mitama/contracts`, nunca imports directos.
 5. **`apps/api` no contiene lógica:** solo registra módulos NestJS y
    configuración global (validación de env, prefijo `/v1`, pipes, CORS, helmet,
    throttler, Swagger).
-6. La composición de cada módulo (puertos → adapters) vive en su
-   `<modulo>.module.ts` en la raíz de `src/`, fuera de las capas.
+6. La composición de cada feature (puertos → adapters) vive en su
+   `<feature>.module.ts` en la raíz de `features/src/<feature>/`, fuera de las
+   capas.
+7. **Plugins de pago** viven en `plugins/payment_*` y solo dependen de
+   `@mitama/contracts` + `@mitama/core` (+ stdlib). El contrato
+   `PaymentProvider` y sus tipos están en `@mitama/contracts/payments`.
 
 ## Patrones ya implementados (reúsalos, no los reinventes)
 
-- **Eventos + puertos entre módulos:** `EventBus` (token `EVENT_BUS`) y puertos en
+- **Eventos + puertos entre features:** `EventBus` (token `EVENT_BUS`) y puertos en
   `@mitama/contracts` (p. ej. `OrderForPaymentsPort`, `TaxResolverPort`,
   `ShippingResolverPort`).
 - **Outbox transaccional** (`orders`): los eventos se persisten en la misma
   transacción que el agregado y se despachan con *claim-then-publish*. Ver
-  `orders/src/domain/outbox.ts` + `infra/prisma-outbox-dispatcher.ts`.
+  `features/src/orders/domain/outbox.ts` + `infra/prisma-outbox-dispatcher.ts`.
 - **Máquinas de estado** separadas para orden y pago, con historial de
-  transiciones (`orders/src/domain/order.entity.ts`).
+  transiciones (`features/src/orders/domain/order.entity.ts`).
 - **Inventario por ubicación** con reservas **claim-then-apply**; consumo al
   `payment.paid` y liberación al fallar/cancelar/expirar
-  (`inventory` + `orders/src/infra/payment-events.handler.ts`).
+  (`features/src/inventory` + `features/src/orders/infra/payment-events.handler.ts`).
 - **Idempotencia:** header `Idempotency-Key` en checkout/órdenes; por `eventId`
   con `storeId` en webhooks de pago.
 - **Totales server-side:** el checkout recalcula subtotal/envío/impuestos; nunca
   confía en los totales del carrito (`orders/CreateOrderUseCase`).
-- **Plugins de pago (Strategy + registry):** cada método (manual, Mercado Pago,
-  futuros) implementa `PaymentProvider` y se registra en
-  `PaymentProviderRegistry`; config por tienda en DB con cifrado obligatorio en
-  producción y opcional en dev/test (`SETTINGS_ENCRYPTION_KEY`). Un método solo aparece en selectores si está
-  habilitado **y** bien configurado.
+- **Plugins de pago (Strategy + registry):** cada método implementa
+  `PaymentProvider` (definido en `@mitama/contracts`) y vive en
+  `plugins/payment_*`. Se registran en `PaymentProviderRegistry` desde el
+  `payments.module.ts`; config por tienda en DB con cifrado obligatorio en
+  producción y opcional en dev/test (`SETTINGS_ENCRYPTION_KEY`). Un método solo
+  aparece en selectores si está habilitado **y** bien configurado.
 - **Tareas programadas in-app** (`scheduled-tasks`, estilo nopCommerce): runner +
   tabla `ScheduledTask` con lock por fila; reemplaza el cron externo
   (`dispatch-outbox`, `release-expired-reservations`, `drain-email-queue`).
@@ -98,9 +110,9 @@ docs/         # ROADMAP.md (planeación) + specs/ + DEPLOY.md + providers/
   interfaces (puertos); extensión vía providers de NestJS.
 - **Simple primero:** la solución más directa que cumpla. Nada de abstracciones
   especulativas ni patrones "por si acaso".
-- **Reutilizable, sin duplicar:** lo compartido vive en `@mitama/core` o en el
-  módulo dueño del dominio. Antes de escribir un helper, busca si ya existe.
-- **DRY con criterio:** prefiere duplicar 3 líneas a acoplar dos módulos;
+- **Reutilizable, sin duplicar:** lo compartido vive en `@mitama/core` o en la
+  feature dueña del dominio. Antes de escribir un helper, busca si ya existe.
+- **DRY con criterio:** prefiere duplicar 3 líneas a acoplar dos features;
   la regla 3 siempre gana.
 
 ## Convenciones multi-canal e idempotencia (ya implementadas)
@@ -120,30 +132,33 @@ corepack enable && yarn install
 yarn build                  # turbo: build de todos los workspaces
 yarn dev                    # API :3000 (/health, /docs, /v1) + Admin :3001
 yarn test                   # Vitest: unit in-memory + e2e (apps/api/test, DB real)
-yarn lint                   # ESLint, incluye boundaries entre módulos
+yarn lint                   # ESLint, incluye boundaries entre features
 yarn db:migrate             # prisma migrate dev — desarrollo
 yarn db:deploy              # prisma migrate deploy — CI/producción
 yarn db:reset               # resetea la DB de desarrollo
 yarn db:seed                # permisos, roles, Super Admin (admin@mitama.local), tienda demo y datos de referencia
-yarn new:module <nombre>    # genera un módulo nuevo con capas + test
+yarn new:feature <nombre>   # genera una feature nueva con capas + test (alias: new:module)
 ```
 
-## Cómo crear un módulo nuevo
+## Cómo crear una feature nueva
 
-1. `yarn new:module <nombre>` (kebab-case) y luego `yarn install`.
-2. Registra `<Nombre>Module` en `apps/api/src/app.module.ts`.
-3. Crea `packages/db/prisma/schema/<nombre>.prisma` y corre `yarn db:migrate`
-   (las migraciones son versionadas; el baseline vive en
+1. `yarn new:feature <nombre>` (kebab-case). No hace falta `yarn install`: la
+   feature vive dentro de `@mitama/features`, ya registrado.
+2. Re-exporta el módulo desde `features/src/index.ts`
+   (`export { <Nombre>Module } from './<nombre>';`).
+3. Registra `<Nombre>Module` en `apps/api/src/app.module.ts`.
+4. Si necesita persistencia: crea `lib/db/prisma/schema/<nombre>.prisma` y corre
+   `yarn db:migrate` (las migraciones son versionadas; el baseline vive en
    `prisma/schema/migrations/`).
-4. Reemplaza el adapter in-memory de `infra/` por uno de Prisma cuando toque
+5. Reemplaza el adapter in-memory de `infra/` por uno de Prisma cuando toque
    persistir.
-5. Patrones de referencia: `packages/modules/auth` (capas + tests in-memory) y
-   `packages/modules/orders` (outbox, eventos, máquinas de estado, idempotencia).
+6. Patrones de referencia: `features/src/auth` (capas + tests in-memory) y
+   `features/src/orders` (outbox, eventos, máquinas de estado, idempotencia).
 
 ## Testing
 
-- Vitest en `packages/core` y en cada módulo. Los specs viven junto al código
-  (`*.spec.ts`) y se excluyen del build.
+- Vitest en `lib/core`, `features/` y cada plugin. Los specs viven junto al
+  código (`*.spec.ts`) y se excluyen del build.
 - Los casos de uso se testean con adapters in-memory; nunca toques Prisma ni
   NestJS en un test unitario de application.
 - Los e2e (`apps/api/test/*.e2e-spec.ts`) corren contra DB real en CI.
@@ -158,4 +173,3 @@ yarn new:module <nombre>    # genera un módulo nuevo con capas + test
   en plano; con valor → cifrado/descifrado transparente.
 - La planeación viva está en `docs/ROADMAP.md`; las specs por requisito en
   `docs/specs/`. `AGENTS.md` y este archivo se mantienen idénticos.
-</content>

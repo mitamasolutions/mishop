@@ -1,4 +1,4 @@
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../../activity-log';
 import { StockLocation } from '../../domain/stock-location.entity';
 import type { StockLocationRepository } from '../../domain/stock-location.repository';
 import { InventoryItem } from '../../domain/inventory-item.entity';

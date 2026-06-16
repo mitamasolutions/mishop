@@ -1,17 +1,18 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { ok, err, type Result } from '@mitama/core';
-import { InvalidWebhookSignatureError, TransientPaymentProviderError } from '../domain/errors';
-import type {
-  DecryptedPaymentMethodConfig,
-  PaymentProvider,
-  PaymentProviderConfigDescriptor,
-  PaymentProviderConfigStatus,
-  PaymentProviderRequest,
-  PaymentProviderResult,
-  PaymentWebhookRequest,
-  PaymentWebhookResult,
-} from '../domain/payment-provider';
-import type { PaymentStatus } from '../domain/payment.entity';
+import {
+  InvalidWebhookSignatureError,
+  TransientPaymentProviderError,
+  type DecryptedPaymentMethodConfig,
+  type PaymentProvider,
+  type PaymentProviderConfigDescriptor,
+  type PaymentProviderConfigStatus,
+  type PaymentProviderRequest,
+  type PaymentProviderResult,
+  type PaymentStatus,
+  type PaymentWebhookRequest,
+  type PaymentWebhookResult,
+} from '@mitama/contracts';
 
 // ----- Cliente de Mercado Pago (port + tipos) -------------------------------
 

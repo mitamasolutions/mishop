@@ -1257,28 +1257,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mitama/activity-log@workspace:*, @mitama/activity-log@workspace:packages/modules/activity-log":
-  version: 0.0.0-use.local
-  resolution: "@mitama/activity-log@workspace:packages/modules/activity-log"
-  dependencies:
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    class-transformer: "npm:^0.5.1"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
 "@mitama/admin@workspace:apps/admin":
   version: 0.0.0-use.local
   resolution: "@mitama/admin@workspace:apps/admin"
@@ -1315,27 +1293,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mitama/api@workspace:apps/api"
   dependencies:
-    "@mitama/activity-log": "workspace:*"
-    "@mitama/auth": "workspace:*"
-    "@mitama/cart": "workspace:*"
-    "@mitama/catalog": "workspace:*"
     "@mitama/config": "workspace:*"
     "@mitama/contracts": "workspace:*"
     "@mitama/core": "workspace:*"
-    "@mitama/customers": "workspace:*"
     "@mitama/db": "workspace:*"
-    "@mitama/giftcards": "workspace:*"
-    "@mitama/inventory": "workspace:*"
-    "@mitama/orders": "workspace:*"
-    "@mitama/payments": "workspace:*"
-    "@mitama/promotions": "workspace:*"
-    "@mitama/reference-data": "workspace:*"
-    "@mitama/reviews": "workspace:*"
-    "@mitama/scheduled-tasks": "workspace:*"
-    "@mitama/settings": "workspace:*"
-    "@mitama/shipping": "workspace:*"
-    "@mitama/stores": "workspace:*"
-    "@mitama/taxes": "workspace:*"
+    "@mitama/features": "workspace:*"
     "@nestjs/cli": "npm:^11.0.0"
     "@nestjs/common": "npm:^11.0.0"
     "@nestjs/config": "npm:^4.0.0"
@@ -1362,78 +1324,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mitama/auth@workspace:*, @mitama/auth@workspace:packages/modules/auth":
+"@mitama/config@workspace:*, @mitama/config@workspace:lib/config":
   version: 0.0.0-use.local
-  resolution: "@mitama/auth@workspace:packages/modules/auth"
-  dependencies:
-    "@mitama/activity-log": "workspace:*"
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/jwt": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@nestjs/throttler": "npm:^6.0.0"
-    "@types/express": "npm:^5.0.6"
-    "@types/node": "npm:^22.10.0"
-    argon2: "npm:^0.41.1"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/cart@workspace:*, @mitama/cart@workspace:packages/modules/cart":
-  version: 0.0.0-use.local
-  resolution: "@mitama/cart@workspace:packages/modules/cart"
-  dependencies:
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/catalog@workspace:*, @mitama/catalog@workspace:packages/modules/catalog":
-  version: 0.0.0-use.local
-  resolution: "@mitama/catalog@workspace:packages/modules/catalog"
-  dependencies:
-    "@mitama/activity-log": "workspace:*"
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/config@workspace:*, @mitama/config@workspace:packages/config":
-  version: 0.0.0-use.local
-  resolution: "@mitama/config@workspace:packages/config"
+  resolution: "@mitama/config@workspace:lib/config"
   dependencies:
     "@eslint/js": "npm:^9.15.0"
     eslint: "npm:^9.15.0"
@@ -1442,9 +1335,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mitama/contracts@workspace:*, @mitama/contracts@workspace:packages/contracts":
+"@mitama/contracts@workspace:*, @mitama/contracts@workspace:lib/contracts":
   version: 0.0.0-use.local
-  resolution: "@mitama/contracts@workspace:packages/contracts"
+  resolution: "@mitama/contracts@workspace:lib/contracts"
   dependencies:
     "@mitama/config": "workspace:*"
     "@mitama/core": "workspace:*"
@@ -1457,9 +1350,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mitama/core@workspace:*, @mitama/core@workspace:packages/core":
+"@mitama/core@workspace:*, @mitama/core@workspace:lib/core":
   version: 0.0.0-use.local
-  resolution: "@mitama/core@workspace:packages/core"
+  resolution: "@mitama/core@workspace:lib/core"
   dependencies:
     "@mitama/config": "workspace:*"
     eslint: "npm:^9.15.0"
@@ -1468,31 +1361,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mitama/customers@workspace:*, @mitama/customers@workspace:packages/modules/customers":
+"@mitama/db@workspace:*, @mitama/db@workspace:lib/db":
   version: 0.0.0-use.local
-  resolution: "@mitama/customers@workspace:packages/modules/customers"
-  dependencies:
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    argon2: "npm:^0.41.1"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/db@workspace:*, @mitama/db@workspace:packages/db":
-  version: 0.0.0-use.local
-  resolution: "@mitama/db@workspace:packages/db"
+  resolution: "@mitama/db@workspace:lib/db"
   dependencies:
     "@mitama/config": "workspace:*"
     "@mitama/contracts": "workspace:*"
@@ -1511,187 +1382,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mitama/giftcards@workspace:*, @mitama/giftcards@workspace:packages/modules/giftcards":
+"@mitama/features@workspace:*, @mitama/features@workspace:features":
   version: 0.0.0-use.local
-  resolution: "@mitama/giftcards@workspace:packages/modules/giftcards"
+  resolution: "@mitama/features@workspace:features"
   dependencies:
     "@mitama/config": "workspace:*"
     "@mitama/contracts": "workspace:*"
     "@mitama/core": "workspace:*"
     "@mitama/db": "workspace:*"
+    "@mitama/payment_manual": "workspace:*"
+    "@mitama/payment_mercado_pago": "workspace:*"
     "@nestjs/common": "npm:^11.0.0"
     "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/inventory@workspace:*, @mitama/inventory@workspace:packages/modules/inventory":
-  version: 0.0.0-use.local
-  resolution: "@mitama/inventory@workspace:packages/modules/inventory"
-  dependencies:
-    "@mitama/activity-log": "workspace:*"
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/orders@workspace:*, @mitama/orders@workspace:packages/modules/orders":
-  version: 0.0.0-use.local
-  resolution: "@mitama/orders@workspace:packages/modules/orders"
-  dependencies:
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@nestjs/throttler": "npm:^6.0.0"
-    "@types/node": "npm:^22.10.0"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/payments@workspace:*, @mitama/payments@workspace:packages/modules/payments":
-  version: 0.0.0-use.local
-  resolution: "@mitama/payments@workspace:packages/modules/payments"
-  dependencies:
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@mitama/orders": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@nestjs/throttler": "npm:^6.0.0"
-    "@types/node": "npm:^22.10.0"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/promotions@workspace:*, @mitama/promotions@workspace:packages/modules/promotions":
-  version: 0.0.0-use.local
-  resolution: "@mitama/promotions@workspace:packages/modules/promotions"
-  dependencies:
-    "@mitama/config": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/reference-data@workspace:*, @mitama/reference-data@workspace:packages/modules/reference-data":
-  version: 0.0.0-use.local
-  resolution: "@mitama/reference-data@workspace:packages/modules/reference-data"
-  dependencies:
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/reviews@workspace:*, @mitama/reviews@workspace:packages/modules/reviews":
-  version: 0.0.0-use.local
-  resolution: "@mitama/reviews@workspace:packages/modules/reviews"
-  dependencies:
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/scheduled-tasks@workspace:*, @mitama/scheduled-tasks@workspace:packages/modules/scheduled-tasks":
-  version: 0.0.0-use.local
-  resolution: "@mitama/scheduled-tasks@workspace:packages/modules/scheduled-tasks"
-  dependencies:
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
+    "@nestjs/jwt": "npm:^11.0.0"
     "@nestjs/schedule": "npm:^6.1.3"
     "@nestjs/swagger": "npm:^11.0.0"
+    "@nestjs/throttler": "npm:^6.0.0"
+    "@types/express": "npm:^5.0.6"
     "@types/node": "npm:^22.10.0"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/settings@workspace:*, @mitama/settings@workspace:packages/modules/settings":
-  version: 0.0.0-use.local
-  resolution: "@mitama/settings@workspace:packages/modules/settings"
-  dependencies:
-    "@mitama/activity-log": "workspace:*"
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
+    argon2: "npm:^0.41.1"
+    class-transformer: "npm:^0.5.1"
     class-validator: "npm:^0.14.1"
     eslint: "npm:^9.15.0"
     reflect-metadata: "npm:^0.2.2"
@@ -1701,64 +1411,31 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mitama/shipping@workspace:*, @mitama/shipping@workspace:packages/modules/shipping":
+"@mitama/payment_manual@workspace:*, @mitama/payment_manual@workspace:plugins/payment_manual":
   version: 0.0.0-use.local
-  resolution: "@mitama/shipping@workspace:packages/modules/shipping"
+  resolution: "@mitama/payment_manual@workspace:plugins/payment_manual"
   dependencies:
     "@mitama/config": "workspace:*"
     "@mitama/contracts": "workspace:*"
     "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
     "@types/node": "npm:^22.10.0"
     eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
     typescript: "npm:^5.6.0"
     vitest: "npm:^3.0.0"
   languageName: unknown
   linkType: soft
 
-"@mitama/stores@workspace:*, @mitama/stores@workspace:packages/modules/stores":
+"@mitama/payment_mercado_pago@workspace:*, @mitama/payment_mercado_pago@workspace:plugins/payment_mercado_pago":
   version: 0.0.0-use.local
-  resolution: "@mitama/stores@workspace:packages/modules/stores"
-  dependencies:
-    "@mitama/activity-log": "workspace:*"
-    "@mitama/config": "workspace:*"
-    "@mitama/contracts": "workspace:*"
-    "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
-    "@mitama/reference-data": "workspace:*"
-    "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
-    "@types/node": "npm:^22.10.0"
-    class-validator: "npm:^0.14.1"
-    eslint: "npm:^9.15.0"
-    reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
-    typescript: "npm:^5.6.0"
-    vitest: "npm:^3.0.0"
-  languageName: unknown
-  linkType: soft
-
-"@mitama/taxes@workspace:*, @mitama/taxes@workspace:packages/modules/taxes":
-  version: 0.0.0-use.local
-  resolution: "@mitama/taxes@workspace:packages/modules/taxes"
+  resolution: "@mitama/payment_mercado_pago@workspace:plugins/payment_mercado_pago"
   dependencies:
     "@mitama/config": "workspace:*"
     "@mitama/contracts": "workspace:*"
     "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
     "@nestjs/common": "npm:^11.0.0"
-    "@nestjs/core": "npm:^11.0.0"
-    "@nestjs/swagger": "npm:^11.0.0"
     "@types/node": "npm:^22.10.0"
     eslint: "npm:^9.15.0"
     reflect-metadata: "npm:^0.2.2"
-    rxjs: "npm:^7.8.1"
     typescript: "npm:^5.6.0"
     vitest: "npm:^3.0.0"
   languageName: unknown

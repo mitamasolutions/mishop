@@ -1,4 +1,4 @@
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../activity-log';
 import { ProductCategory } from './product-category.entity';
 import type { SlugRedirect } from './brand.repository';
 

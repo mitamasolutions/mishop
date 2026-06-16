@@ -22,11 +22,10 @@ export class InvalidPaymentTransitionError extends Error {
   }
 }
 
-export class InvalidWebhookSignatureError extends Error {
-  constructor() {
-    super('Firma de webhook inválida');
-  }
-}
+export {
+  InvalidWebhookSignatureError,
+  TransientPaymentProviderError,
+} from '@mitama/contracts';
 
 export class DuplicateWebhookEventError extends Error {
   constructor(eventId: string) {
@@ -43,12 +42,6 @@ export class RefundAmountExceededError extends Error {
 export class PaymentNotRefundableError extends Error {
   constructor(status: string) {
     super(`El pago en estado ${status} no puede reembolsarse`);
-  }
-}
-
-export class TransientPaymentProviderError extends Error {
-  constructor(message = 'Error transitorio del provider de pago') {
-    super(message);
   }
 }
 

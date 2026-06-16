@@ -1,4 +1,4 @@
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../activity-log';
 import { InvitationToken } from './invitation-token.entity';
 import { PasswordCredential } from './password-credential.entity';
 import { User } from './user.entity';

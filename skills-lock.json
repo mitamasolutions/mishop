@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "engineering-code-review": {
+      "source": "agentara/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/engineering-code-review/SKILL.md",
+      "computedHash": "f3d9345972690eefa8ee2bea518506f8115b9d433779ee3477d58c3ac2d0a9dc"
+    }
+  }
+}

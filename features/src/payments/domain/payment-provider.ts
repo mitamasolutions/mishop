@@ -1,100 +1,11 @@
-import type { Result } from '@mitama/core';
-import type { InvalidWebhookSignatureError, TransientPaymentProviderError } from './errors';
-import type { PaymentStatus } from './payment.entity';
-
-export interface PaymentProviderConfig {
-  /** Secretos descifrados del método (accessToken, publicKey, etc.). */
-  credentials?: Record<string, unknown>;
-  webhookSecret?: string | null;
-  captureMode?: 'manual' | 'automatic';
-}
-
-export interface PaymentProviderRequest {
-  paymentId: string;
-  orderId: string;
-  amount: number;
-  currency: string;
-  config: PaymentProviderConfig;
-}
-
-export interface PaymentProviderResult {
-  providerReference: string;
-  status: PaymentStatus;
-  occurredAt: Date;
-}
-
-export interface PaymentWebhookRequest {
-  providerCode: string;
-  headers: Record<string, string | string[] | undefined>;
-  rawBody: string;
-  config?: PaymentProviderConfig;
-}
-
-export interface PaymentWebhookResult {
-  eventId: string;
-  paymentId: string;
-  status: PaymentStatus;
-  providerReference?: string | null;
-  refundReference?: string | null;
-  amount?: number | null;
-  occurredAt: Date;
-}
+import type { PaymentProvider } from '@mitama/contracts';
 
 /**
- * Descriptor de configuración de un plugin de pago (r14 · sprint1_cierre).
- * Lo consume la UI del admin para renderizar el formulario de configuración
- * y el use case `ResolveAvailablePaymentMethods` para decidir si un método
- * está `configured` o `misconfigured`.
+ * Registry de providers de pago. Vive en el dominio de `payments` (no en
+ * contracts) porque es estado mutable de composición, no un contrato.
+ * Los plugins implementan `PaymentProvider` (re-exportado desde
+ * `@mitama/contracts`) y se registran aquí desde el módulo Nest.
  */
-export interface PaymentProviderConfigFieldDescriptor {
-  key: string;
-  label: string;
-  /** `secret` se enmascara en UI y nunca se devuelve descifrado al cliente. */
-  type: 'string' | 'secret' | 'boolean';
-  required: boolean;
-  description?: string;
-}
-
-export interface PaymentProviderConfigDescriptor {
-  fields: PaymentProviderConfigFieldDescriptor[];
-}
-
-export type PaymentProviderConfigStatus =
-  | { state: 'configured' }
-  | { state: 'misconfigured'; missing: string[]; reason: string };
-
-/**
- * Configuración descifrada de un método de tienda (después de aplicar
- * `CredentialCipher` al `encryptedCredentials`).
- */
-export interface DecryptedPaymentMethodConfig {
-  webhookSecret: string | null;
-  captureMode: 'manual' | 'automatic';
-  credentials: Record<string, unknown>;
-}
-
-export interface PaymentProvider {
-  readonly code: string;
-  readonly displayName: string;
-  /**
-   * Descriptor de los campos de configuración que el plugin acepta. Lo usa
-   * el admin para renderizar el formulario y el resolver para validar.
-   */
-  readonly configDescriptor: PaymentProviderConfigDescriptor;
-  /**
-   * Valida la configuración descifrada del método. Devuelve `configured`
-   * si está OK o `misconfigured` con la razón. Un método mal configurado
-   * NO aparece en el selector de checkout, pero sí dispara una alerta en
-   * el admin.
-   */
-  validateConfig(config: DecryptedPaymentMethodConfig): PaymentProviderConfigStatus;
-  authorize(input: PaymentProviderRequest): Promise<Result<PaymentProviderResult, Error | TransientPaymentProviderError>>;
-  capture(input: PaymentProviderRequest): Promise<Result<PaymentProviderResult, Error | TransientPaymentProviderError>>;
-  refund(input: PaymentProviderRequest & { refundId: string }): Promise<Result<PaymentProviderResult, Error | TransientPaymentProviderError>>;
-  void(input: PaymentProviderRequest): Promise<Result<PaymentProviderResult, Error | TransientPaymentProviderError>>;
-  handleWebhook(input: PaymentWebhookRequest): Promise<Result<PaymentWebhookResult, InvalidWebhookSignatureError | TransientPaymentProviderError | Error>>;
-}
-
 export class PaymentProviderRegistry {
   private readonly providers = new Map<string, PaymentProvider>();
 
@@ -115,3 +26,18 @@ export class PaymentProviderRegistry {
     return [...this.providers.values()];
   }
 }
+
+// Re-export del contrato para compatibilidad con consumidores internos
+// (los use cases siguen importando desde 'payment-provider' relativo).
+export type {
+  PaymentProvider,
+  PaymentProviderConfig,
+  PaymentProviderRequest,
+  PaymentProviderResult,
+  PaymentWebhookRequest,
+  PaymentWebhookResult,
+  PaymentProviderConfigDescriptor,
+  PaymentProviderConfigFieldDescriptor,
+  PaymentProviderConfigStatus,
+  DecryptedPaymentMethodConfig,
+} from '@mitama/contracts';

@@ -4,7 +4,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { createModuleProviders } from '@mitama/contracts';
-import { ReferenceDataModule, REFERENCE_DATA_TOKENS } from '@mitama/reference-data';
+import { ReferenceDataModule, REFERENCE_DATA_TOKENS } from '../reference-data';
 import { STORES_TOKENS } from './stores.tokens';
 import { CreateStoreUseCase } from './application/create-store/create-store.use-case';
 import { UpdateStoreUseCase } from './application/update-store/update-store.use-case';

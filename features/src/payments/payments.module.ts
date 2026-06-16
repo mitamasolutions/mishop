@@ -9,7 +9,7 @@
  */
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { createModuleProviders, EVENT_BUS, ORDER_FOR_PAYMENTS_PORT } from '@mitama/contracts';
-import { OrdersModule } from '@mitama/orders';
+import { OrdersModule } from '../orders';
 import { PAYMENTS_TOKENS } from './payments.tokens';
 import {
   AuthorizePaymentUseCase,
@@ -23,11 +23,11 @@ import {
   ResolveAvailablePaymentMethodsUseCase,
   VoidPaymentUseCase,
 } from './application/payment-use-cases';
-import { PaymentProviderRegistry, type PaymentProvider } from './domain/payment-provider';
+import { PaymentProviderRegistry } from './domain/payment-provider';
+import type { PaymentProvider } from '@mitama/contracts';
 import { CredentialCipher, resolveCredentialCipher } from './infra/credential-cipher';
-import { HttpMercadoPagoClient } from './infra/http-mercado-pago.client';
-import { CashPaymentProvider, ManualPaymentProvider } from './infra/manual-payment.provider';
-import { MercadoPagoPaymentProvider, type MercadoPagoClient } from './infra/mercado-pago-payment.provider';
+import { HttpMercadoPagoClient, MercadoPagoPaymentProvider, type MercadoPagoClient } from '@mitama/payment_mercado_pago';
+import { CashPaymentProvider, ManualPaymentProvider } from '@mitama/payment_manual';
 import { PrismaPaymentRepository } from './infra/prisma-payment.repository';
 import { PrismaPaymentWebhookEventRepository } from './infra/prisma-payment-webhook-event.repository';
 import { PrismaStorePaymentMethodRepository } from './infra/prisma-store-payment-method.repository';

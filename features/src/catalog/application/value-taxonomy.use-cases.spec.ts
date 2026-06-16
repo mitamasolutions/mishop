@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../activity-log';
 import { ValidationError } from '@mitama/core';
 import { ValueTaxonomy } from '../domain/value-taxonomy.entity';
 import { ValueAlreadyInUseError, ValueTaxonomyNotFoundError } from '../domain/errors';

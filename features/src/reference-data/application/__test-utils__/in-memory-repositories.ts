@@ -2,7 +2,7 @@
  * Adapters in-memory para specs de application/ del módulo reference-data.
  * Ninguno toca Prisma ni NestJS.
  */
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../../activity-log';
 import { Currency } from '../../domain/currency.entity';
 import type { CurrencyRepository } from '../../domain/currency.repository';
 import { Region } from '../../domain/region.entity';

@@ -1,7 +1,8 @@
 import { Entity } from '@mitama/core';
+import type { PaymentStatus } from '@mitama/contracts';
 import { InvalidPaymentTransitionError, PaymentNotRefundableError, RefundAmountExceededError } from './errors';
 
-export type PaymentStatus = 'pending' | 'authorized' | 'paid' | 'partially_refunded' | 'refunded' | 'failed' | 'voided' | 'cancelled';
+export type { PaymentStatus };
 
 export interface PaymentTransitionProps {
   id: string;

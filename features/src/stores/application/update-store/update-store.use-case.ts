@@ -1,6 +1,6 @@
 import { err, ok, Result, UseCase, ValidationError } from '@mitama/core';
-import type { RecordActivityInput } from '@mitama/activity-log';
-import type { CurrencyRepository, RegionRepository } from '@mitama/reference-data';
+import type { RecordActivityInput } from '../../../activity-log';
+import type { CurrencyRepository, RegionRepository } from '../../../reference-data';
 import { InvalidCurrencyError, InvalidRegionError, StoreNotFoundError } from '../../domain/errors';
 import type { StoreRepository } from '../../domain/store.repository';
 import { toStoreOutput, type StoreOutput } from '../store.dto';

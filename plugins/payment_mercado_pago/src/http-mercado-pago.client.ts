@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import type { PaymentStatus } from '@mitama/contracts';
 import type { MercadoPagoClient } from './mercado-pago-payment.provider';
-import type { PaymentStatus } from '../domain/payment.entity';
 
 const MP_API = 'https://api.mercadopago.com';
 

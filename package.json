@@ -5,8 +5,9 @@
   "license": "MIT",
   "workspaces": [
     "apps/*",
-    "packages/*",
-    "packages/modules/*"
+    "lib/*",
+    "features",
+    "plugins/*"
   ],
   "scripts": {
     "build": "turbo run build",
@@ -18,7 +19,8 @@
     "db:deploy": "yarn workspace @mitama/db db:deploy",
     "db:reset": "yarn workspace @mitama/db db:reset",
     "db:seed": "yarn workspace @mitama/db db:seed",
-    "new:module": "node tools/new-module.mjs"
+    "new:feature": "node tools/new-feature.mjs",
+    "new:module": "node tools/new-feature.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.0"

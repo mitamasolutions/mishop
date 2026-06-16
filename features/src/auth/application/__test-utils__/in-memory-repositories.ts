@@ -2,7 +2,7 @@
  * Adapters in-memory compartidos por los specs de application/. Patrón de
  * referencia: ninguno toca Prisma ni NestJS.
  */
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../../activity-log';
 import type { AccessTokenIssuer, AccessTokenPayload } from '../../domain/access-token-issuer';
 import { Email } from '../../domain/email.vo';
 import type { InvitationToken } from '../../domain/invitation-token.entity';

@@ -1,6 +1,6 @@
 import { Region } from '../domain/region.entity';
 import type { RegionRepository } from '../domain/region.repository';
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../activity-log';
 
 export class InMemoryRegionRepository implements RegionRepository {
   readonly regions: Region[];

@@ -16,7 +16,7 @@ import { InvalidWebhookSignatureError, TransientPaymentProviderError } from '../
 import { InMemoryPaymentRepository } from '../infra/in-memory-payment.repository';
 import { InMemoryPaymentWebhookEventRepository } from '../infra/in-memory-payment-webhook-event.repository';
 import { InMemoryStorePaymentMethodRepository } from '../infra/in-memory-store-payment-method.repository';
-import { ManualPaymentProvider } from '../infra/manual-payment.provider';
+import { ManualPaymentProvider } from '@mitama/payment_manual';
 
 export const PER_TENANT_SECRET = 'per-tenant-secret';
 

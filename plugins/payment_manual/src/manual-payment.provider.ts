@@ -8,7 +8,7 @@ import type {
   PaymentProviderResult,
   PaymentWebhookRequest,
   PaymentWebhookResult,
-} from '../domain/payment-provider';
+} from '@mitama/contracts';
 
 /**
  * Plugin de **pago manual / transferencia** (r14 · sprint1_cierre).

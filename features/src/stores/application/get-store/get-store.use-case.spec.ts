@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../../activity-log';
 import { GetStoreUseCase } from './get-store.use-case';
 import { Store } from '../../domain/store.entity';
 import { StoreNotFoundError } from '../../domain/errors';

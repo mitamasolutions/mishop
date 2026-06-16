@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { RecordActivityInput } from '@mitama/activity-log';
+import type { RecordActivityInput } from '../../../activity-log';
 import { ValidationError } from '@mitama/core';
 import { CreateCategoryUseCase } from './create-category.use-case';
 import { UpdateCategoryUseCase } from '../update-category/update-category.use-case';

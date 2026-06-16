@@ -6,4 +6,5 @@ export * from './settings/settings-updated.event';
 export * from './orders/events';
 export * from './orders/order-for-payments.port';
 export * from './checkout/totals.ports';
+export * from './payments';
 export * from './nest-providers';
