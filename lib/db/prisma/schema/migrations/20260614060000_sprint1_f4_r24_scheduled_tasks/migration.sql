@@ -1,4 +1,6 @@
 -- Sprint 1 · F4 · r24 — Tareas programadas in-app (estilo nopCommerce)
+-- Spec: docs/specs/sprint1_r24_outbox_worker_observability.md
+-- Sprint 1 (MVP API + Admin) — cerrado. Ver docs/ROADMAP.md.
 --
 -- Modelo `scheduled_tasks` con nombre único, tipo (handler), intervalo en
 -- segundos, marcas de tiempo de la última ejecución y último error. La

@@ -1,3 +1,12 @@
+-- Sprint 1 · F0 · r20 — Baseline limpio del esquema multi-tenant
+-- Spec: docs/specs/sprint1_r20_db_baseline_constraints.md
+-- Sprint 1 (MVP API + Admin) — cerrado. Ver docs/ROADMAP.md.
+--
+-- Esta migración es el origen único del esquema. Reemplaza el uso de
+-- `prisma db push` del prototipo: declara todas las tablas, enums y FKs
+-- críticas de las 17 features registradas en apps/api/src/app.module.ts.
+-- Las migraciones posteriores son aditivas y todas pertenecen al Sprint 1.
+
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 

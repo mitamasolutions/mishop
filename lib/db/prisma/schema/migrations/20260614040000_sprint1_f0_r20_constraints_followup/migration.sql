@@ -1,4 +1,6 @@
--- Sprint 1 · F0 · r20 — Constraints de integridad
+-- Sprint 1 · F0 · r20 — Cierre de constraints diferidos del baseline
+-- Spec: docs/specs/sprint1_r20_db_baseline_constraints.md
+-- Sprint 1 (MVP API + Admin) — cerrado. Ver docs/ROADMAP.md.
 --
 -- 1. Unicidad parcial de handle/SKU sobre filas activas (deleted_at IS NULL):
 --    permite reutilizar el handle o SKU después de un soft-delete.

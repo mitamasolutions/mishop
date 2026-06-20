@@ -1,3 +1,7 @@
+-- Sprint 1 · F0 · r20 — CHECK de estados cerrados y unicidad parcial
+-- Spec: docs/specs/sprint1_r20_db_baseline_constraints.md
+-- Sprint 1 (MVP API + Admin) — cerrado. Ver docs/ROADMAP.md.
+--
 -- CHECK constraints para estados con valores cerrados y unicidad parcial
 -- para casos donde un NULL representa un valor concreto ("global").
 

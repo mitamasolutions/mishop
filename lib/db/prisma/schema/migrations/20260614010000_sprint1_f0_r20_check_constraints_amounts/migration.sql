@@ -1,5 +1,9 @@
--- CHECK constraints de integridad para cantidades, dineros y rangos.
--- Prisma no los expresa en el schema; viven aquí como migración manual.
+-- Sprint 1 · F0 · r20 — CHECK constraints de cantidades, dineros y rangos
+-- Spec: docs/specs/sprint1_r20_db_baseline_constraints.md
+-- Sprint 1 (MVP API + Admin) — cerrado. Ver docs/ROADMAP.md.
+--
+-- Prisma no expresa CHECK constraints en el schema; viven aquí como
+-- migración manual para endurecer la integridad del baseline.
 
 -- Órdenes y líneas
 ALTER TABLE "orders"

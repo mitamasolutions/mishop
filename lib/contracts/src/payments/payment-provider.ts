@@ -15,6 +15,12 @@ export interface PaymentProviderRequest {
   amount: number;
   currency: string;
   config: PaymentProviderConfig;
+  /**
+   * Referencia del provider ya persistida en el Payment local (p. ej. id de
+   * pago de MP). La usan capture/refund/void cuando el id externo difiere del
+   * id local.
+   */
+  providerReference?: string | null;
 }
 
 export interface PaymentProviderResult {

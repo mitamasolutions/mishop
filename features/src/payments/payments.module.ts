@@ -7,7 +7,7 @@
  * - Expone use cases que validan `configured ∩ enabled` y derivan
  *   storeId desde el path del webhook (NO desde el body).
  */
-import { Module, type OnModuleInit } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { createModuleProviders, EVENT_BUS, ORDER_FOR_PAYMENTS_PORT } from '@mitama/contracts';
 import { OrdersModule } from '../orders';
 import { PAYMENTS_TOKENS } from './payments.tokens';
@@ -92,6 +92,4 @@ import { PaymentsController } from './http/payments.controller';
   ]),
   exports: [PAYMENTS_TOKENS.providerRegistry, ResolveAvailablePaymentMethodsUseCase],
 })
-export class PaymentsModule implements OnModuleInit {
-  onModuleInit(): void {}
-}
+export class PaymentsModule {}

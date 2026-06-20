@@ -12,7 +12,7 @@ métricas).
 
 ## Entregado (primer corte)
 
-- Schema `outbox_events` (migración `20260614030000_outbox_events`).
+- Schema `outbox_events` (migración `20260614030000_sprint1_f2_r13_outbox_events`).
 - Puerto `OutboxDispatcher` + `OutboxEventInput` en
   `@mitama/orders/domain/outbox.ts`.
 - `OrderRepository.save()` acepta `{ idempotency, outbox }` y persiste los eventos

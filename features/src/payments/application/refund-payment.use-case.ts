@@ -30,7 +30,15 @@ export class RefundPaymentUseCase implements UseCase<{ paymentId: string; amount
     } catch (error) {
       return err(error as RefundAmountExceededError | PaymentNotRefundableError);
     }
-    const result = await provider.refund({ paymentId: payment.id, orderId: payment.orderId, amount: input.amount, currency: payment.currency, config: toDecryptedConfig(method), refundId: refund.id });
+    const result = await provider.refund({
+      paymentId: payment.id,
+      orderId: payment.orderId,
+      amount: input.amount,
+      currency: payment.currency,
+      config: toDecryptedConfig(method),
+      providerReference: payment.providerReference,
+      refundId: refund.id,
+    });
     if (result.isErr()) return err(result.error);
     payment.setRefundProviderReference(refund.id, result.value.providerReference);
     await this.paymentWriter.save(payment);

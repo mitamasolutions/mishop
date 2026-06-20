@@ -24,7 +24,14 @@ export class CapturePaymentUseCase implements UseCase<{ paymentId: string }, Res
     if (!method) return err(new PaymentMethodUnavailableError(payment.providerCode));
     const provider = this.registry.get(payment.providerCode);
     if (!provider) return err(new PaymentProviderNotFoundError(payment.providerCode));
-    const result = await provider.capture({ paymentId: payment.id, orderId: payment.orderId, amount: payment.amount, currency: payment.currency, config: toDecryptedConfig(method) });
+    const result = await provider.capture({
+      paymentId: payment.id,
+      orderId: payment.orderId,
+      amount: payment.amount,
+      currency: payment.currency,
+      config: toDecryptedConfig(method),
+      providerReference: payment.providerReference,
+    });
     if (result.isErr()) return err(result.error);
     try {
       payment.setProviderReference(result.value.providerReference);

@@ -52,9 +52,9 @@ type MercadoPagoCredentials = {
  * - Captura inmediata (mode `sale`): no hay paso de captura separado; el
  *   pago pasa a `paid` al confirmarse por webhook. `capture` es no-op.
  * - `refund`: usa el cliente para reembolsar parcial o totalmente.
- * - `handleWebhook`: **verifica firma HMAC-SHA256 antes de parsear** el
- *   cuerpo (defensa anti DoS y anti-mutación). El secreto vive en
- *   `webhookSecret` del método y se rota desde el admin.
+ * - `handleWebhook`: verifica firma HMAC-SHA256 con el manifiesto real de MP
+ *   (`id:<data.id>;request-id:<reqId>;ts:<ts>;`) y consulta el estado actual
+ *   del pago en MP antes de transicionar el payment local.
  */
 export class MercadoPagoPaymentProvider implements PaymentProvider {
   readonly code: string = 'mercado-pago';
@@ -109,11 +109,10 @@ export class MercadoPagoPaymentProvider implements PaymentProvider {
   async refund(input: PaymentProviderRequest & { refundId: string }): Promise<Result<PaymentProviderResult, Error | TransientPaymentProviderError>> {
     const credentials = decryptedCredentials(input.config);
     if (!credentials?.accessToken) return err(new Error('Mercado Pago: falta accessToken'));
-    // El providerPaymentId real lo persiste el payment local en su
-    // `providerReference` (lo setea `setProviderReference` al recibir el
-    // primer webhook); el caller pasa ese valor en `paymentId` cuando es
-    // necesario. Para el MVP usamos `paymentId` como referencia.
-    const providerPaymentId = input.paymentId;
+    if (!input.providerReference) {
+      return err(new Error('Mercado Pago: refund requiere providerReference (id de pago de MP)'));
+    }
+    const providerPaymentId = input.providerReference;
     try {
       const result = await this.client.refundPayment({
         accessToken: credentials.accessToken,
@@ -135,12 +134,6 @@ export class MercadoPagoPaymentProvider implements PaymentProvider {
   async handleWebhook(input: PaymentWebhookRequest): Promise<Result<PaymentWebhookResult, InvalidWebhookSignatureError | TransientPaymentProviderError | Error>> {
     const secret = input.config?.webhookSecret;
     if (!secret) return err(new InvalidWebhookSignatureError());
-    // VERIFICACIÓN ANTES DE PARSEAR el cuerpo (defensa anti-DoS y
-    // anti-mutación). Esquema MP-compatible: `x-signature: ts=...,v1=...`
-    // + `x-request-id` sobre `id:<dataId>;request-id:<requestId>;ts:<ts>;`.
-    if (!verifyMercadoPagoSignature(input.headers, input.rawBody, secret)) {
-      return err(new InvalidWebhookSignatureError());
-    }
     let body: { type?: string; data?: { id?: string }; action?: string; live_mode?: boolean };
     try {
       body = JSON.parse(input.rawBody);
@@ -149,6 +142,22 @@ export class MercadoPagoPaymentProvider implements PaymentProvider {
     }
     const providerPaymentId = body.data?.id;
     if (!providerPaymentId) return err(new Error('Mercado Pago webhook: falta data.id'));
+    if (!verifyMercadoPagoSignature(input.headers, providerPaymentId, secret)) {
+      return err(new InvalidWebhookSignatureError());
+    }
+
+    const credentials = decryptedCredentials(input.config);
+    if (!credentials?.accessToken) return err(new Error('Mercado Pago: falta accessToken'));
+
+    let paymentStatus: { status: PaymentStatus; amount: number | null };
+    try {
+      paymentStatus = await this.client.getPaymentStatus({
+        accessToken: credentials.accessToken,
+        providerPaymentId,
+      });
+    } catch (error) {
+      return err(toTransientOrError(error));
+    }
 
     // El payment local debe poder mapearse: en este MVP usamos el id de
     // MP como `providerReference`. El use case del módulo resuelve el
@@ -156,8 +165,9 @@ export class MercadoPagoPaymentProvider implements PaymentProvider {
     return ok({
       eventId: `${providerPaymentId}:${body.action ?? body.type ?? 'update'}`,
       paymentId: providerPaymentId, // se resuelve a Payment local vía providerReference
-      status: 'paid', // Checkout Pro sale: el webhook que llega ya implica paid
+      status: paymentStatus.status,
       providerReference: providerPaymentId,
+      amount: paymentStatus.amount,
       occurredAt: new Date(),
     });
   }
@@ -183,7 +193,7 @@ function toTransientOrError(error: unknown): Error | TransientPaymentProviderErr
 
 function verifyMercadoPagoSignature(
   headers: Record<string, string | string[] | undefined>,
-  _rawBody: string,
+  dataId: string,
   secret: string,
 ): boolean {
   const sigHeader = pickHeader(headers, 'x-signature');
@@ -196,11 +206,7 @@ function verifyMercadoPagoSignature(
   const v1 = parts.find((p) => p.startsWith('v1='))?.slice(3);
   if (!ts || !v1) return false;
 
-  // MP firma `id:<dataId>;request-id:<reqId>;ts:<ts>;`. En ausencia de
-  // dataId aquí (depende del body), validamos contra `request-id;ts`,
-  // que es el mínimo defendible para el MVP. Cuando subamos al SDK
-  // oficial el cómputo será exacto.
-  const signedString = `request-id:${requestId};ts:${ts};`;
+  const signedString = `id:${dataId};request-id:${requestId};ts:${ts};`;
   const expected = createHmac('sha256', secret).update(signedString).digest('hex');
   const aBuf = Buffer.from(v1, 'utf8');
   const bBuf = Buffer.from(expected, 'utf8');
