@@ -93,7 +93,7 @@ describe('Multi-tenant anti-fuga (e2e)', () => {
     tokenB = (await request(server).post('/auth/login').send({ email: `e2e-user-b-${suffix}@mitama.local`, password: PASSWORD })).body.accessToken;
     tokenReadOnly = (await request(server).post('/auth/login').send({ email: `e2e-user-readonly-${suffix}@mitama.local`, password: PASSWORD })).body.accessToken;
     tokenSuperAdmin = (
-      await request(server).post('/auth/login').send({ email: 'admin@mitama.local', password: process.env.SEED_ADMIN_PASSWORD })
+      await request(server).post('/auth/login').send({ email: 'admin@admin.com', password: process.env.SEED_ADMIN_PASSWORD })
     ).body.accessToken;
   });
 

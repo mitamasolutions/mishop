@@ -4,7 +4,7 @@
  * Carga los datos mínimos para arrancar el MVP del Sprint 1 (API + Admin):
  *   1. Datos de referencia (currencies, regions, countries, payment providers, tax rules).
  *   2. Roles predefinidos (Super Admin, Admin de tienda, Operador).
- *   3. Usuario Super Admin (`admin@mitama.local`).
+ *   3. Usuario Super Admin (`admin@admin.com`).
  *   4. Tienda demo en MXN con métodos de pago, envío e impuestos listos.
  *
  * Idempotente por construcción: cada módulo usa `upsert` por clave natural,

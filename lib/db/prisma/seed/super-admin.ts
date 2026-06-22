@@ -1,14 +1,14 @@
 /**
  * Sprint 1 · Seed · Usuario Super Admin
  *
- * Cuenta semilla `admin@mitama.local` con contraseña tomada de
+ * Cuenta semilla `admin@admin.com` con contraseña tomada de
  * `SEED_ADMIN_PASSWORD` y asignación de rol Super Admin global
  * (`storeId IS NULL` en UserStoreRole).
  */
 import type { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
 
-const SUPER_ADMIN_EMAIL = 'admin@mitama.local';
+const SUPER_ADMIN_EMAIL = 'admin@admin.com';
 const SUPER_ADMIN_NAME = 'Super Admin';
 
 export async function seedSuperAdminUser(prisma: PrismaClient, superAdminRoleId: string): Promise<void> {

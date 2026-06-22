@@ -3,9 +3,42 @@
 > Plataforma open source de **ecommerce + punto de venta (POS)** enfocada en LATAM.
 > Español-first · API-first · Multi-tienda · Multi-canal
 
-Inspirada en la profundidad funcional de nopCommerce, construida con un stack moderno: **NestJS · Prisma · PostgreSQL · Next.js**.
+Inspirada en la profundidad funcional de nopCommerce, construida con un stack
+moderno: **NestJS · Prisma · PostgreSQL · Next.js**. Software libre (licencia
+MIT): úsalo, modifícalo y monta tu negocio con él.
 
-**🇺🇸 English:** Open source ecommerce + point-of-sale platform focused on LATAM. Spanish-first docs and admin, API-first architecture, multi-store and multi-channel by design. Full English docs coming soon — contributions welcome.
+---
+
+## ¿Qué puedes hacer hoy con mitama-commerce?
+
+El **Sprint 1 está cerrado**: ya hay un MVP de ecommerce vendible operando
+sobre API + panel de administración. Lo que ya funciona:
+
+- 🛒 **Carrito y checkout** server-side (totales recalculados en el servidor,
+  nunca se confía en lo que mande el cliente).
+- 💳 **Pagos** con dos pasarelas listas para producción:
+  - **Manual** (transferencia, depósito, efectivo) con confirmación desde el admin.
+  - **Mercado Pago Checkout Pro** real, con webhooks firmados y reintentos.
+- 📦 **Inventario por ubicación** con reservas tipo "claim-then-apply" (no se
+  vende lo que no hay; se libera al cancelar o expirar la orden).
+- 🏪 **Multi-tienda** desde el día 1 (varias tiendas en una misma instalación;
+  por defecto opera en modo single-store).
+- 🚚 **Envíos** con métodos por zona, tarifas server-side y tracking manual.
+- 🧾 **Impuestos** con reglas por región y categoría (base lista para CFDI MX).
+- 👥 **Clientes y direcciones** + checkout como invitado por email.
+- 🧑‍💼 **Panel admin** completo: órdenes, clientes, pagos, envíos, productos
+  con variantes, inventario, métodos de pago por tienda, tareas programadas,
+  dashboard con KPIs reales.
+- 🔐 **Auth robusta**: JWT con refresh en cookie HttpOnly, RBAC fail-closed,
+  invitaciones, reset de contraseña, lockout, log de actividad.
+- ⏰ **Tareas programadas in-app** (estilo nopCommerce): outbox, liberación de
+  reservas, drenado de emails. Sin cron externo.
+- 🔌 **Plugins de pago** (`payment_manual`, `payment_mercado_pago`) como
+  paquetes independientes — agregar Stripe o PayPal es un módulo más, no un
+  parche al core.
+
+> Estado real y detallado en [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+> Próximo paso: **Sprint 2** (`apps/web` · tienda pública).
 
 ---
 
@@ -13,124 +46,306 @@ Inspirada en la profundidad funcional de nopCommerce, construida con un stack mo
 
 Ya existen Medusa, Vendure y Saleor. Lo que no existe bien resuelto para LATAM:
 
-- 🇲🇽 **Facturación CFDI** (México) como ciudadano de primera clase
-- 💳 **Mercado Pago y OXXO** nativos, no como plugin de tercera
-- 🗣️ **Español-first** en documentación, admin y comunidad
-- 🏪 **POS integrado y offline-first** — la venta no para cuando se cae el internet
+- 🇲🇽 **Facturación CFDI** (México) como ciudadano de primera clase.
+- 💳 **Mercado Pago y OXXO** nativos, no como plugin de tercera.
+- 🗣️ **Español-first** en documentación, admin y comunidad.
+- 🏪 **POS integrado y offline-first** — la venta no para cuando se cae el
+  internet (planeado para el Sprint 3).
+
+---
 
 ## Stack
 
-| Capa     | Tecnología                                  |
-| -------- | ------------------------------------------- |
-| Monorepo | yarn workspaces + Turborepo                 |
-| API      | NestJS · REST + OpenAPI/Swagger             |
-| ORM / DB | Prisma · PostgreSQL                         |
-| Admin    | Next.js (App Router) · Tailwind · shadcn/ui |
-| Lenguaje | TypeScript estricto                         |
+| Capa             | Tecnología                                          |
+| ---------------- | --------------------------------------------------- |
+| Monorepo         | yarn workspaces + Turborepo                         |
+| API              | NestJS · REST + OpenAPI/Swagger                     |
+| ORM / DB         | Prisma · PostgreSQL 16                              |
+| Admin            | Next.js (App Router) · Tailwind v4 · shadcn/ui      |
+| Auth             | JWT + argon2 + cookies HttpOnly                     |
+| Validación       | class-validator (DTOs estrictos en el borde HTTP)   |
+| Tareas en background | Scheduler in-app (@nestjs/schedule + lock en DB) |
+| Lenguaje         | TypeScript estricto                                 |
 
-## Arquitectura
+---
 
-Modular monolith **hexagonal**: cada dominio de negocio es un paquete independiente del workspace con sus capas `domain → application → infra → http`. Los módulos se comunican solo por eventos (`packages/core/events`) o contratos públicos (`packages/contracts`) — nunca por imports internos.
+## Empezar en 5 minutos
 
-```
-mitama-commerce/
-├── apps/
-│   ├── api/          # Composición: bootstrap NestJS, ensambla módulos, Swagger
-│   ├── admin/        # Panel de administración (Next.js + shadcn/ui)
-│   └── pos/          # (futuro) Punto de venta offline-first
-├── packages/
-│   ├── core/         # Shared kernel: Result<T,E>, eventos, primitivas DDD
-│   ├── modules/      # Un paquete por dominio: auth, stores, catalog, orders...
-│   ├── contracts/    # Eventos e interfaces compartidas entre módulos
-│   ├── db/           # Prisma (schema multi-archivo, un .prisma por módulo)
-│   └── config/       # tsconfig y eslint base
-├── docker-compose.yml
-└── turbo.json
-```
+Esta guía es para correr el proyecto en tu máquina por primera vez.
 
-**Reglas inviolables**
+### Requisitos previos
 
-1. Dependencias siempre hacia adentro: `http → application → domain`.
-2. Prisma solo vive en `infra/`; los casos de uso dependen de puertos (interfaces).
-3. Ningún módulo importa internals de otro (ESLint lo hace fallar en CI).
-4. Comunicación entre módulos: eventos, no imports.
-5. `apps/api` no contiene lógica de negocio.
-6. Preparado para multi-canal: órdenes con `channel`, inventario por ubicación, mutaciones con `Idempotency-Key`.
+- **Node.js 20+** ([instalar](https://nodejs.org/)).
+- **Yarn 4** (lo activas con un solo comando: `corepack enable`).
+- **Docker Desktop** para levantar Postgres local — alternativa: una base
+  gratuita en [Neon](https://neon.tech).
+- **Git** para clonar el repo.
 
-## Setup local
+### Paso 1 — Clona e instala
 
 ```bash
 git clone https://github.com/mitama/mitama-commerce
 cd mitama-commerce
-cp .env.example .env        # configura tu DATABASE_URL (ver abajo)
+corepack enable
 yarn install
-yarn db:migrate && yarn db:seed
-yarn dev                    # API en :3000 (/docs) + Admin en :3001
 ```
 
-## Variables de entorno
+### Paso 2 — Crea tu `.env`
 
-Toda la configuración vive en un `.env` en la raíz (nunca se commitea; `.env.example` documenta cada variable). El proyecto es agnóstico al proveedor de PostgreSQL: solo cambia el `DATABASE_URL`.
+```bash
+cp .env.example .env
+```
 
-**Opción A — Postgres local con Docker** (recomendada para contribuidores)
+Edita `.env` y asegúrate de tener estas variables (más detalle abajo):
+
+```env
+DATABASE_URL="postgresql://mitama:mitama@localhost:5432/mitama"
+JWT_SECRET="cambia-esto-por-algo-largo-y-aleatorio"
+JWT_REFRESH_SECRET="otro-secreto-distinto-y-largo"
+SEED_ADMIN_PASSWORD="ponle-una-contraseña-fuerte"
+```
+
+> Genera secretos seguros con: `openssl rand -base64 32`.
+
+### Paso 3 — Levanta PostgreSQL
+
+Opción A (recomendada, con Docker):
 
 ```bash
 docker compose up -d
 ```
 
-```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mitama?schema=public"
+Opción B: usa Neon (u otro Postgres administrado) — solo cambia el
+`DATABASE_URL` en tu `.env` por el connection string que te dé el proveedor.
+
+### Paso 4 — Crea las tablas y los datos iniciales
+
+```bash
+yarn db:migrate     # aplica el esquema a la base de datos
+yarn db:seed        # crea roles, Super Admin, tienda demo y datos de referencia
 ```
 
-**Opción B — Neon (u otro Postgres administrado)**
+### Paso 5 — Arranca el proyecto
 
-```env
-DATABASE_URL="postgresql://<user>:<password>@<endpoint>.neon.tech/mitama?sslmode=require"
+```bash
+yarn dev
 ```
 
-Con Neon no necesitas levantar Docker. Tip: usa el branching de Neon para tener una rama de base de datos por feature sin tocar la principal.
+- 🌐 **API:** http://localhost:3000 (Swagger en `/docs` si activas `API_DOCS_ENABLED=true`)
+- 🛠️ **Admin:** http://localhost:3001
 
-**Otras variables principales**
+### Primer login en el admin
 
-```env
-# apps/api
-JWT_SECRET="cámbiame"
-JWT_REFRESH_SECRET="cámbiame-también"
-API_PORT=3000
+| Campo       | Valor                                          |
+| ----------- | ---------------------------------------------- |
+| Email       | `admin@admin.com`                              |
+| Contraseña  | la que pusiste en `SEED_ADMIN_PASSWORD`        |
 
-# apps/admin
-NEXT_PUBLIC_API_URL="http://localhost:3000"
+> ⚠️ **¿Ya habías sembrado la DB antes con otro correo?** El seed crea usuarios
+> con `upsert` por email, así que no borra el anterior. Si necesitas empezar
+> limpio: `yarn db:reset && yarn db:seed`.
+
+---
+
+## Variables de entorno
+
+Toda la configuración vive en un `.env` en la raíz (no se commitea;
+`.env.example` documenta cada variable).
+
+### Obligatorias
+
+| Variable               | Para qué sirve                                                              |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `DATABASE_URL`         | Cadena de conexión a Postgres (local con Docker, Neon, RDS, etc.).          |
+| `JWT_SECRET`           | Firma los access tokens del API. Mínimo 32 caracteres en producción.        |
+| `JWT_REFRESH_SECRET`   | Firma los refresh tokens. **Debe ser distinto** a `JWT_SECRET`.             |
+| `SEED_ADMIN_PASSWORD`  | Contraseña inicial del Super Admin (`admin@admin.com`) que crea el seed.    |
+
+### Recomendadas / opcionales
+
+| Variable                    | Para qué sirve                                                          |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `API_PORT`                  | Puerto del API (default `3000`).                                        |
+| `CORS_ORIGINS`              | Lista de dominios permitidos, separados por coma. Vacío = abierto.      |
+| `API_DOCS_ENABLED`          | Activa Swagger UI en `/docs` (úsalo solo en dev o con auth externa).    |
+| `DEFAULT_STORE_ID`          | Tienda usada cuando el request no envía `X-Store-Id` (modo single-store).|
+| `NEXT_PUBLIC_API_URL`       | URL del API que consume el admin. Obligatoria en build de producción.   |
+| `SETTINGS_ENCRYPTION_KEY`   | Cifra credenciales sensibles de plugins. **Obligatoria en producción**, opcional en dev/test. |
+
+---
+
+## Estructura del proyecto
+
+```
+mitama-commerce/
+├── apps/
+│   ├── api/        # NestJS — bootstrap, prefijo /v1, Swagger, ensamblaje de módulos
+│   └── admin/      # Next.js (App Router) — panel de administración
+├── lib/
+│   ├── core/       # Shared kernel TS puro: Result<T,E>, EventBus, primitivas DDD
+│   ├── contracts/  # Contratos compartidos entre features (eventos, puertos, pagos)
+│   ├── db/         # Prisma multi-archivo, migraciones, PrismaService
+│   └── config/     # tsconfig + ESLint base (incluye reglas de fronteras)
+├── features/       # 17 features de negocio en UN paquete (@mitama/features)
+│   └── src/        # auth · stores · catalog · inventory · cart · orders · payments · ...
+├── plugins/
+│   ├── payment_manual/         # Pago manual (transferencia, depósito, efectivo)
+│   └── payment_mercado_pago/   # Mercado Pago Checkout Pro
+├── docs/           # ROADMAP, specs por requisito, guía de deploy
+├── tools/          # Generador de features (yarn new:feature <nombre>)
+├── docker-compose.yml
+└── turbo.json
 ```
 
-Puedes combinar ambas opciones: Docker para desarrollo del día a día y Neon para staging/producción — es literalmente cambiar una línea del `.env`.
+---
 
-## Roadmap
+## Arquitectura en pocas palabras
 
-### Hito 1 — Ecommerce base funcional
+mitama-commerce es un **monolito modular hexagonal**: un solo deploy, pero cada
+feature de negocio (auth, catalog, orders, payments…) vive aislada con sus
+propias capas:
 
-- [ ] **Fase 1 · Fundación** — Auth (JWT + roles/ACL), multi-tienda, settings global/por tienda, log de actividad, layout base del admin.
-- [ ] **Fase 2 · Catálogo** — Productos con variantes/atributos, categorías, fabricantes, imágenes, precios. Inventario por ubicación desde el inicio. Búsqueda y filtros en admin.
-- [ ] **Fase 3 · Ventas** — Clientes y direcciones, carrito, checkout, órdenes con canal y estados, idempotencia en creación de órdenes, gestión de órdenes en admin.
-- [ ] **Fase 4 · Pagos y envíos** — Arquitectura de providers tipo plugin. Adapters iniciales: Mercado Pago, Stripe, pago manual. Métodos y tarifas de envío. Impuestos (IVA México).
-- [ ] **Fase 5 · Marketing básico** — Descuentos y cupones, reviews de producto, emails transaccionales.
+```
+http → application → domain
+                       ↑
+                    infra  (implementa los puertos del dominio)
+```
 
-> ✅ Al cerrar la Fase 5 hay un ecommerce operable de punta a punta vía API + admin.
+**Las 6 reglas inviolables** (las vigila ESLint en CI, no se negocian):
 
-### Hito 2 — Extensión POS
+1. **Dependencias hacia adentro**: `http → application → domain`. El dominio
+   no sabe que existe Prisma, Nest ni HTTP.
+2. **Prisma SOLO en `infra/`** — los casos de uso dependen de puertos
+   (interfaces), nunca del cliente Prisma.
+3. **Una feature nunca importa internals de otra** — solo el barrel hermano
+   (`../<feature>`) o `@mitama/contracts`.
+4. **Comunicación entre features = eventos** del `EventBus` o puertos de
+   `@mitama/contracts`. Cero imports directos.
+5. **`apps/api` no contiene lógica** — solo registra módulos y configura cosas
+   globales (validación de env, CORS, Helmet, Swagger).
+6. **Multi-canal e idempotencia desde el día 1** — órdenes con `channel`
+   (`web` | `pos`), inventario por ubicación, escrituras críticas aceptan
+   `Idempotency-Key`.
 
-- [ ] **Fase 6 · Inventario avanzado** — Sucursales/ubicaciones como entidad de primera clase, transferencias, ajustes de stock, conteos físicos, alertas de stock bajo. _Prerequisito duro del POS._
-- [ ] **Fase 7 · POS core** — App de caja (`apps/pos`): búsqueda rápida, escaneo de código de barras, venta con canal `pos`, cobro efectivo/tarjeta/mixto, cálculo de cambio, ticket térmico, devoluciones.
-- [ ] **Fase 8 · Offline-first y sync** — Base local en dispositivo, cola de operaciones, sync por eventos con claves de idempotencia, resolución de conflictos de stock.
-- [ ] **Fase 9 · Operación de tienda física** — Apertura/cierre de caja, cortes (arqueo), múltiples cajeros con permisos, reportes por caja/cajero/turno.
+Si vas a contribuir, lee también los patrones ya implementados en
+[`AGENTS.md`](./AGENTS.md): outbox transaccional, máquinas de estado,
+plugins de pago como Strategy, reservas claim-then-apply, etc.
 
-### Transversales (crecen en cada fase)
+---
 
-Reportes y dashboard · Facturación CFDI (post Fase 4) · Multi-idioma y multi-moneda · Webhooks públicos · Import/export · Documentación para contribuidores.
+## Comandos útiles
+
+```bash
+# Base de datos
+yarn db:migrate     # Aplica migraciones en desarrollo
+yarn db:deploy      # Aplica migraciones en CI/producción (sin prompts)
+yarn db:reset       # Borra y recrea la DB de desarrollo (¡destructivo!)
+yarn db:seed        # Carga permisos, roles, Super Admin (admin@admin.com), tienda demo
+
+# Desarrollo
+yarn dev            # API en :3000 + Admin en :3001 (con hot reload)
+yarn build          # Build de todos los workspaces (turbo)
+yarn lint           # ESLint en todo el monorepo (incluye fronteras entre features)
+yarn test           # Vitest: unit tests (in-memory) + e2e (DB real)
+
+# Generadores
+yarn new:feature <nombre>   # Genera una feature nueva con capas + tests
+```
+
+---
+
+## Roadmap (estado real)
+
+### ✅ Sprint 1 — MVP ecommerce (API + Admin) · CERRADO
+
+Plataforma vendible end-to-end: auth, productos con variantes, inventario por
+ubicación, carrito, checkout, pagos manual + Mercado Pago, envíos, impuestos,
+panel admin completo, tareas programadas, deploy con Docker Compose.
+
+### 🚧 Sprint 2 — Storefront público (`apps/web`) · EN PLANEACIÓN
+
+Tienda pública que consume el catálogo y checkout ya existentes:
+
+- Home, listados con filtros, detalle de producto, carrito, checkout guiado.
+- Guest checkout por email.
+- SEO real (slugs, redirects, meta), integración con Mercado Pago.
+- (Opcional) Descongelar promotions / gift cards / reviews y cablearlos.
+
+### 🔜 Sprint 3 — Extensión POS
+
+Punto de venta offline-first (`apps/pos`):
+
+- Sucursales y transferencias de stock como entidad de primera clase.
+- App de caja PWA con escaneo de código de barras, cobro mixto, ticket térmico.
+- Base local en dispositivo + sync por eventos con `Idempotency-Key`.
+- Apertura/cierre de caja, múltiples cajeros, cortes X/Z.
+
+### 🔜 Sprint 4 — Paridad nopCommerce extendida
+
+Por prioridad: **CFDI 4.0 México**, multi-idioma/moneda, RMA, multi-vendor,
+CMS ligero, webhooks públicos, reportes avanzados, GDPR/LFPDPPP.
+
+> Detalle completo, specs por requisito y estado por módulo en
+> [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+
+---
+
+## Documentación adicional
+
+- 📋 [`docs/ROADMAP.md`](./docs/ROADMAP.md) — Planeación viva y estado por sprint.
+- 📦 [`docs/DEPLOY.md`](./docs/DEPLOY.md) — Cómo desplegar en un VPS con Docker.
+- 📐 [`docs/specs/`](./docs/specs/) — Specs detalladas por requisito.
+- 🤖 [`AGENTS.md`](./AGENTS.md) — Reglas y patrones para agentes/contribuidores.
+- 🤝 [`CONTRIBUTING.md`](./CONTRIBUTING.md) — Cómo contribuir código.
+
+---
 
 ## Contribuir
 
-Lee [CONTRIBUTING.md](./CONTRIBUTING.md). En corto: conventional commits, cada módulo nuevo se genera con `yarn new:module <nombre>`, y las reglas de arquitectura no se negocian — el CI las vigila.
+Lee [`CONTRIBUTING.md`](./CONTRIBUTING.md). En corto:
+
+- Conventional commits.
+- Cada feature nueva se genera con `yarn new:feature <nombre>`.
+- Las reglas de arquitectura no se negocian — el CI las vigila.
+
+**¿No programas pero quieres ayudar?** Abrir un
+[issue](https://github.com/mitama/mitama-commerce/issues) reportando un bug,
+sugiriendo una mejora o pidiendo soporte para tu pasarela de pago local también
+es contribuir.
+
+---
 
 ## Licencia
 
 [MIT](./LICENSE) — úsalo, modifícalo y monta tu negocio con él.
+
+---
+
+## Glosario rápido (para quienes apenas están aprendiendo)
+
+- **API** — Servidor que expone funcionalidad por HTTP para que otros sistemas
+  (un admin, una tienda, una app móvil) la consuman. Aquí, `apps/api`.
+- **Monorepo** — Un solo repositorio Git que contiene varios proyectos
+  relacionados (API, admin, librerías, plugins) que comparten dependencias y
+  herramientas.
+- **Modular monolith** — Un único deploy, pero con módulos internos tan
+  aislados que mañana podrías separarlos en microservicios sin reescribir el
+  dominio.
+- **Hexagonal (puertos y adapters)** — El "qué hace el negocio" vive en el
+  centro (domain) y las decisiones técnicas (Prisma, HTTP, Mercado Pago) viven
+  en los bordes (infra), conectadas por **puertos** (interfaces).
+- **Seed** — Script que carga datos iniciales en la base (roles, usuario admin,
+  tienda demo) para que arranques con algo usable.
+- **Migración** — Archivo SQL versionado que evoluciona el esquema de la base
+  de datos de forma reproducible. Nunca se edita una migración ya aplicada.
+- **Idempotencia** — Que enviar la misma operación dos veces produzca el mismo
+  resultado, no dos resultados. Clave para reintentos y para el POS offline.
+- **Outbox** — Patrón que guarda los eventos a publicar en la misma transacción
+  que los datos. Garantiza "si la orden se creó, su evento se publicará" — sin
+  perder eventos por caídas.
+- **RBAC** — Role-Based Access Control: a los usuarios se les asignan roles, y
+  los roles tienen permisos. "Fail-closed" significa que sin permiso explícito,
+  la respuesta es **denegado**.
+- **Multi-tienda / Multi-canal** — Una instalación puede operar varias tiendas
+  (cada una con su catálogo, métodos de pago y envío); cada venta sabe si vino
+  por **web** o **POS** (canal).

@@ -1274,6 +1274,7 @@ __metadata:
     "@types/react-dom": "npm:^19.0.0"
     class-variance-authority: "npm:^0.7.1"
     clsx: "npm:^2.1.1"
+    dotenv-cli: "npm:^8.0.0"
     eslint: "npm:^9.15.0"
     lucide-react: "npm:^0.469.0"
     next: "npm:^15.1.0"

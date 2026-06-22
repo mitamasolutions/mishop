@@ -78,7 +78,7 @@ Customers/Roles de nopCommerce, acotado a usuarios administrativos.
 - Invitación: token de 72 h; usuario `invited` hasta aceptar.
 - Estados de usuario: `invited`, `active`, `locked`, `disabled`.
 - Sesión admin: refresh en cookie httpOnly, access en memoria.
-- Super admin de seed: `admin@mitama.local`, contraseña tomada de `.env`.
+- Super admin de seed: `admin@admin.com`, contraseña tomada de `.env`.
 
 ## Criterios de aceptación
 

@@ -136,7 +136,7 @@ yarn lint                   # ESLint, incluye boundaries entre features
 yarn db:migrate             # prisma migrate dev — desarrollo
 yarn db:deploy              # prisma migrate deploy — CI/producción
 yarn db:reset               # resetea la DB de desarrollo
-yarn db:seed                # permisos, roles, Super Admin (admin@mitama.local), tienda demo y datos de referencia
+yarn db:seed                # permisos, roles, Super Admin (admin@admin.com), tienda demo y datos de referencia
 yarn new:feature <nombre>   # genera una feature nueva con capas + test (alias: new:module)
 ```
 
