@@ -25,7 +25,7 @@ RUN corepack enable
 COPY --from=deps /repo /repo
 
 # Genera Prisma Client y compila todos los workspaces (turbo respeta DAG).
-RUN yarn workspace @mitama/db db:generate
+RUN yarn workspace @mitama/data db:generate
 RUN yarn build
 
 # --- Stage 3: runtime (solo lo necesario para el API) ------------------------

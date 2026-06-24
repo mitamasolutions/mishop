@@ -64,11 +64,11 @@ corepack enable
 yarn install --immutable
 
 log "Generando cliente Prisma…"
-yarn workspace @mitama/db db:generate
+yarn workspace @mitama/data db:generate
 
 # ── 3. Migraciones DB ───────────────────────────────────────────────────────
 log "Aplicando migraciones de Prisma (db:deploy)…"
-yarn workspace @mitama/db db:deploy
+yarn workspace @mitama/data db:deploy
 
 # ── 4. Levantar servicios con build ─────────────────────────────────────────
 log "Levantando contenedores (api + admin)…"
@@ -94,7 +94,7 @@ if ! healthcheck_url "$API_HEALTH_URL" "API"; then
   err "Healthcheck de API falló. Iniciando rollback…"
   git reset --hard "$PREVIOUS_SHA"
   yarn install --immutable
-  yarn workspace @mitama/db db:generate
+  yarn workspace @mitama/data db:generate
   docker compose -f "$COMPOSE_FILE" up -d --build
   err "Rollback aplicado. Revisa logs: docker compose -f $COMPOSE_FILE logs api"
   exit 1

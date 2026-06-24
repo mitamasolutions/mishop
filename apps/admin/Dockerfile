@@ -25,8 +25,8 @@ COPY --from=deps /repo /repo
 ENV NEXT_OUTPUT_TRACING_ROOT=/repo
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# El admin no toca Prisma directamente, pero @mitama/db es dep transitiva.
-RUN yarn workspace @mitama/db db:generate
+# El admin no toca Prisma directamente, pero @mitama/data es dep transitiva.
+RUN yarn workspace @mitama/data db:generate
 RUN yarn workspace @mitama/admin build
 
 # --- Stage 3: runtime (solo el bundle standalone) ----------------------------

@@ -1,0 +1,44 @@
+{
+  "name": "@mitama/features",
+  "version": "0.1.0",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mitama/contracts": "workspace:*",
+    "@mitama/core": "workspace:*",
+    "@mitama/data": "workspace:*",
+    "@mitama/payment_manual": "workspace:*",
+    "@mitama/payment_mercado_pago": "workspace:*",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/schedule": "^6.1.3",
+    "@nestjs/swagger": "^11.0.0",
+    "@nestjs/throttler": "^6.0.0",
+    "argon2": "^0.41.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@mitama/config": "workspace:*",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.15.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}

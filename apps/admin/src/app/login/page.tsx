@@ -13,7 +13,7 @@ import { ApiError } from '@/lib/api-client';
 export default function LoginPage() {
   const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
-  const [email, setEmail] = useState('admin@mitama.local');
+  const [email, setEmail] = useState('admin@admin.com');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 

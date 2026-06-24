@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { PrismaService } from '@mitama/db';
-import { ORDERS_TOKENS, type StockReservationService } from '@mitama/orders';
+import { PrismaService } from '@mitama/data';
+import { ORDERS_TOKENS, type StockReservationService } from '@mitama/features';
 import { AppModule } from '../src/app.module';
 
 /**

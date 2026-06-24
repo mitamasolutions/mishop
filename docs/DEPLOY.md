@@ -41,25 +41,24 @@ CORS_ORIGINS=https://admin.tudominio.com
 NEXT_PUBLIC_API_URL=https://api.tudominio.com
 ```
 
-Variable **opcional** recomendada en producción:
+Variable **obligatoria** en producción:
 
 ```dotenv
 # Cifrado de settings sensibles, incluidas credenciales de plugins de pago.
-# Si se omite, la API arranca y persiste esos settings en plano.
 SETTINGS_ENCRYPTION_KEY=...
 ```
 
 Las credenciales de Mercado Pago **NO van en `.env`**: se configuran por
 tienda desde el admin (`/configuracion/pagos`) y se persisten cifradas en
-DB si `SETTINGS_ENCRYPTION_KEY` está definida (`store_payment_methods.encrypted_credentials`).
+DB con `SETTINGS_ENCRYPTION_KEY` (`store_payment_methods.encrypted_credentials`).
 
 ## 3. Primer despliegue
 
 ```bash
 # Migraciones + seed
 yarn install --immutable
-yarn workspace @mitama/db db:deploy
-yarn workspace @mitama/db db:seed
+yarn workspace @mitama/data db:deploy
+yarn workspace @mitama/data db:seed
 
 # Arrancar API + Admin
 docker compose -f docker-compose.prod.yml up -d --build
@@ -80,6 +79,23 @@ Hace `git pull` → `yarn install --immutable` → `prisma generate` →
 backoff. Si la API no responde tras 12 intentos (60s), aplica
 **rollback automático** al commit previo y reinicia. Variables ajustables:
 `API_HEALTH_URL`, `ADMIN_HEALTH_URL`, `HEALTH_RETRIES`, `HEALTH_INTERVAL`.
+
+### 4.1 Refactor de nombres de migración (`sprint1_refactor_f2`)
+
+El refactor cambió los nombres de las 7 carpetas de migración del Sprint 1.
+Si tu entorno ya ejecutó `prisma migrate deploy` **antes** de este merge,
+las entradas existentes en `_prisma_migrations` aún apuntan a los nombres
+largos y Prisma intentaría reaplicar las 7 migraciones. Para evitarlo,
+ejecuta una sola vez por entorno y **antes** del próximo `deploy.sh` o
+`prisma migrate deploy`:
+
+```bash
+psql "$DATABASE_URL" -f lib/data/scripts/rename-migrations.sql
+```
+
+El script es idempotente: tras la primera corrida, las siguientes no
+afectan filas. Convención permanente y procedimiento general para futuros
+renombrados en `docs/arch/migration_naming_convention.md`.
 
 ## 5. Operación periódica (sin cron externo · r24)
 

@@ -4,30 +4,33 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { DbModule } from '@mitama/db';
-import { AuthModule } from '@mitama/auth';
-import { ReferenceDataModule } from '@mitama/reference-data';
-import { StoresModule } from '@mitama/stores';
-import { SettingsModule } from '@mitama/settings';
-import { ActivityLogModule } from '@mitama/activity-log';
-import { CatalogModule } from '@mitama/catalog';
-import { InventoryModule } from '@mitama/inventory';
-import { CustomersModule } from '@mitama/customers';
-import { CartModule } from '@mitama/cart';
-import { OrdersModule } from '@mitama/orders';
-import { PaymentsModule } from '@mitama/payments';
-import { ShippingModule } from '@mitama/shipping';
-import { TaxesModule } from '@mitama/taxes';
-import { PromotionsModule } from '@mitama/promotions';
-import { GiftCardsModule } from '@mitama/giftcards';
-import { ReviewsModule } from '@mitama/reviews';
-import { ScheduledTasksModule } from '@mitama/scheduled-tasks';
+import { DataModule } from '@mitama/data';
+import {
+  ActivityLogModule,
+  AuthModule,
+  CartModule,
+  CatalogModule,
+  CustomersModule,
+  GiftCardsModule,
+  InventoryModule,
+  OrdersModule,
+  PaymentsModule,
+  PromotionsModule,
+  ReferenceDataModule,
+  ReviewsModule,
+  ScheduledTasksModule,
+  SettingsModule,
+  ShippingModule,
+  StoresModule,
+  TaxesModule,
+} from '@mitama/features';
 import { EventBusModule } from './event-bus.module';
 import { HealthController } from './health.controller';
 import { ScheduledTaskHandlersWiring } from './scheduled-task-handlers.wiring';
 import { validateEnv } from './config/env';
+import { InfraExceptionFilter } from './infra-exception.filter';
 
 @Module({
   imports: [
@@ -38,7 +41,7 @@ import { validateEnv } from './config/env';
       { name: 'checkout', ttl: 60000, limit: 20 },
       { name: 'webhook', ttl: 60000, limit: 60 },
     ]),
-    DbModule,
+    DataModule,
     EventBusModule,
     AuthModule,
     ReferenceDataModule,
@@ -59,6 +62,10 @@ import { validateEnv } from './config/env';
     ScheduledTasksModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }, ScheduledTaskHandlersWiring],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: InfraExceptionFilter },
+    ScheduledTaskHandlersWiring,
+  ],
 })
 export class AppModule {}

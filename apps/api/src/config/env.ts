@@ -8,6 +8,7 @@
  * tooling.
  */
 const REQUIRED = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET'] as const;
+const PRODUCTION_REQUIRED = ['SETTINGS_ENCRYPTION_KEY'] as const;
 const OPTIONAL_BOOLEAN = ['API_DOCS_ENABLED'];
 
 export function validateEnv(input: Record<string, unknown>): Record<string, unknown> {
@@ -23,6 +24,12 @@ export function validateEnv(input: Record<string, unknown>): Record<string, unkn
     }
   }
   if (input.NODE_ENV === 'production') {
+    const missingProduction = PRODUCTION_REQUIRED.filter(
+      (key) => typeof input[key] !== 'string' || (input[key] as string).length === 0,
+    );
+    if (missingProduction.length > 0) {
+      throw new Error(`Variables de entorno requeridas en producción ausentes: ${missingProduction.join(', ')}`);
+    }
     if ((input.JWT_SECRET as string).length < 32) {
       throw new Error('JWT_SECRET debe tener al menos 32 caracteres en producción');
     }

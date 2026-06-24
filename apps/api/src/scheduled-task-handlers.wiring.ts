@@ -7,8 +7,13 @@
  * donde los módulos se cruzan.
  */
 import { Inject, Injectable, type OnApplicationBootstrap } from '@nestjs/common';
-import { DispatchOutboxEventsUseCase, DrainEmailQueueUseCase, ReleaseExpiredReservationsUseCase } from '@mitama/orders';
-import { ScheduledTaskRegistry, SCHEDULED_TASKS_TOKENS } from '@mitama/scheduled-tasks';
+import {
+  DispatchOutboxEventsUseCase,
+  DrainEmailQueueUseCase,
+  ReleaseExpiredReservationsUseCase,
+  ScheduledTaskRegistry,
+  SCHEDULED_TASKS_TOKENS,
+} from '@mitama/features';
 
 @Injectable()
 export class ScheduledTaskHandlersWiring implements OnApplicationBootstrap {
