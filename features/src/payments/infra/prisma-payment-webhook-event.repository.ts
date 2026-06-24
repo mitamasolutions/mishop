@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import type { PaymentWebhookEventProps, PaymentWebhookEventStatus } from '../domain/payment-webhook-event.entity';
 import type { PaymentWebhookEventRepository } from '../domain/payment-webhook-event.repository';
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import { normalizeGiftCardCode, type GiftCardProps, type GiftCardRedemptionOutput, type GiftCardStatus } from '../domain/gift-card.models';
 import type {
   ActiveRedemptionRecord,

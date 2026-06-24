@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import { recordActivity, type RecordActivityInput } from '../../activity-log';
 import { StockLocation } from '../domain/stock-location.entity';
 import type { StockLocationRepository } from '../domain/stock-location.repository';

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import type { CouponCommitOutcome, CouponCommitRedemptionInput, PromotionIdempotencyRecord, PromotionRepository, RewardAccrualInput, RewardAccrualOutcome } from '../domain/promotion.repository';
 import { normalizeCode, type CouponProps, type DiscountConditionProps, type DiscountProps, type DiscountScope, type DiscountType, type NewsletterStatus, type NewsletterSubscription, type RewardLedgerEntry, type RewardProgramConfig } from '../domain/promotion.models';
 

@@ -5,7 +5,7 @@ import { Test } from '@nestjs/testing';
 import * as argon2 from 'argon2';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import { AppModule } from '../src/app.module';
 
 const PASSWORD = 'Test1234!';

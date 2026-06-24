@@ -4,7 +4,7 @@ import type { __Name__ItemRepository } from '../domain/__name__-item.repository'
 
 /**
  * Adapter in-memory de arranque. Cuando el módulo necesite persistencia real,
- * crea aquí un Prisma__Name__ItemRepository (y su .prisma en lib/db).
+ * crea aquí un Prisma__Name__ItemRepository (y su .prisma en lib/data).
  */
 @Injectable()
 export class InMemory__Name__ItemRepository implements __Name__ItemRepository {

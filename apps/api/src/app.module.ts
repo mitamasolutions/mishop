@@ -6,7 +6,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { DbModule } from '@mitama/db';
+import { DataModule } from '@mitama/data';
 import {
   ActivityLogModule,
   AuthModule,
@@ -41,7 +41,7 @@ import { InfraExceptionFilter } from './infra-exception.filter';
       { name: 'checkout', ttl: 60000, limit: 20 },
       { name: 'webhook', ttl: 60000, limit: 60 },
     ]),
-    DbModule,
+    DataModule,
     EventBusModule,
     AuthModule,
     ReferenceDataModule,

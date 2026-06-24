@@ -16,4 +16,4 @@ import { createScopedPrismaClient, SCOPED_PRISMA } from './scoped-prisma';
   ],
   exports: [PrismaService, RequestContextService, SCOPED_PRISMA],
 })
-export class DbModule {}
+export class DataModule {}

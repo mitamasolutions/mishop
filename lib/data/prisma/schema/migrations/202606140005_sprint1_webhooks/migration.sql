@@ -8,7 +8,7 @@
 -- 2. Dropea el unique legado `(provider_code, event_id)` que dejaba
 --    colisionar eventos entre tiendas.
 -- 3. La unicidad ya es exclusivamente `(store_id, provider_code, event_id)`
---    (índice creado en `20260614040000_sprint1_f0_r20_constraints_followup`).
+--    (índice creado en `202606140004_sprint1_constraints_followup`).
 
 -- 1. Si quedaron filas viejas sin store_id, las purgamos (eventos
 --    huérfanos de provider antes de F3 sin valor operativo).

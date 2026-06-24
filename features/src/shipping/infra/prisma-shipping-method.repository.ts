@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import type { ShippingMethod, ShippingRateStrategy } from '../domain/shipping-method.entity';
 import type { ShippingMethodRepository } from '../domain/shipping-method.repository';
 

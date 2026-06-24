@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import { Country } from '../domain/country.entity';
 import type { CountryRepository } from '../domain/country.repository';
 

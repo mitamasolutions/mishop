@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import { AppModule } from '../src/app.module';
 
 /**

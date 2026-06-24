@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import type { CheckoutCartReader, CheckoutCartSnapshot } from '../domain/checkout-cart';
 
 @Injectable()

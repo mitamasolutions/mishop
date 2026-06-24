@@ -19,7 +19,7 @@ apps/
 lib/
   core/       # Shared kernel TS puro (CERO deps): Result, errores, EventBus, Entity/VO/UseCase
   contracts/  # Eventos, puertos e interfaces compartidas (+ contrato de pagos + token EVENT_BUS)
-  db/         # Prisma multi-archivo (prisma/schema/<feature>.prisma) + migraciones + PrismaService/DbModule
+  data/       # Prisma multi-archivo (prisma/schema/<feature>.prisma) + migraciones + PrismaService/DataModule
   config/     # tsconfig base + ESLint compartido (incluye reglas de boundaries)
 features/     # UN paquete @mitama/features con las 17 features de negocio
   src/
@@ -46,7 +46,7 @@ vía el barrel `@mitama/features`:
 1. **Dependencias hacia adentro:** `http → application → domain`. `infra`
    implementa los puertos (interfaces) de `domain`. `domain` no importa nada
    externo (solo `@mitama/core` / `@mitama/contracts`).
-2. **Prisma SOLO en `infra/`** de cada feature (y en `lib/db`, su dueño).
+2. **Prisma SOLO en `infra/`** de cada feature (y en `lib/data`, su dueño).
    Los casos de uso dependen de puertos, nunca del cliente Prisma.
 3. **Una feature NUNCA importa internals de otra:** solo el barrel hermano
    (`../<feature>` que resuelve al `index.ts`) o `@mitama/contracts`. ESLint
@@ -147,7 +147,7 @@ yarn new:feature <nombre>   # genera una feature nueva con capas + test (alias: 
 2. Re-exporta el módulo desde `features/src/index.ts`
    (`export { <Nombre>Module } from './<nombre>';`).
 3. Registra `<Nombre>Module` en `apps/api/src/app.module.ts`.
-4. Si necesita persistencia: crea `lib/db/prisma/schema/<nombre>.prisma` y corre
+4. Si necesita persistencia: crea `lib/data/prisma/schema/<nombre>.prisma` y corre
    `yarn db:migrate` (las migraciones son versionadas; el baseline vive en
    `prisma/schema/migrations/`).
 5. Reemplaza el adapter in-memory de `infra/` por uno de Prisma cuando toque

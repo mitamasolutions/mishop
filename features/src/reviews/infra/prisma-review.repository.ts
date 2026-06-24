@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { roundMoney } from '@mitama/core';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import type { ProductRatingAggregate, ReviewProps, ReviewStatus } from '../domain/review.models';
 import type { ReviewRepository } from '../domain/review.repository';
 

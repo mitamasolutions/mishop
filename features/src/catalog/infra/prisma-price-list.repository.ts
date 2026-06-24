@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import { recordActivity, type RecordActivityInput } from '../../activity-log';
 import { PriceList, type PriceListPriceProps, type PriceListStatus, type PriceListType } from '../domain/price-list.entity';
 import type { PriceListFilter, PriceListPage, PriceListRepository } from '../domain/price-list.repository';

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import type { StoreTaxSettings, StoreTaxSettingsRepository } from '../domain/store-tax-settings.repository';
 
 @Injectable()

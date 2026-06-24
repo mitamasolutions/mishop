@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import { ActivityLogEntry } from '../domain/activity-log-entry.entity';
 import type { ActivityLogEntryRepository, ActivityLogFilter, ActivityLogPage } from '../domain/activity-log-entry.repository';
 

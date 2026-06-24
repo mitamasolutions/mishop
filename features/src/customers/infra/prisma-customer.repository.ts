@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import { Customer, type CustomerAddressProps, normalizeEmail } from '../domain/customer.entity';
 import type { CustomerRepository, ListCustomersFilter, PaginatedCustomers } from '../domain/customer.repository';
 

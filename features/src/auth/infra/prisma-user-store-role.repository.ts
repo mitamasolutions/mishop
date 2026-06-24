@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import { recordActivity, type RecordActivityInput } from '../../activity-log';
 import type { Permission } from '@mitama/contracts';
 import { UserStoreRole } from '../domain/user-store-role.entity';

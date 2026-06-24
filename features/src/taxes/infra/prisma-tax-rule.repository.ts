@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import type { TaxCategory } from '../domain/tax-provider';
 import type { TaxRule, TaxRuleRepository } from '../domain/tax-rule.repository';
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import { PaymentProvider } from '../domain/payment-provider.entity';
 import type { PaymentProviderRepository } from '../domain/payment-provider.repository';
 

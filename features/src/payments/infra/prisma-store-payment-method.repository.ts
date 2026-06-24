@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import { PAYMENTS_TOKENS } from '../payments.tokens';
 import type { StorePaymentMethod, StorePaymentMethodRepository } from '../domain/store-payment-method.repository';
 import type { CredentialCipher } from './credential-cipher';

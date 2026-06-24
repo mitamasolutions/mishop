@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { OrderForPaymentsPort, OrderForPaymentsView } from '@mitama/contracts';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 
 /**
  * Adapter del puerto público `OrderForPaymentsPort`: expone una vista

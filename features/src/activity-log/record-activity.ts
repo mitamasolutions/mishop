@@ -1,4 +1,4 @@
-import type { Prisma } from '@mitama/db';
+import type { Prisma } from '@mitama/data';
 
 /**
  * Entrada para `recordActivity`. `storeId` puede ser `null` para acciones

@@ -4,7 +4,7 @@
  */
 import { Module } from '@nestjs/common';
 import { createModuleProviders } from '@mitama/contracts';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import { CATALOG_TOKENS } from './catalog.tokens';
 import { CreateBrandUseCase } from './application/create-brand/create-brand.use-case';
 import { UpdateBrandUseCase } from './application/update-brand/update-brand.use-case';

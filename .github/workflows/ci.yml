@@ -73,10 +73,10 @@ jobs:
         run: yarn build
 
       - name: Migraciones Prisma
-        run: yarn workspace @mitama/db db:deploy
+        run: yarn workspace @mitama/data db:deploy
 
       - name: Seed DB
-        run: yarn workspace @mitama/db db:seed
+        run: yarn workspace @mitama/data db:seed
 
       - name: Tests (unit + e2e con Postgres real)
         run: yarn test

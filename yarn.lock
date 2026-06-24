@@ -1297,7 +1297,7 @@ __metadata:
     "@mitama/config": "workspace:*"
     "@mitama/contracts": "workspace:*"
     "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
+    "@mitama/data": "workspace:*"
     "@mitama/features": "workspace:*"
     "@nestjs/cli": "npm:^11.0.0"
     "@nestjs/common": "npm:^11.0.0"
@@ -1362,9 +1362,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mitama/db@workspace:*, @mitama/db@workspace:lib/db":
+"@mitama/data@workspace:*, @mitama/data@workspace:lib/data":
   version: 0.0.0-use.local
-  resolution: "@mitama/db@workspace:lib/db"
+  resolution: "@mitama/data@workspace:lib/data"
   dependencies:
     "@mitama/config": "workspace:*"
     "@mitama/contracts": "workspace:*"
@@ -1390,7 +1390,7 @@ __metadata:
     "@mitama/config": "workspace:*"
     "@mitama/contracts": "workspace:*"
     "@mitama/core": "workspace:*"
-    "@mitama/db": "workspace:*"
+    "@mitama/data": "workspace:*"
     "@mitama/payment_manual": "workspace:*"
     "@mitama/payment_mercado_pago": "workspace:*"
     "@nestjs/common": "npm:^11.0.0"

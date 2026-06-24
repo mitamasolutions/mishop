@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import { recordActivity, type RecordActivityInput } from '../../activity-log';
 import { RefreshToken } from '../domain/refresh-token.entity';
 import type { RefreshTokenRepository } from '../domain/refresh-token.repository';

@@ -20,7 +20,7 @@ negativo, etc.).
 ## Requisitos / estado entregado
 
 - **Baseline limpio** en
-  `lib/db/prisma/schema/migrations/20260614000000_sprint1_f0_r20_baseline/migration.sql`;
+  `lib/data/prisma/schema/migrations/202606140000_sprint1_baseline/migration.sql`;
   las migraciones históricas de fase inicial fueron retiradas del árbol.
 - **FKs críticas** declaradas en el baseline:
   - `Order.customerId` → `Customer.id`.
@@ -29,12 +29,12 @@ negativo, etc.).
   - `Payment.orderId` → `Order.id`.
   - `Shipment.orderId` → `Order.id`.
   - `Cart.customerId`, `Cart.lines.variantId/productId`.
-- **CHECK de estados** (migración `20260614020000_sprint1_f0_r20_state_checks_and_partial_unique`):
+- **CHECK de estados** (migración `202606140002_sprint1_state_constraints`):
   `Order.status/paymentStatus/channel`, `Payment.status`, `PaymentRefund.status`,
   `PaymentWebhookEvent.status`, `Cart.status/checkoutStep/channel`,
   `Shipment.status`, `StorePaymentMethod.captureMode`, `ProductReview.status`,
   `OrderStateTransition.kind`.
-- **CHECK de cantidades/montos** (migración `20260614010000_sprint1_f0_r20_check_constraints_amounts`):
+- **CHECK de cantidades/montos** (migración `202606140001_sprint1_amounts`):
   `reservedQuantity >= 0`, `incomingQuantity >= 0`, `stockedQuantity >= 0`,
   `reservedQuantity <= stockedQuantity`; montos/cantidades no negativos en
   `orders`, `order_lines`, `cart_lines`, `stock_reservations`, `payments`,

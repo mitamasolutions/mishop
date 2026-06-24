@@ -1,5 +1,5 @@
 {
-  "name": "@mitama/db",
+  "name": "@mitama/data",
   "version": "0.1.0",
   "license": "MIT",
   "main": "./dist/index.js",

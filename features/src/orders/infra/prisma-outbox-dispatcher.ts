@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@mitama/db';
+import { PrismaService } from '@mitama/data';
 import { EVENT_BUS } from '@mitama/contracts';
 import type { EventBus } from '@mitama/core';
 import { type OutboxDispatcher, type PendingOutboxEvent, toDomainEvent } from '../domain/outbox';

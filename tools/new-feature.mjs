@@ -56,7 +56,7 @@ console.log('Siguientes pasos:');
 console.log(`  1. Re-exporta el módulo desde features/src/index.ts:`);
 console.log(`       export { ${pascal}Module } from './${name}';`);
 console.log(`  2. Registra ${pascal}Module en apps/api/src/app.module.ts`);
-console.log(`  3. Si necesita persistencia: crea lib/db/prisma/schema/${name}.prisma y corre yarn db:migrate`);
+console.log(`  3. Si necesita persistencia: crea lib/data/prisma/schema/${name}.prisma y corre yarn db:migrate`);
 console.log('  4. Reemplaza el adapter in-memory por uno de Prisma en infra/');
 console.log('  5. Las reglas de boundary la protegen automáticamente desde features/src/');
 console.log('');

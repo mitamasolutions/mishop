@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import { Cart, type CartAddressSnapshot, type CartChannel, type CartLineProps, type CartPaymentMethodSnapshot, type CartShippingMethodSnapshot, type CheckoutStep } from '../domain/cart.entity';
 import type { CartRepository } from '../domain/cart.repository';
 

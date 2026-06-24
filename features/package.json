@@ -18,7 +18,7 @@
   "dependencies": {
     "@mitama/contracts": "workspace:*",
     "@mitama/core": "workspace:*",
-    "@mitama/db": "workspace:*",
+    "@mitama/data": "workspace:*",
     "@mitama/payment_manual": "workspace:*",
     "@mitama/payment_mercado_pago": "workspace:*",
     "@nestjs/common": "^11.0.0",

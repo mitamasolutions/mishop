@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import { Order, type OrderLineProps, type OrderPaymentStatus, type OrderStatus, type OrderNoteProps, type StateTransitionProps } from '../domain/order.entity';
 import { IdempotencyConflictError, OrderAlreadyExistsForCartError } from '../domain/errors';
 import type { OrderFilter, OrderIdempotencyReader, OrderNumberGenerator, OrderReader, OrderWriter, SaveOrderOptions, StoredIdempotencyRecord } from '../domain/order.repository';

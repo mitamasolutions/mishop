@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { Observable } from 'rxjs';
-import { RequestContextService } from '@mitama/db';
+import { RequestContextService } from '@mitama/data';
 import type { ActiveStore, AuthenticatedUser } from '@mitama/contracts';
 
 interface StoreContextRequest {

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@mitama/db';
+import { Prisma, PrismaService } from '@mitama/data';
 import type { ScheduledTaskProps, ScheduledTaskRepository } from '../domain/scheduled-task';
 import { isDue } from '../domain/scheduled-task';
 
